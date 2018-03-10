@@ -1,5 +1,5 @@
 "use strict"; 
-const command = require('./modules/command.js');
+const command = require('./command.js');
 const config = require('../config.js');
 const v = require('../dbVarTypes.js');
 

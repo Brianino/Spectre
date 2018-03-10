@@ -73,11 +73,14 @@ field.GRp = 'Filter_Group';
 field.GRw = 'Warning_Group';
 field.GRm = 'Enabled_Modules';
 field.GRb = 'Blocked_Users';
+field.GRd = 'Dependencies';
 field.GRID = 'Group_ID int';
 field.Tim = 'Time datetime';
 field.iTi = 'Timeout bool';
+field.depS = 'Source_Module_ID int';
+field.depD = 'Required_Module_ID int';
 
-//CONTRAINTS
+//CONSTRAINTS
 field.pk = 'PRIMARY KEY';
 field.fk = 'FOREIGN KEY';
 field.nn = 'NOT NULL';

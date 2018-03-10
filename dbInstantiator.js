@@ -33,6 +33,7 @@ class dbInstantiator {
 			db[v.GRw] = `CREATE TABLE ${config.database}.${v.GRw} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.warGr},${v.mID})`; // WARNING_GROUP TABLE
 			db[v.GRm] = `CREATE TABLE ${config.database}.${v.GRm} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.gID},${v.modID})`; // MODULE_GROUP TABLE
 			db[v.GRb] = `CREATE TABLE ${config.database}.${v.GRb} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.uID},${v.gID},${v.modID})`; // BLOCKED_GROUP TABLE
+			db[v.GRd] = `CREATE TABLE ${config.database}.${v.GRd} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.depS},${v.depD})`; // DEPENDENCY_TABLE TABLE
 			//console.log(`Attempting to instantiate ${config.database.green}`);
 			if ("error" in params) {
 				if (params.error) {
