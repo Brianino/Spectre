@@ -3,7 +3,6 @@ var config = {}
 /*
   ######## READ ME ########
   *	Config Example
-  *	Create a folder called "Files" within the Emote-Bro directory.
   *	Rename this file to config.js
 
   ######## WARNING ########
