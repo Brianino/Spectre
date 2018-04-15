@@ -19,14 +19,14 @@ class commands {
 		}
 
 		function checkFunc (obj, message) {
-			let Guild = v.gID.split(" ")[0], Module = v.modID.split(" ")[0], Name = v.modNa.split(" ")[0], Glob = v.modGl.split(" ")[0], Fixed = String(v.modFi).split(" ")[0];
+			let Guild = v.ss('gID'), Module = v.ss('modID'), Name = v.ss('modNa'), Glob = v.ss('modGl'), Fixed = v.ss('modFi');
 			let SQL = `SELECT ${Guild}, ${Name}, ${Glob}, ${Fixed} FROM ${config.database}.${v.GRmod} LEFT JOIN ${config.database}.${v.mod} ON ${v.GRmod}.${Module} = ${v.mod}.${Module} WHERE ${Guild} = ${message.guild.id}`;
 			this._con.query(SQL, callfunc, {msg:message}, obj);
 		}
 
 		async function callfunc (queryRes, params, obj) {
 			//check message allowed.
-			let Guild = v.gID.split(" ")[0], Name = v.modNa.split(" ")[0], Glob = v.modGl.split(" ")[0], Fixed = String(v.modFi).split(" ")[0];
+			let Guild = v.ss('gID'), Name = v.ss('modNa'), Glob = v.ss('modGl'), Fixed = v.ss('modFi');
 			let message = params.msg, count = 0, found = false;
 
 			while (!found && count < queryRes.length) {

@@ -8,7 +8,7 @@ class connection {
 			host: chost,
 			user: cuser,
 		}
-		if (cpass != null) {
+		if (cpass != null && cpass != '') {
 			temp.pass = cpass;
 		}
 		this._host = chost;
@@ -80,6 +80,51 @@ class connection {
 				message: "sql string is empty, connection.js"
 			}
 		}
+	}
+
+	queryEsc (sql = "", vals = [], callback = null) {
+		if (sql != "") {
+			if (typeof(vals) == 'array') {
+				this._con.query(sql, vals, function (e, result) {
+					//console.log(result);
+					if (e) {
+						if (callback == null) {
+							console.log(`Query Error`);
+							console.log(`Query: ${sql.red}`);
+							console.log(`Error: ${e}`);
+						} else {
+							try {
+								callback(e);
+							} catch (err) {
+								console.log(err);
+							};
+						}
+					} else {
+						try {
+							if (callback != null) {
+								callback(result, params);
+							}
+						} catch (err) {
+							console.log(err);
+						};
+					}
+				})
+			} else {
+				throw {
+					name: "sql values error",
+					message: "sql values not passed in an array"
+				}
+			}
+		} else {
+			throw {
+				name: "sql string error",
+				message: "sql string is empty, connection.js"
+			}
+		}
+	}
+
+	esc (input) {
+		return this._con.escape(input);
 	}
 
 	set instantiated (input) {

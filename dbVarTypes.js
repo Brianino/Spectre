@@ -1,3 +1,10 @@
+//THIS FILE CAN BE EDITED TO CHANGE THE TABLE AND COLUMN NAMES IN THE DATABASE
+//AVOID CHANGING THIS FILE UNLESS YOU KNOW WHAT YOU ARE DOING!
+//WARNING! DO NOT CHANGE THE NAME OF THE OBJECT PROPERTY, ONLY THE ASSIGNED STRING
+//DO NOT CHANGE THE FIELD TYPE EITHER OR USE SPACES IN THE FIELD NAME
+//DO NOT CHANGE THESE WHILST THE BOT IS RUNNING
+const config = require('../config.js');
+
 var field = {};
 
 //GUILD INFO
@@ -63,24 +70,24 @@ field.war = 'Warnings';
 field.warID = 'Warning_ID int';
 field.warRe = 'Warning_Reason varchar(100)';
 field.warLi = 'Image_Link varchar(20)';
-field.warGr = 'Message_Group int';
 field.warBa = 'Is_Ban bool';
 
 //OTHER
 field.GRr = 'Role_Group';
 field.GRp = 'Perm_Group';
-field.GRp = 'Filter_Group';
 field.GRw = 'Warning_Group';
 field.GRm = 'Enabled_Modules';
 field.GRb = 'Blocked_Users';
 field.GRd = 'Dependencies';
+field.GRfg = 'Filter_Group_Guild';
+field.GRfc = 'Filter_Group_Channel';
 field.GRID = 'Group_ID int';
-field.Tim = 'Time datetime';
+field.Tim = 'Time bigint';
 field.iTi = 'Timeout bool';
 field.depS = 'Source_Module_ID int';
 field.depD = 'Required_Module_ID int';
 
-//CONSTRAINTS
+//CONSTRAINTS (DO NOT CHANGE THESE)
 field.pk = 'PRIMARY KEY';
 field.fk = 'FOREIGN KEY';
 field.nn = 'NOT NULL';
@@ -89,5 +96,23 @@ field.ch = 'CHECK';
 field.df = 'DEFAULT';
 field.IN = 'INDEX';
 field.in = 'AUTO_INCREMENT';
+
+//FUNCTIONS
+//WARNING! DO NOT CHANGE ANY OF THE FUNCTIONS
+field.ss = function (prop) {
+	if (prop in field) {
+		let res = field[prop].split(' ')[0]
+		if (res.length > 1) {
+			return res[0];
+		} else {
+			return config.database + "." + res[0];
+		}
+	} else {
+		throw {
+			name: `invalid field referenced`,
+			message: `${prop} is not a valise property`
+		}
+	}
+}
 
 module.exports = field;

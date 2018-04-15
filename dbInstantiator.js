@@ -25,15 +25,16 @@ class dbInstantiator {
 			db[v.r] = `CREATE TABLE ${config.database}.${v.r} (${v.rID} ${v.pk},${v.rNa},${v.iTi},${v.rSe},${v.gID})`; // ROLE TABLE
 			db[v.p] = `CREATE TABLE ${config.database}.${v.p} (${v.pID} ${v.nn} ${v.in} ${v.pk},${v.pNa},${v.pBi})`; // PERM TABLE
 			db[v.mod] = `CREATE TABLE ${config.database}.${v.mod} (${v.modID} ${v.nn} ${v.in} ${v.pk},${v.modNa},${v.modDe},${v.modUs},${v.modAu},${v.modGl},${v.modFi})`; // MODULE TABLE
-			db[v.war] = `CREATE TABLE ${config.database}.${v.war} (${v.warID} ${v.nn} ${v.in} ${v.pk},${v.uID},${v.warRe},${v.Tim},${v.warLi},${v.warGr},${v.warBa})`; // WARNING TABLE
+			db[v.war] = `CREATE TABLE ${config.database}.${v.war} (${v.warID} ${v.nn} ${v.in} ${v.pk},${v.uID},${v.gID},${v.warRe},${v.Tim},${v.warLi},${v.warBa})`; // WARNING TABLE
 			db[v.fil] = `CREATE TABLE ${config.database}.${v.fil} (${v.filID} ${v.nn} ${v.in} ${v.pk},${v.filTa},${v.filFi})`; // FILTER TABLE
 			db[v.GRr] = `CREATE TABLE ${config.database}.${v.GRr} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.uRG},${v.rID})`; // ROLE_GROUP TABLE
-			db[v.GRp] = `CREATE TABLE ${config.database}.${v.GRp} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.pID},${v.gID},${v.cID},${v.modID})`; // PERM_GROUP TABLE
-			db[v.GRf] = `CREATE TABLE ${config.database}.${v.GRp} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.filID},${v.gID},${v.cID},${v.uID})`; // FILTER_GROUP TABLE
-			db[v.GRw] = `CREATE TABLE ${config.database}.${v.GRw} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.warGr},${v.mID})`; // WARNING_GROUP TABLE
+			db[v.GRp] = `CREATE TABLE ${config.database}.${v.GRp} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.pID},${v.gID},${v.modID})`; // PERM_GROUP TABLE
+			db[v.GRw] = `CREATE TABLE ${config.database}.${v.GRw} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.warID},${v.mID})`; // WARNING_GROUP TABLE
 			db[v.GRm] = `CREATE TABLE ${config.database}.${v.GRm} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.gID},${v.modID})`; // MODULE_GROUP TABLE
 			db[v.GRb] = `CREATE TABLE ${config.database}.${v.GRb} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.uID},${v.gID},${v.modID})`; // BLOCKED_GROUP TABLE
 			db[v.GRd] = `CREATE TABLE ${config.database}.${v.GRd} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.depS},${v.depD})`; // DEPENDENCY_TABLE TABLE
+			db[v.GRfg] = `CREATE TABLE ${config.database}.${v.GRp} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.filID},${v.gID},${v.uID})`; // FILTER_GROUP_GUILD TABLE
+			db[v.GRfc] = `CREATE TABLE ${config.database}.${v.GRp} (${v.GRID} ${v.nn} ${v.in} ${v.pk},${v.filID},${v.cID},${v.uID})`; // FILTER_GROUP_CHANNEL TABLE
 			//console.log(`Attempting to instantiate ${config.database.green}`);
 			if ("error" in params) {
 				if (params.error) {
@@ -91,6 +92,8 @@ class dbInstantiator {
 						if (!exists) {
 							console.log(`Creating ${prop} table`);
 							dbInst.con.query(db[prop]);
+						} else {
+							//CHECK TABLE COLUMNS
 						}
 					}
 					dbInst.con.instantiated = true;

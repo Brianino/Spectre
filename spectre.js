@@ -8,7 +8,7 @@ const dbInstantiator = require('./dbInstantiator.js');
 const v = require('./dbVarTypes.js');
 
 const bot = new Discord.Client();
-const con = new connection("localhost", "root");
+const con = new connection(config.dbhost, config.dbuser, config.dbpass);
 const dbI = new dbInstantiator(con);
 const commands = new modules(con);
 

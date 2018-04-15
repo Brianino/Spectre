@@ -16,7 +16,7 @@ class command {
 		//console.log(typeof(obj.con.instantiated));
 		//console.log(`Attempting to instantiate ${obj.name}`);
 		if (obj.con.instantiated) {
-			let SQL = `SELECT * FROM ${config.database}.${v.mod} WHERE ${String(v.modNa).split(" ")[0]} = '${obj.name}'`;
+			let SQL = `SELECT * FROM ${config.database}.${v.mod} WHERE ${v.ss('modNa')} = '${obj.name}'`;
 			obj.con.query(SQL, instantiateModule, {com: usage, fi:fixed, isGlobal: isGlobal, lg: linkedGuild}, obj);
 		} else {
 			setTimeout(obj.checkModule, 1000, usage, fixed, isGlobal, linkedGuild, obj);
@@ -27,15 +27,12 @@ class command {
 				console.log(`Multiple Module Entries Found`.red);
 			} else if (queryRes.length == 1) {
 				//Check the data is the same
-				let id = String(v.modNa).split(" ")[0];
+				let id = v.ss('modNa');
 			} else {
 				//Insert module data into database
-				let name = String(v.modNa).split(" ")[0];
-				let desc = String(v.modDe).split(" ")[0];
-				let com = String(v.modUs).split(" ")[0];
-				let auto = String(v.modAu).split(" ")[0];
-				let glob = String(v.modGl).split(" ")[0];
-				let fixed = String(v.modFi).split(" ")[0];
+				let name = v.ss('modNa'), desc = v.ss('modDe');
+				let com = v.ss('modUs'), auto = v.ss('modAu');
+				let glob = v.ss('modGl'), fixed = v.ss('modFi');
 				let SQL = `INSERT INTO ${config.database}.${v.mod} (${name},${desc},${com},${auto},${glob},${fixed})`;
 				SQL += ` VALUES ('${obj.name}','${obj.desc}','${params.com}',${false},${params.isGlobal},${params.fi})`;
 
@@ -44,15 +41,14 @@ class command {
 
 			function step (res = {}, params = {}, obj) {
 				if (!params.isGlobal) {
-					let SQL = `SELECT ${String(v.modID).split(" ")[0]} FROM ${config.database}.${v.mod} WHERE ${String(v.modNa).split(" ")[0]} = '${obj.name}'`;
+					let SQL = `SELECT ${v.ss('modID')} FROM ${config.database}.${v.mod} WHERE ${v.ss('modNa')} = '${obj.name}'`;
 					obj.con.query(SQL, enableCustom, params, obj);
 				}
 			}
 		}
 
 		function enableCustom (queryRes = [], params = {}, obj) {
-			let guild = String(v.gID).split(" ")[0];
-			let module = String(v.modID).split(" ")[0];
+			let guild = v.ss('gID'), module = v.ss('modID');
 			let SQL = `INSERT INTO ${config.database}.${v.GRm} (${guild},${module})`;
 
 			if (queryRes.length = 1) {
