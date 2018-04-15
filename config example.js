@@ -10,9 +10,9 @@ var config = {}
  ##############################################################################################################################
  ########################################################## WARNING ###########################################################
  ##############################################################################################################################
-  * Database name cannot contain any spaces or special characters
-  * Prefix has to be at least one charcter long, up to a max of 5
-  * Do not change any of the properties whilst the bot is running
+  *	Database name cannot contain any spaces or special characters
+  *	Prefix has to be at least one charcter long, up to a max of 5
+  *	Do not change any of the properties whilst the bot is running
     (This may cause date corruption and create errors)
 
  ##############################################################################################################################
