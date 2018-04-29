@@ -4,20 +4,25 @@ const config = require('../config.js');
 const v = require('./dbVarTypes.js');
 
 class guildCache {
-	constructor (con, guildId) {
+	constructor (con, guildId, client) {
 		let SQL = `SELECT ${guildId} FROM ${config.database}.${v.g} WHERE ${v.ss('gID')} = '${String(guildId)}'`;
 		this._con = con;
 		this._id = guildId;
+		this._client = client;
 		this._prefix = config.prefix;
+		this._botMessages = [];
 		this._messages = [];
+		this._msgReads = 0;
 		this._priority = 0;
 		if (config.messageLimit >= 100) {
 			this._imposedLimit = 100;
-		} else if (config.messageLimit < 0) {
+		} else if (config.messageLimit > 0) {
 			this._imposedLimit = config.messageLimit;
 		} else {
 			this._imposedLimit = 0;
 		}
+		//subtractReadCount();
+		setInterval(subtractReadCount,30000,this);
 		con.query(SQL, loadPrefix, {guildId: guildId}, this);
 
 		//get prefix
@@ -57,6 +62,13 @@ class guildCache {
 				}
 			}
 		}
+
+		function subtractReadCount (obj) {
+			if (obj._msgReads >= 5) {
+				obj._msgReads = obj._msgReads - 5;
+			}
+			//setTimeout(subtractReadCount, 300000, obj);
+		}
 	}
 
 	get id () {
@@ -66,6 +78,10 @@ class guildCache {
 
 	get priority () {
 		return this._priority;
+	}
+
+	get msgReads () {
+		return this._msgReads;
 	}
 
 	set imposedLimit (input) {
@@ -84,20 +100,22 @@ class guildCache {
 
 	set lastMessage (message, isCom = false, editFrom = {}) {
 		//let SQL = makeQuery(message, isCom, eitedFrom);
-		let limit = (this._priority + 1) * 10;
+		let limit = (this._msgReads + 1) * 10;
 
 		if (!message.system && String(message.guild.id) == String(this._id)) {
-			if (limit > this._imposedLimit) {
-				limit = this._imposedLimit;
+			if (message.author.id != client.user.id) {
+				if (limit > this._imposedLimit) {
+					limit = this._imposedLimit;
+				}
+				if (this._messages.length >= limit && limit > 0) {
+					//trim
+					this._messages.splice(0,1);
+					this._messages.push(message);
+				} else if (limit > 0) {
+					this._messages.push(message);
+				}
+				sendQuery(msg, isCom, editFrom);
 			}
-			if (this._messages.length >= limit && limit > 0) {
-				//trim
-				this._messages.splice(0,1);
-				this._messages.push(message);
-			} else if (limit > 0) {
-				this._messages.push(message);
-			}
-			sendQuery(msg, isCom, editFrom);
 		} else {
 			if (String(message.guild.id) != String(this._id)) {
 				throw {
@@ -154,7 +172,7 @@ class guildCache {
 		let cID = v.ss('cID'), gID = v.ss('gID');
 		let guildStr = `${v.g}.${v.ss('gID')} = ${this._id}`;
 		let from = `FROM ${v.ss('m')} LEFT JOIN ${v.c} ON ${v.c}.${cID} = ${v.m}.${cID} LEFT JOIN ${v.g} ON ${v.g}.${gID} = ${v.c}.${gID}`;
-		this._priority++;
+		this._priority++; this._msgReads++;
 		if (this._messages.length > 0 && channel == null && user == null) {
 			callback(this._messages[this._messages.length - 1]);
 			this._con.query(SQL, casheMessages, {from:from, gStr:guildStr}, this);

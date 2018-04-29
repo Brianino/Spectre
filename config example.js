@@ -33,7 +33,7 @@ config.prefix = '.'; /*Default command prefix*/
  ####################################################### CACHE SETTINGS #######################################################
  ##############################################################################################################################
   *	These settings set the hard limit on the number of objects that can be stored in cache (In RAM Memory)
-  *	Higher numbers will improve performance of servers (More storage will be prioritised for servers using the bot more actively)
+  *	Higher numbers will improve performance of servers (More storage will be assigned to servers using the bot more actively)
   *	but will use more RAM
 */
 config.messageLimit = 1000; /*The hard limit for the number of messages to cache per server*/
