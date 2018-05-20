@@ -3,7 +3,7 @@
 //WARNING! DO NOT CHANGE THE NAME OF THE OBJECT PROPERTY, ONLY THE ASSIGNED STRING
 //DO NOT CHANGE THE FIELD TYPE EITHER OR USE SPACES IN THE FIELD NAME
 //DO NOT CHANGE THESE WHILST THE BOT IS RUNNING
-const config = require('../config.js');
+const config = require('./../config.js');
 
 var field = {};
 
@@ -11,6 +11,7 @@ var field = {};
 field.g = 'Guilds';
 field.gID = 'Guild_ID varchar(21)';
 field.gPr = 'Prefix varchar(5)';
+field.gAh = 'Message_Archive bool';
 
 //USER INFO
 field.u = 'Users';
@@ -29,7 +30,7 @@ field.rSe = 'Self_Role bool';
 field.m = 'Messages';
 field.mID = 'Message_ID varchar(21)';
 field.mCo = 'Message_Content text(2000)';
-field.mEd = 'Edit bool';
+field.mEd = 'Edited bool';
 field.mDe = 'Deleted bool';
 field.mCm = 'Command bool';
 field.mOm = 'Unedited_ID varchar(21)';

@@ -3,9 +3,9 @@ const color = require('color');
 const Discord = require('discord.js');
 const config = require('./config.js');
 const modules = require('./Commands/commands.js');
-const connection = require('./connection.js');
-const dbInstantiator = require('./dbInstantiator.js');
-const v = require('./dbVarTypes.js');
+const connection = require('./etc/connection.js');
+const dbInstantiator = require('./etc/dbInstantiator.js');
+const v = require('./etc/dbVarTypes.js');
 
 const bot = new Discord.Client();
 const con = new connection(config.dbhost, config.dbuser, config.dbpass);
@@ -45,9 +45,9 @@ bot.on('message', function (message) {
 
 function isCommand (message) {
 	if (message.isMentioned(bot.user.id)) {
-		return true;
+		return false;
 	} else {
-		let SQL = `SELECT ${v.gPr.split(' ')[0]} FROM ${config.database}.${v.g} WHERE ${v.gID.split(' ')[0]} = '${String(message.guild.id)}'`;
+		let SQL = `SELECT ${v.ss('gPr')} FROM ${v.ss('g')} WHERE ${v.ss('gID')} = '${String(message.guild.id)}'`;
 		//console.log(`Searching for prefix`);
 		con.query(SQL, checkForPrefix, {msg: message});
 		return false;

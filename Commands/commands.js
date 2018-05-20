@@ -1,7 +1,6 @@
 "use strict"; 
 const command = require('./command.js');
-const config = require('../config.js');
-const v = require('../dbVarTypes.js');
+const v = require('./../etc/dbVarTypes.js');
 
 class commands {
 	constructor (connection) {
@@ -20,7 +19,7 @@ class commands {
 
 		function checkFunc (obj, message) {
 			let Guild = v.ss('gID'), Module = v.ss('modID'), Name = v.ss('modNa'), Glob = v.ss('modGl'), Fixed = v.ss('modFi');
-			let SQL = `SELECT ${Guild}, ${Name}, ${Glob}, ${Fixed} FROM ${config.database}.${v.GRmod} LEFT JOIN ${config.database}.${v.mod} ON ${v.GRmod}.${Module} = ${v.mod}.${Module} WHERE ${Guild} = ${message.guild.id}`;
+			let SQL = `SELECT ${Guild}, ${Name}, ${Glob}, ${Fixed} FROM ${v.ss('GRm')} LEFT JOIN ${v.ss('mod')} ON ${v.GRm}.${Module} = ${v.mod}.${Module} WHERE ${Guild} = ${message.guild.id}`;
 			this._con.query(SQL, callfunc, {msg:message}, obj);
 		}
 

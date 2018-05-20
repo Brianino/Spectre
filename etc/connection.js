@@ -26,6 +26,7 @@ class connection {
 			if (e) {
 				console.log(`Error occured during database connection`);
 				console.log(e.red);
+				//try to start database
 				try {
 					callback(e, params);
 				} catch (err) {};

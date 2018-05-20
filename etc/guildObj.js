@@ -1,11 +1,11 @@
 "use strict";
 //GUILD OBJECT FOR CASHING GUILD DATA
-const config = require('../config.js');
+const config = require('./../config.js');
 const v = require('./dbVarTypes.js');
 
 class guildCache {
 	constructor (con, guildId, client) {
-		let SQL = `SELECT ${guildId} FROM ${config.database}.${v.g} WHERE ${v.ss('gID')} = '${String(guildId)}'`;
+		let SQL = `SELECT ${guildId} FROM ${v.ss('g')} WHERE ${v.ss('gID')} = '${String(guildId)}'`;
 		this._con = con;
 		this._id = guildId;
 		this._client = client;
@@ -14,6 +14,7 @@ class guildCache {
 		this._messages = [];
 		this._msgReads = 0;
 		this._priority = 0;
+		this._archive = config.archiveM;
 		if (config.messageLimit >= 100) {
 			this._imposedLimit = 100;
 		} else if (config.messageLimit > 0) {
@@ -45,7 +46,7 @@ class guildCache {
 				obj._prefix = temp;
 				if (queryRes.length == 0) {
 					console.log(`Setting ${params.guildId} command prefix to ${temp}`);
-					SQL = `INSERT INTO ${config.database}.${v.g} (${v.ss('gID')},${v.ss('gPr')}) VALUES ('${params.guildId}','${temp}')`;
+					SQL = `INSERT INTO ${v.ss('g')} (${v.ss('gID')},${v.ss('gPr')}) VALUES ('${params.guildId}','${temp}')`;
 					con.query(SQL);
 				}
 			} else {
@@ -67,13 +68,35 @@ class guildCache {
 			if (obj._msgReads >= 5) {
 				obj._msgReads = obj._msgReads - 5;
 			}
-			//setTimeout(subtractReadCount, 300000, obj);
 		}
 	}
 
 	get id () {
 		this._priority++;
 		return this._id;
+	}
+
+	get prefix () {
+		this._priority++;
+		return this._prefix;
+	}
+
+	set prefix (input) {
+		let SQL = SQL = `INSERT INTO ${v.ss('g')} (${v.ss('gID')},${v.ss('gPr')}) VALUES ('${this._id}','${prefix}')`;
+
+		this._con.query(SQL);
+		this._prefix = input;
+	}
+
+	set archiveM (input) {
+		if (typeof(input) == 'boolean') {
+			this._archive = input
+		} else {
+			throw {
+				name: 'wrong var type',
+				message: `${typeof(input)} was used for ${this._id} (archive var)`
+			};
+		}
 	}
 
 	get priority () {
@@ -91,6 +114,9 @@ class guildCache {
 		if (input < 0) {
 			input = 0;
 		}
+		if (input < this._imposedLimit) {
+			this._messages.splice(0, this_.imposedLimit - input);
+		}
 		this._imposedLimit = input;
 	}
 
@@ -98,7 +124,7 @@ class guildCache {
 		return this._imposedLimit;
 	}
 
-	set lastMessage (message, isCom = false, editFrom = {}) {
+	set lastMessage (message, isCom = false, editFrom = {}, timeoutIn = 60000) {
 		//let SQL = makeQuery(message, isCom, eitedFrom);
 		let limit = (this._msgReads + 1) * 10;
 
@@ -114,6 +140,16 @@ class guildCache {
 				} else if (limit > 0) {
 					this._messages.push(message);
 				}
+			} else {
+				isCom = false;
+				this._botMessages.push({
+					"timer": setTimeout(function(msg) {
+						msg.delete();
+					}, timeoutIn, message);,
+					"msg": message
+				});
+			}
+			if (this._archive) {
 				sendQuery(msg, isCom, editFrom);
 			}
 		} else {
@@ -129,7 +165,7 @@ class guildCache {
 		function sendQuery (msg, isCom = false, editFrom = {}) {
 			let mID = v.ss('mID'), uID = v.ss('uID'), cID = v.ss('cID'), mCo = v.ss('mCo'), Tim = v.ss('Tim');
 			let mEd = v.ss('mEd'), mDe = v.ss('mDe'), mCm = v.ss('mCm'), mOm = v.ss('mOm'), mOb = v.ss('mOb');
-			let SQL = `INSERT INTO ${config.database}.${v.m} `, columns = '', values = '', arr = '';
+			let SQL = `INSERT INTO ${v.ss('m')} `, columns = '', values = '', arr = '';
 
 			columns = `(${mID},${uID},${cID},${mCo},${Tim},${mDe},${mCo},${mOb},${mEd}`;
 			values = ` VALUES (?,?,?,?,?,?,?,?,?`;
@@ -142,13 +178,16 @@ class guildCache {
 			arr.push(false);
 			arr.push(isCom);
 			arr.push(msg);
+			arr.push(false);
 			if (Object.keys(editFrom).length == 0) {
 				columns+= `) `;
 				values+= `)`;
 			} else {
+				let SQL2 = `UPDATE ${v.ss(m)} SET ${v.ss('mEd')} = ${true} WHERE ${v.ss('mID')} = '${editFrom.id}'`;
 				columns+= `,${mOm}) `;
 				values+= `,?)`;
 				arr.push(editFrom.id);
+				this._con.query(SQL2);
 			}
 			SQL+= columns + values;
 
@@ -156,16 +195,9 @@ class guildCache {
 		}
 	}
 
-	get prefix () {
-		this._priority++;
-		return this._prefix;
-	}
-
-	set prefix (input) {
-		let SQL = SQL = `INSERT INTO ${config.database}.${v.ss('g')} (${v.ss('gID')},${v.ss('gPr')}) VALUES ('${this._id}','${prefix}')`;
-
+	set deletedMessage (msg) {
+		let SQL = `UPDATE ${v.ss('m')} SET ${v.ss('mDe')} = ${true} WHERE ${v.ss('mID')} = '${msg.id}'`;
 		this._con.query(SQL);
-		this._prefix = input;
 	}
 
 	getlastMessage (callback, channel = null, user = null) {
@@ -230,11 +262,16 @@ class guildCache {
 		}
 
 		function returnRes (queryRes, params, obj) {
-			callback(queryRes[0][v.ss('mOb')]);
+			if (queryRes.length > 0) {
+				callback(queryRes[0][v.ss('mOb')]);
+			} else {
+				callback();
+			}
+			/*
 			let SQL = `SELECT ${v.m}.${v.ss('mOb')} ${params.from} WHERE ${params.gStr} ORDER BY DESC ${v.ss('Tim')} LIMIT ${obj.imposedLimit}`;
-			obj._con.query(SQL, casheMessages, {}, obj);
+			obj._con.query(SQL, casheMessages, {}, obj);//*/
 		}
-
+		/* Needs to be improved somehow
 		async function casheMessages(queryRes = null , params = {}, obj) {
 			if (queryRes != null) {
 				obj._messages = [];
@@ -245,6 +282,10 @@ class guildCache {
 				let SQL = `SELECT ${v.m}.${v.ss('mOb')} ${params.from} WHERE ${params.gStr} ORDER BY DESC ${v.ss('Tim')} LIMIT ${obj.imposedLimit}`;
 				obj._con.query(SQL, casheMessages, {}, obj);
 			}
-		}
+		}//*/
 	}
+
+	//return multiple messages from user of channel with a limit
+
+	//return messages within time frame
 }

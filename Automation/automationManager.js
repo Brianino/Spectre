@@ -1,7 +1,6 @@
 "use strict"; 
 const module = require('./module.js');
-const config = require('../config.js');
-const v = require('../dbVarTypes.js');
+const v = require('./../etc/dbVarTypes.js');
 
 class automationManager {
 	constructor (connection) {
@@ -20,7 +19,7 @@ class automationManager {
 
 		function checkFunc (obj, message) {
 			let Guild = v.gID.split(" ")[0], Module = v.modID.split(" ")[0], Name = v.modNa.split(" ")[0], Glob = v.modGl.split(" ")[0], Fixed = String(v.modFi).split(" ")[0];
-			let SQL = `SELECT ${Guild}, ${Name}, ${Glob}, ${Fixed} FROM ${config.database}.${v.GRmod} LEFT JOIN ${config.database}.${v.mod} ON ${v.GRmod}.${Module} = ${v.mod}.${Module} WHERE ${Guild} = ${message.guild.id}`;
+			let SQL = `SELECT ${Guild}, ${Name}, ${Glob}, ${Fixed} FROM ${v.ss('GRm')} LEFT JOIN ${v.ss('mod')} ON ${v.GRmod}.${Module} = ${v.mod}.${Module} WHERE ${Guild} = ${message.guild.id}`;
 			this._con.query(SQL, callfunc, {msg:message}, obj);
 		}
 

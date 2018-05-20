@@ -1,7 +1,6 @@
 "use strict";
 const color = require('color');
-const config = require('../../config.js');
-const v = require('../../dbVarTypes.js');
+const v = require('./../etc/dbVarTypes.js');
 
 class command {
 	constructor (name, desc, usage, method, connection = {}, fixed = false, isGlobal = true, linkedGuild = '') {
@@ -16,7 +15,7 @@ class command {
 		//console.log(typeof(obj.con.instantiated));
 		//console.log(`Attempting to instantiate ${obj.name}`);
 		if (obj.con.instantiated) {
-			let SQL = `SELECT * FROM ${config.database}.${v.mod} WHERE ${v.ss('modNa')} = '${obj.name}'`;
+			let SQL = `SELECT * FROM ${v.ss('mod')} WHERE ${v.ss('modNa')} = '${obj.name}'`;
 			obj.con.query(SQL, instantiateModule, {com: usage, fi:fixed, isGlobal: isGlobal, lg: linkedGuild}, obj);
 		} else {
 			setTimeout(obj.checkModule, 1000, usage, fixed, isGlobal, linkedGuild, obj);
@@ -33,7 +32,7 @@ class command {
 				let name = v.ss('modNa'), desc = v.ss('modDe');
 				let com = v.ss('modUs'), auto = v.ss('modAu');
 				let glob = v.ss('modGl'), fixed = v.ss('modFi');
-				let SQL = `INSERT INTO ${config.database}.${v.mod} (${name},${desc},${com},${auto},${glob},${fixed})`;
+				let SQL = `INSERT INTO ${v.ss('mod')} (${name},${desc},${com},${auto},${glob},${fixed})`;
 				SQL += ` VALUES ('${obj.name}','${obj.desc}','${params.com}',${false},${params.isGlobal},${params.fi})`;
 
 				obj.con.query(SQL, step, {fi:params.fi, isGlobal: params.isGlobal, lg: params.lg}, obj);
@@ -41,7 +40,7 @@ class command {
 
 			function step (res = {}, params = {}, obj) {
 				if (!params.isGlobal) {
-					let SQL = `SELECT ${v.ss('modID')} FROM ${config.database}.${v.mod} WHERE ${v.ss('modNa')} = '${obj.name}'`;
+					let SQL = `SELECT ${v.ss('modID')} FROM ${v.ss('mod')} WHERE ${v.ss('modNa')} = '${obj.name}'`;
 					obj.con.query(SQL, enableCustom, params, obj);
 				}
 			}
@@ -49,7 +48,7 @@ class command {
 
 		function enableCustom (queryRes = [], params = {}, obj) {
 			let guild = v.ss('gID'), module = v.ss('modID');
-			let SQL = `INSERT INTO ${config.database}.${v.GRm} (${guild},${module})`;
+			let SQL = `INSERT INTO ${v.ss('GRm')} (${guild},${module})`;
 
 			if (queryRes.length = 1) {
 				SQL += ` VALUES ('${params.lg}',${queryRes[0].module})`;

@@ -27,6 +27,7 @@ config.dbuser = 'root'; /*The user used to log into the database*/
 config.dbpass = ''; /*The password used to log into the database*/
 config.dbhost = 'localhost'; /*The hostname of the device hosting the database*/
 config.prefix = '.'; /*Default command prefix*/
+config.archiveM = true; /*Default guild archiving behavior ('true' to default archiving messages, stores messages in the DB)*/
 
 /*
  ##############################################################################################################################
@@ -36,6 +37,7 @@ config.prefix = '.'; /*Default command prefix*/
   *	Higher numbers will improve performance of servers (More storage will be assigned to servers using the bot more actively)
   *	but will use more RAM
 */
+config.serverLimit = 10000; /*The hard limit for the number of servers to cache details for*/
 config.messageLimit = 1000; /*The hard limit for the number of messages to cache per server*/
 
 module.exports = config;

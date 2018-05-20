@@ -1,6 +1,6 @@
 "use strict";
 const color = require('color');
-const config = require('./config.js');
+const config = require('./../config.js');
 const v = require('./dbVarTypes.js');
 
 class dbInstantiator {
