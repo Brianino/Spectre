@@ -5,7 +5,8 @@ const v = require('./dbVarTypes.js');
 
 class guildCache {
 	constructor (con, guildId, client) {
-		let SQL = `SELECT ${guildId} FROM ${v.ss('g')} WHERE ${v.ss('gID')} = '${String(guildId)}'`;
+		let SQL = `SELECT ${v.ss('gPr')} FROM ${v.ss('g')} WHERE ${v.ss('gID')} = '${String(guildId)}'`;
+		let initialMsgLimit = 1000;
 		this._con = con;
 		this._id = guildId;
 		this._client = client;
@@ -15,8 +16,8 @@ class guildCache {
 		this._msgReads = 0;
 		this._priority = 0;
 		this._archive = config.archiveM;
-		if (config.messageLimit >= 100) {
-			this._imposedLimit = 100;
+		if (config.messageLimit >= initialMsgLimit) {
+			this._imposedLimit = initialMsgLimit;
 		} else if (config.messageLimit > 0) {
 			this._imposedLimit = config.messageLimit;
 		} else {
@@ -46,7 +47,7 @@ class guildCache {
 				obj._prefix = temp;
 				if (queryRes.length == 0) {
 					console.log(`Setting ${params.guildId} command prefix to ${temp}`);
-					SQL = `INSERT INTO ${v.ss('g')} (${v.ss('gID')},${v.ss('gPr')}) VALUES ('${params.guildId}','${temp}')`;
+					SQL = `INSERT INTO ${v.ss('g')} (${v.ss('gID')},${v.ss('gPr')},${v.ss('gAh')}) VALUES ('${params.guildId}','${temp}',${obj._archive})`;
 					con.query(SQL);
 				}
 			} else {
@@ -82,7 +83,7 @@ class guildCache {
 	}
 
 	set prefix (input) {
-		let SQL = SQL = `INSERT INTO ${v.ss('g')} (${v.ss('gID')},${v.ss('gPr')}) VALUES ('${this._id}','${prefix}')`;
+		let SQL = SQL = `UPDATE ${v.ss('g')} SET ${v.ss('gPr')} = '${prefix}' WHERE ${v.ss('gID')} = '${this._id}'`;
 
 		this._con.query(SQL);
 		this._prefix = input;
@@ -90,7 +91,9 @@ class guildCache {
 
 	set archiveM (input) {
 		if (typeof(input) == 'boolean') {
-			this._archive = input
+			let SQL = SQL = `UPDATE ${v.ss('g')} SET ${v.ss('gAh')} = ${input} WHERE ${v.ss('gID')} = '${this._id}'`;
+			this._archive = input;
+			this._con.query(SQL);
 		} else {
 			throw {
 				name: 'wrong var type',
@@ -124,12 +127,17 @@ class guildCache {
 		return this._imposedLimit;
 	}
 
-	set lastMessage (message, isCom = false, editFrom = {}, timeoutIn = 60000) {
-		//let SQL = makeQuery(message, isCom, eitedFrom);
+	archiveMessage (message, editFrom = {}) {
+		let isCom = false, timeoutIn = 60000;
 		let limit = (this._msgReads + 1) * 10;
 
 		if (!message.system && String(message.guild.id) == String(this._id)) {
 			if (message.author.id != client.user.id) {
+				if (message.content.substring(0, this._prefix.length) == this._prefix) {
+					isCom = true;
+				} else if (message.isMentioned(bot.user.id)) {
+					isCom = true;
+				}
 				if (limit > this._imposedLimit) {
 					limit = this._imposedLimit;
 				}
@@ -142,6 +150,7 @@ class guildCache {
 				}
 			} else {
 				isCom = false;
+				//remove timer from old message if edited
 				this._botMessages.push({
 					"timer": setTimeout(function(msg) {
 						msg.delete();
@@ -152,6 +161,7 @@ class guildCache {
 			if (this._archive) {
 				sendQuery(msg, isCom, editFrom);
 			}
+			return isCom;
 		} else {
 			if (String(message.guild.id) != String(this._id)) {
 				throw {
@@ -288,4 +298,6 @@ class guildCache {
 	//return multiple messages from user of channel with a limit
 
 	//return messages within time frame
+
+	//update timeout of bot message
 }

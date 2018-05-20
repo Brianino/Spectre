@@ -22,7 +22,7 @@ bot.on('message', function (message) {
 	//console.log(`Message: ${message.content}`);
 	//check input for prefix
 	//strip input of prefix before passing to command object
-	if (isCommand(message)) {
+	if (isCommand(message)) {//change to get value from archiving the message
 		let arr = String(message.content).split(" "), found = false, count = 0;
 		let mention = /<@[0-9]*>/, command = '';
 		while (!found && count < arr.length) {
@@ -40,6 +40,7 @@ bot.on('message', function (message) {
 			console.log(`Could not find ${command}`);
 		}
 	}
+	//archive message
 	//AUTOMATION OBJECT
 })
 

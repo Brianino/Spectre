@@ -37,7 +37,6 @@ config.archiveM = true; /*Default guild archiving behavior ('true' to default ar
   *	Higher numbers will improve performance of servers (More storage will be assigned to servers using the bot more actively)
   *	but will use more RAM
 */
-config.serverLimit = 10000; /*The hard limit for the number of servers to cache details for*/
 config.messageLimit = 1000; /*The hard limit for the number of messages to cache per server*/
 
 module.exports = config;
