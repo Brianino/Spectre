@@ -3,17 +3,16 @@
   "version": "0.1.0",
   "description": "A shitty general purpose bot",
   "engines": {
-    "node": "6.11.0"
+    "node": "10.6.0"
   },
   "main": "spectre.js",
   "scripts": {
     "start": "node `spectre.js"
   },
   "dependencies": {
-    "color": "^3.0.0",
     "colors": "^1.1.2",
     "discord.js": "11.2.1",
-    "mysql": "2.15.0"
+    "mysql": "^2.15.0"
   },
   "repository": {
     "type": "git",

@@ -1,5 +1,5 @@
 "use strict";
-const color = require('color');
+const color = require('colors');
 
 module.exports = (function () {
 	return function speak (message = {}) {

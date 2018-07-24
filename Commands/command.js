@@ -1,5 +1,5 @@
 "use strict";
-const color = require('color');
+const color = require('colors');
 const v = require('./../etc/dbVarTypes.js');
 
 class command {

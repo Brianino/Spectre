@@ -4,5 +4,5 @@
   "repository": "https://github.com/Brianino/Spectre",
   "logo": "https://cdn.discordapp.com/app-icons/375373617808015390/a1b601c073b5ed0600ddfcf5c65c024b.png",
   "keywords": ["node", "bot", "discord", "general purpose"],
-  "image": "heroku/nodejs"
+  "image": "nodejs"
 }

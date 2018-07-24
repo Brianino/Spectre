@@ -1,5 +1,5 @@
 "use strict";
-const color = require('color');
+const color = require('colors');
 const Discord = require('discord.js');
 const config = require('./config.js');
 const modules = require('./Commands/commands.js');

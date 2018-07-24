@@ -1,5 +1,5 @@
 "use strict";
-const color = require('color');
+const color = require('colors');
 const config = require('./../config.js');
 const v = require('./dbVarTypes.js');
 
