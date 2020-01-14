@@ -3,24 +3,15 @@
   "version": "0.0.1",
   "description": "A shitty general purpose bot",
   "engines": {
-<<<<<<< HEAD
-    "node": "10.6.0"
-=======
     "node": "12.14.1"
->>>>>>> Starting from scratch
   },
   "main": "spectre.js",
   "scripts": {
     "start": "node spectre.js"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "colors": "^1.1.2",
-    "discord.js": "11.2.1",
-    "mysql": "^2.15.0"
-=======
-    "discord.js": "11.5.1"
->>>>>>> Starting from scratch
+    "debug-logger": "^0.4.1",
+    "discord.js": "^11.5.1"
   },
   "repository": {
     "type": "git",
