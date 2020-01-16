@@ -1,25 +1,28 @@
 "use strict";
 if (!process.env.DEBUG) process.env.DEBUG = '*:log,*:info,*:warn,*:error';
-const modules = require('./etc/moduleLoader.js');
 const log = require('debug-logger')('main');
 const Discord = require('discord.js');
 const time = require('./etc/time.js');
 const fs = require('fs');
 
+var config, modules;
 try {
-	const {token, ...config} = require('./config.json');
+	config = require('./config.json');
 } catch (e) {
+	log.error(time(), e.toString);
 	fs.writeFileSync('./config.json', JSON.stringify({
-		token: ""
-	}));
+		token: "",
+
+	}, undefined, '\t'), 'wx');
 	log.log('config.json file created');
 	process.exit();
 }
 
-const bot = new Discord.Client();
+global.bot = new Discord.Client();
 
 bot.on('ready', () => {
 	log.info(time(), 'Bot ready');
+	modules = require('./etc/moduleLoader.js');
 });
 
 bot.on('error', e => {
@@ -27,4 +30,7 @@ bot.on('error', e => {
 	log.debug(e.stack);
 })
 
-//bot.login(token); //Bot Token
+bot.login(config.token).catch(e => {
+	log.error(time(), e.toString());
+	log.debug(e.stack);
+}); //Bot Token
