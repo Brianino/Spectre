@@ -12,8 +12,11 @@ try {
 	log.error(time(), e.toString);
 	fs.writeFileSync('./config.json', JSON.stringify({
 		token: "",
-
-	}, undefined, '\t'), 'wx');
+		prefix: "",
+	}, undefined, '\t'), {
+		encoding: 'utf8',
+		flag: 'wx'
+	});
 	log.log('config.json file created');
 	process.exit();
 }
