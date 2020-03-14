@@ -1,32 +1,41 @@
 "use strict";
 if (!process.env.DEBUG) process.env.DEBUG = '*:log,*:info,*:warn,*:error';
 const log = require('debug-logger')('main');
+const config = require('./config.json');
 const Discord = require('discord.js');
 const time = require('./etc/time.js');
-const fs = require('fs');
 
-var config, modules;
-try {
-	config = require('./config.json');
-} catch (e) {
-	log.error(time(), e.toString);
-	fs.writeFileSync('./config.json', JSON.stringify({
-		token: "",
-		prefix: "",
-	}, undefined, '\t'), {
-		encoding: 'utf8',
-		flag: 'wx'
-	});
-	log.log('config.json file created');
-	process.exit();
-}
+const bot = new Discord.Client();
+var modules, exec;
 
-global.bot = new Discord.Client();
-
+//ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
 bot.on('ready', () => {
+	let modLoader;
 	log.info(time(), 'Bot ready');
-	modules = require('./etc/moduleLoader.js');
+	modLoader = require('./etc/moduleLoader.js');
+
+	modules = modLoader.modules;
+	exec = modLoader.exec;
 });
+
+bot.on('message', msg => new Promise((resolve, reject) => {
+	let msgStr = msg.content.split(' ');
+	let cmd = modules.get(msgStr[0].substr(1));
+
+	msgStr.shift();
+	log.debug(time(), 'Found cmd:', cmd !== undefined, 'Message:', msg.content);
+	if (cmd && msg.content.startsWith(config.prefix)) {
+		if (msg.member && msg.member.permissionsIn(msg.channel).has(cmd.permissions(msg.guild))) {
+			return cmd[exec](msg, ...msgStr);
+		} else if (!msg.member && !cmd.guildOnly) {
+			return cmd[exec](msg, ...msgStr);
+		} else if (msg.member) log.warn('Member missing permissions for:', cmd.command);
+	}
+	return;
+}).catch(e => {
+	log.error(time(), 'There was an error executing a command', e.toString());
+	log.error(e.stack);
+}));
 
 bot.on('error', e => {
 	log.error(time(), e.toString());

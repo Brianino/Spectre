@@ -1,5 +1,5 @@
 const log = require('debug-logger')('module-loader');
-const {prefix} = require('../config.json');
+const {Permissions, Guild} = require('discord.js');
 const time = require('./time.js');
 const fs = require('fs').promises;
 const path = require('path');
@@ -7,16 +7,24 @@ const path = require('path');
 const sym = {
 	name: Symbol('module command'),
 	desc: Symbol('module description'),
+	perm: Symbol('module permissions'),
+	gprm: Symbol('module guild specific perms'),
+	gcmd: Symbol('module guild only'),
 	exec: Symbol('module subroutine'),
 	file: Symbol('file path for module'),
 }
-const modules = module.exports = new Map();
+const modules = new Map();
+
+module.exports = {
+	exec: sym.exec,
+	modules: modules,
+}
 
 fs.readdir(path.join('./', 'modules'), {
 	encoding: 'utf8',
 	withFileTypes: true,
 }).then(files => {
-	log.debug('Found files:', files);
+	log.debug(time(), 'Found files:', files);
 	for (let file of files) {
 		try {
 			if (file.isFile()) require(path.join('../', 'modules', file.name));
@@ -42,25 +50,15 @@ global.setupModule = (command = "", func) => {
 	modules.set(mod.command, mod);
 }
 
-bot.on('message', msg => new Promise((resolve, reject) => {
-	let msgStr = msg.content.split(' ');
-	let cmd = modules.get(msgStr[0].substr(1));
-
-	msgStr.shift();
-	log.debug(time(), 'Found cmd:', cmd !== undefined, 'Message:', msg.content);
-	if (cmd && msg.content.startsWith(prefix)) return cmd[sym.exec](msg, ...msgStr);
-	return;
-}).catch(e => {
-	log.error(time(), 'There was an error executing a command', e.toString());
-	log.error(e.stack);
-}));
-
 class cmdmodule {
 	constructor (file) {
 		Object.defineProperties(this, {
 			[sym.name]: {writable: true, value: null},
 			[sym.desc]: {writable: true, value: null},
 			[sym.exec]: {writable: true, value: null},
+			[sym.gcmd]: {writable: true, value: true},
+			[sym.gprm]: {writable: true, value: new Map()},
+			[sym.perm]: {writable: true, value: new Permissions('VIEW_CHANNEL')},
 			[sym.file]: {value: file},
 		});
 	}
@@ -77,7 +75,8 @@ class cmdmodule {
 	*/
 	set command (value) {
 		if (this[sym.name]) throw new Error('command already set, and cannot be changed');
-		this[sym.name] = String(value);
+		value = String(value);
+		this[sym.name] = value.replace(/ /g, '');
 	}
 
 	get command () {
@@ -94,6 +93,46 @@ class cmdmodule {
 
 	get description () {
 		return this[sym.desc];
+	}
+
+	/*
+	 * @param value the permissions required to run the command, will be displayed in the specific help
+	*/
+	set permissions (value) {
+		if (this[sym.desc]) log.warn(time(), 'permission for', this[sym.name], 'was modified');
+		this[sym.perm] = new Permissions(value);
+	}
+
+	get permissions () {
+		return (guild, perms) => {
+			if (perms) {
+				let tmp = null;
+				if (!guild instanceof Guild) throw new Error('First argument of permissions should be a guild');
+				if (perms instanceof Array && perms.length === 0) {
+					this[sym.gprm].delete(guild);
+					log.warn(time(), 'Permissions for', guild.name, 'was set to default');
+				} else {
+					this[sym.gprm].set(guild, tmp = new Permissions(perms));
+					log.warn(time(), 'Permissions for', guild.name, 'was modified to', tmp.toArray().join(' '));
+				}
+			} else if (guild) {
+				return this[sym.gprm].get(guild) || this[sym.perm];
+			} else {
+				return this[sym.perm];
+			}
+		}
+	}
+
+	/*
+	 * @param value the permissions required to run the command, will be displayed in the specific help
+	*/
+	set guildOnly (value) {
+		if (this[sym.desc]) log.warn(time(), 'guild only flag for', this[sym.name], 'was modified');
+		this[sym.gcmd] = Boolean(value);
+	}
+
+	get guildOnly () {
+		return this[sym.gcmd];
 	}
 
 	/*
