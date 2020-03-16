@@ -1,6 +1,5 @@
 const log = require('debug-logger')('help-module');
 const {modules} = require('../etc/moduleLoader.js');
-const {RichEmbed} = require('discord.js')
 const time = require('../etc/time.js');
 
 setupModule('help', function () {
@@ -10,28 +9,39 @@ setupModule('help', function () {
 
 	this.exec((msg, arg) => {
 		if (!arg) {
-			let embed = new RichEmbed({title: 'Options'});
+			let embed = {
+				title: 'Options',
+				description: 'Available commands',
+				color: 0xBB0000,
+				fields: []
+			};
 
-			embed.setColor('RED').setDescription('Available commands');
 			for (let [cmd, cmdObj] of modules) {
 				let tmp = msg.member;
 				if (!tmp || tmp.hasPermission(cmdObj.permissions(msg.guild)))
-					embed.addField(cmd, cmdObj.description);
+					embed.fields.push({
+						name: cmd,
+						value: cmdObj.description,
+						inline: false
+					});
 			}
 			log.debug(time(), 'Posting help (no args)');
-			return msg.channel.send(undefined, embed);
+			return msg.channel.send({embed});
 		} else {
-			// this should be individual command help but.....nothing is in place for this yet
-			let embed = new RichEmbed({title: arg}), cmd = modules.get(arg = String(arg));
+			let cmd = modules.get(arg = String(arg));
 			let tmp = msg.member;
 
 			arg = arg.replace(/`/g, '');
 			if (arg === '') arg = ' ';
 			if (cmd && (!tmp || tmp.hasPermission(cmd.permissions(msg.guild)))) {
-				embed.setColor('RED').setDescription(cmd.description);
-				//embed.addField(cmd.command, cmd.description);
 				log.debug(time(), 'Posting help (args)');
-				return msg.channel.send(undefined, embed);
+				return msg.channel.send({
+					embed: {
+						title: arg,
+						description: cmd.description,
+						color: 0xBB0000
+					}
+				})
 			} else {
 				return msg.channel.send(`Could not find command \`${arg}\``);
 			}

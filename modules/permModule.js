@@ -1,15 +1,16 @@
 const log = require('debug-logger')('perm-module');
+const {guildLoad, addGuild} = require('../etc/guildConfig.js');
 const {modules} = require('../etc/moduleLoader.js');
-const {RichEmbed} = require('discord.js');
-const persistant = require('../data/permissions.json');
 const time = require('../etc/time.js');
 const fs = require('fs').promises;
 
 setupModule('permissions', function () {
+	var guildConfig = new Map();
 	this.command = 'permissions';
 	this.description = 'Modifying required permissions for commands';
-	this.permissions = 'ADMINISTRATOR'
+	this.permissions = 'ADMINISTRATOR';
 	this.guildOnly = true;
+
 
 	this.exec((msg, ...args) => {
 		switch (args.shift()) {
@@ -27,25 +28,40 @@ setupModule('permissions', function () {
 		}
 	});
 
+	this.modules.on('ready', async () => {
+		guildConfig = await guildLoad;
+		for (let [id, config] of guildConfig) {
+			let guild = this.bot.guilds.resolve(id);
+
+			for (let [command, perms] of config.perms) {
+				let cmd = modules.get(command);
+
+				if (cmd) cmd.permissions(guild, ...perms);
+				else config.perms = [command];
+			}
+			log.info(time(), 'Loaded custom command permissions for server', guild.name);
+		}
+	});
+
 	//post module load event;
 
-	function setPermission (guild, command, ...perms) {
+	function setPermission (guild, command, perms) {
 		let cmd = modules.get(command = String(command));
 
 		command = command.replace(/`/g, '');
 		if (command === '') command = ' ';
 		if (cmd) {
 			perms.forEach((val, index) => {
-				val = Number(val);
-				if (!isNaN(val)) perms[index] = val;
+				let tmp = Number(val);
+				if (!isNaN(tmp)) perms[index] = tmp;
+				else perms[index] = String(val).toUpperCase();
 			});
 			try {
+				let config = guildConfig.get(guild.id)
 				cmd.permissions(guild, ...perms);
 
-				persistant[guild.id] = perms;
-				fs.writeFile('./data/permissions.json', JSON.stringify(persistant), {flag: 'w'}).catch(e => {
-					log.error(time(), 'Unable save to command permissions to file:', e.toString());
-				});
+				if (config) config.perms = [command, ...perms];
+				else addGuild(guild.id, {perms: [[command, perms]]});
 				return this.send(`Permissions for \`${command}\` updated`);
 			} catch (e) {
 				log.error(time(), 'Failed to set permissions:', e.toString());
@@ -63,15 +79,35 @@ setupModule('permissions', function () {
 		command = command.replace(/`/g, '');
 		if (command === '') command = ' ';
 		if (cmd) {
-			return this.send([`Permissions for: ${command}`, ...cmd.permissions(guild).toArray().map(val => '`' + val + '`')]);
+			this.send({
+				embed: {
+					title: 'Permissions',
+					fields: {
+						name: command,
+						value: '`' + cmd.permissions(guild).toArray().join('` `') + '`',
+						inline: false,
+					},
+					color: 0xBB0000
+				}
+			});
 		} else {
 			return this.send(`Could not find command \`${command}\``);
 		}
 	}
 
 	function listPermission (guild) {
+		let embed = {
+				title: 'Permissions',
+				color: 0xBB0000,
+				fields: [],
+			};
 		for (let cmd of modules.values()) {
-			return this.send([`Permissions for: ${cmd.command}`, ...cmd.permissions(guild).toArray().map(val => '`' + val + '`')]);
+			embed.fields.push({
+				name: cmd.command,
+				value: '`' + cmd.permissions(guild).toArray().join('`\n`') + '`',
+				inline: true,
+			});
 		}
+		return this.send({embed});
 	}
 });

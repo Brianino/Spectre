@@ -12,7 +12,7 @@ var modules, exec;
 bot.on('ready', () => {
 	let modLoader;
 	log.info(time(), 'Bot ready');
-	modLoader = require('./etc/moduleLoader.js');
+	modLoader = require('./etc/moduleLoader.js')(bot);
 
 	modules = modLoader.modules;
 	exec = modLoader.exec;
