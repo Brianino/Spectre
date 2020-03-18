@@ -50,6 +50,7 @@ fs.readdir(path.join('./', 'modules'), {
 global.setupModule = (func) => {
 	let mod;
 	/* May be used later to group commands into "modules"
+	   or may set the group attribute the same way as the other module attributes
 	if (!func) {
 		func = command;
 		command = '';
