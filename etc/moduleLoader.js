@@ -47,12 +47,13 @@ fs.readdir(path.join('./', 'modules'), {
 });
 
 //need to modify this so that the file name is added to the object....
-global.setupModule = (command = "", func) => {
+global.setupModule = (func) => {
 	let mod;
+	/* May be used later to group commands into "modules"
 	if (!func) {
 		func = command;
 		command = '';
-	}
+	}*/
 	if (typeof func !== 'function') throw new Error('module function missing');
 	func.call(mod = new cmdmodule());
 	log.info(time(), 'Module', mod.command, 'finished loading');

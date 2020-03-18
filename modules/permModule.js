@@ -4,7 +4,7 @@ const {modules} = require('../etc/moduleLoader.js');
 const time = require('../etc/time.js');
 const fs = require('fs').promises;
 
-setupModule('permissions', function () {
+setupModule(function () {
 	var guildConfig = new Map();
 	this.command = 'permissions';
 	this.description = 'Modifying required permissions for commands';

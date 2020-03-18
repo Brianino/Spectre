@@ -2,7 +2,7 @@ const log = require('debug-logger')('help-module');
 const {modules} = require('../etc/moduleLoader.js');
 const time = require('../etc/time.js');
 
-setupModule('help', function () {
+setupModule(function () {
 	this.command = 'help';
 	this.description = 'Display command help';
 	this.guildOnly = false;
