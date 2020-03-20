@@ -25,7 +25,6 @@ module.exports = function (input) {
 }
 module.exports.exec = sym.exec;
 module.exports.modules = modules;
-require('./guildConfig.js')(modules);
 
 fs.readdir(path.join('./', 'modules'), {
 	encoding: 'utf8',

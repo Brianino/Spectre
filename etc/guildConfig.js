@@ -1,5 +1,4 @@
 const log = require('debug-logger')('guild-config');
-const {modules} = require('../etc/moduleLoader.js');
 const config = require('../config.json');
 const time = require('./time.js');
 const fs = require('fs').promises;
@@ -7,7 +6,11 @@ const fs = require('fs').promises;
 const cache = new Map(), sym = {
 	prfx: Symbol('command prefix'),
 	perm: Symbol('permissions map'),
-
+	json: Symbol('to json functions'),
+	empt: Symbol('empty prop functions'),
+	dmdn: Symbol('default number of messages to erase'),
+	mlim: Symbol('message search limit'),
+	cOld: Symbol('clear old messages'),
 }
 
 const load = fs.opendir('./data').then(async files => {
@@ -43,23 +46,30 @@ const saveConfig = (config) => {
 	}
 }
 
-module.exports = (modules) => {
-	exports.modules = modules;
-}
-module.exports.guildLoad = load;
-module.exports.addGuild = (id, obj) => {
-	let tmp;
-	cache.set(id, tmp = new guildConfig(id, obj));
-	saveConfig(id, tmp).catch(e => log.error(time(), 'Unable to save file:', e.toString()));
+module.exports.configLoad = load;
+module.exports.guildConfig = getGuild;
+
+function getGuild (id) {
+	let res
+
+	res = cache.get(id);
+	if (!res) cache.set(id, res = new guildConfig(id, {id}));
+
+	return res;
 }
 
 class guildConfig {
-	constructor (id, {id: fallbackid, prefix, perms}) {
+	constructor (id, {id: fallbackid, prefix, perms, ...obj}) {
 		Object.defineProperties(this, {
 			id: {value: id || fallbackid},
-			[sym.prfx]: {value: prefix, writable: true},
-			[sym.perm]: {value: new Map(perms)},
+			[sym.json]: {value: []},
+			[sym.empt]: {value: []},
 		});
+		this._internal(sym.prfx, {prefix});
+		this._internal(sym.perm, {perms: new Map(perms)}, () => [...this[sym.perm]], () => this[sym.perm].size);
+		this._internal(sym.dmdn, {defClear: obj.defClear});
+		this._internal(sym.mlim, {msgLimit: obj.msgLimit});
+		this._internal(sym.cOld, {msgOld: obj.msgOld});
 	}
 
 	set prefix (value) {
@@ -71,9 +81,7 @@ class guildConfig {
 		}
 	}
 
-	get prefix () {
-		return this[sym.prfx] || config.prefix;
-	}
+	get prefix () {return this[sym.prfx] || config.prefix}
 
 	set perms ([command, ...permissions]) {
 		let old = this[sym.perm].get(command), same = true;
@@ -96,19 +104,50 @@ class guildConfig {
 		}
 	}
 
-	get perms () {
-		return [...this[sym.perm]];
+	get perms () {return [...this[sym.perm]]}
+
+	set defaultClear (input) {
+		if (!isNaN(input = Number(input))) {
+			this[sym.dmdn] = input;
+		}
 	}
 
+	get defaultClear () {return this[sym.dmdn] || 50}
+
+	set messageLimit (input) {
+		if (!isNaN(input = Number(input))) {
+			this[sym.mlim] = input;
+		}
+	}
+
+	get messageLimit () {return this[sym.mlim] || 1000}
+
+	set clearOld (input) {this[sym.cOld] = Boolean(input)}
+
+	get clearOld () {return this[sym.cOld] || true}
+
 	isEmpty() {
-		return !Boolean(this[sym.perm].size && this[sym.prfx]);
+		for (let func of this[sym.empt]) {
+			if (func()) return false;
+		}
+		return true;
 	}
 
 	toJSON () {
-		return JSON.stringify({
-			id: this.id,
-			prefix: this[sym.prfx],
-			perms: [...this[sym.perm]],
-		});;
+		let obj = {id: this.id};
+		for (let [name, func] of this[sym.json]) {
+			obj[name] = func();
+		}
+		return JSON.stringify(obj);
+	}
+
+	_internal (prop, val, jsonFunc, emptyFunc) {
+		let [name] = Object.getOwnPropertyNames(val);
+
+		this[prop] = val[name];
+		if (!jsonFunc) jsonFunc = () => this[prop];
+		if (!emptyFunc) emptyFunc = () => this[prop];
+		this[sym.json].push([name, jsonFunc]);
+		this[sym.empt].push(emptyFunc);
 	}
 }

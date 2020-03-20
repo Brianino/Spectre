@@ -1,11 +1,10 @@
 const log = require('debug-logger')('perm-module');
-const {guildLoad, addGuild} = require('../etc/guildConfig.js');
+const {configLoad, guildConfig} = require('../etc/guildConfig.js');
 const {modules} = require('../etc/moduleLoader.js');
 const time = require('../etc/time.js');
 const fs = require('fs').promises;
 
 setupModule(function () {
-	var guildConfig = new Map();
 	this.command = 'permissions';
 	this.description = 'Modifying required permissions for commands';
 	this.permissions = 'ADMINISTRATOR';
@@ -29,7 +28,7 @@ setupModule(function () {
 	});
 
 	this.modules.on('ready', async () => {
-		guildConfig = await guildLoad;
+		let guildConfig = await configLoad;
 		for (let [id, config] of guildConfig) {
 			let guild = this.bot.guilds.resolve(id);
 
@@ -57,7 +56,7 @@ setupModule(function () {
 				else perms[index] = String(val).toUpperCase();
 			});
 			try {
-				let config = guildConfig.get(guild.id)
+				let config = guildConfig(guild.id);
 				cmd.permissions(guild, ...perms);
 
 				if (config) config.perms = [command, ...perms];

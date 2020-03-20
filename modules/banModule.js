@@ -1,6 +1,6 @@
 const log = require('debug-logger')('ban-module');
 const {modules} = require('../etc/moduleLoader.js');
-const {MessageMentions, DiscordAPIError} = require('discord.js');
+const {DiscordAPIError} = require('discord.js');
 const time = require('../etc/time.js');
 
 setupModule(function () {
