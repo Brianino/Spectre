@@ -6,6 +6,7 @@ const fs = require('fs').promises;
 const cache = new Map(), sym = {
 	prfx: Symbol('command prefix'),
 	perm: Symbol('permissions map'),
+	disa: Symbol('disabled com map'),
 	json: Symbol('to json functions'),
 	empt: Symbol('empty prop functions'),
 	dmdn: Symbol('default number of messages to erase'),
@@ -59,7 +60,7 @@ function getGuild (id) {
 }
 
 class guildConfig {
-	constructor (id, {id: fallbackid, prefix, perms, ...obj}) {
+	constructor (id, {id: fallbackid, prefix, perms, disabled, ...obj}) {
 		Object.defineProperties(this, {
 			id: {value: id || fallbackid},
 			[sym.json]: {value: []},
@@ -67,6 +68,7 @@ class guildConfig {
 		});
 		this._internal(sym.prfx, {prefix});
 		this._internal(sym.perm, {perms: new Map(perms)}, () => [...this[sym.perm]], () => this[sym.perm].size);
+		this._internal(sym.disa, {disabled: new Array(disabled)}, undefined, () => this[sym.disa].length);
 		this._internal(sym.dmdn, {defClear: obj.defClear});
 		this._internal(sym.mlim, {msgLimit: obj.msgLimit});
 		this._internal(sym.cOld, {msgOld: obj.msgOld});
@@ -86,9 +88,9 @@ class guildConfig {
 	set perms ([command, ...permissions]) {
 		let old = this[sym.perm].get(command), same = true;
 
-		if (old) {
+		if (old && old.length === permissions.length) {
 			for (let val of old) {
-				if (permissions.indexOf(val) < 0) {
+				if (!permissions.includes(val)) {
 					same = false;
 					break;
 				}
@@ -105,6 +107,30 @@ class guildConfig {
 	}
 
 	get perms () {return [...this[sym.perm]]}
+
+	set disabled (commands) {
+		let same = true;
+
+		if (!commands instanceof Array) return;
+		if (commands.length === this[sym.disa].length) {
+			for (let val of this[sym.disa]) {
+				if (!commands.includes(val)) {
+					same = false;
+					break;
+				}
+			}
+		} else same = false;
+		if (!same) {
+			log.debug(time(), 'Permissions are:', permissions);
+			if (permissions.length === 0) {
+				log.debug(time(), 'Removing permissions config for', command, 'guild -', this.id);
+				this[sym.disa].delete(command);
+			} else this[sym.disa].set(command, permissions);
+			saveConfig(this).catch(e => log.error(time(), 'Unable to save file:', e.toString()));
+		}
+	}
+
+	get disabled () {return [...this[sym.disa]]}
 
 	set defaultClear (input) {
 		if (!isNaN(input = Number(input))) {
