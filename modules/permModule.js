@@ -7,6 +7,7 @@ const fs = require('fs').promises;
 setupModule(function () {
 	this.command = 'permissions';
 	this.description = 'Modifying required permissions for commands';
+	this.arguments = '<list|show|set> <command> [...permission]';
 	this.permissions = 'ADMINISTRATOR';
 	this.guildOnly = true;
 
@@ -23,7 +24,10 @@ setupModule(function () {
 			return setPermission.call(msg.channel, msg.guild, args.shift(), args);
 			break;
 			default:
-			return msg.channel.send('Unknown option, use either `list` `show` or `set`');
+			return msg.channel.send('Unknown option, use either:\n' +
+				'`list` (to list the permissions for all the commands)\n' +
+				'`show` (to show the permissions for a single command)\n' +
+				'`set` (to set the permissions for a command)');
 		}
 	});
 

@@ -6,6 +6,7 @@ const time = require('../etc/time.js');
 setupModule(function () {
 	this.command = 'ban';
 	this.description = 'Ban a user';
+	this.arguments = '<@user> [reason]';
 	this.permissions = 'BAN_MEMBERS'
 	this.guildOnly = true;
 

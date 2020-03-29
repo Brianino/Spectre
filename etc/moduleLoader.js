@@ -9,6 +9,7 @@ const sym = {
 	name: Symbol('module command'),
 	desc: Symbol('module description'),
 	perm: Symbol('module permissions'),
+	args: Symbol('module arguments'),
 	gprm: Symbol('module guild specific perms'),
 	gcmd: Symbol('module guild only'),
 	exec: Symbol('module subroutine'),
@@ -66,6 +67,7 @@ class cmdmodule {
 		Object.defineProperties(this, {
 			[sym.name]: {writable: true, value: null},
 			[sym.desc]: {writable: true, value: null},
+			[sym.args]: {writable: true, value: null},
 			[sym.exec]: {writable: true, value: null},
 			[sym.gcmd]: {writable: true, value: true},
 			[sym.gprm]: {writable: true, value: new Map()},
@@ -106,6 +108,18 @@ class cmdmodule {
 
 	get description () {
 		return this[sym.desc];
+	}
+
+	/*
+	 * @param value the arguments of the module, will be displayed in the specific help
+	*/
+	set arguments (value) {
+		if (this[sym.args]) log.warn(time(), 'arguments help for', this[sym.name], 'was modified');
+		this[sym.args] = String(value);
+	}
+
+	get arguments () {
+		return this[sym.args];
 	}
 
 	/*

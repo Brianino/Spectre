@@ -6,6 +6,7 @@ const time = require('../etc/time.js');
 setupModule(function () {
 	this.command = 'kick';
 	this.description = 'Kick a user';
+	this.arguments = '<@user> [reason]';
 	this.permissions = 'KICK_MEMBERS'
 	this.guildOnly = true;
 

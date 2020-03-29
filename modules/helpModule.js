@@ -5,6 +5,7 @@ const time = require('../etc/time.js');
 setupModule(function () {
 	this.command = 'help';
 	this.description = 'Display command help';
+	this.arguments = '[command]';
 	this.guildOnly = false;
 
 	this.exec((msg, arg) => {
@@ -39,7 +40,11 @@ setupModule(function () {
 					embed: {
 						title: arg,
 						description: cmd.description,
-						color: 0xBB0000
+						color: 0xBB0000,
+						fields: [{
+							name: 'Arguments:',
+							value: msg.content.substr(0,1) + cmd.command + ' ' + cmd.arguments,
+						}],
 					}
 				})
 			} else {

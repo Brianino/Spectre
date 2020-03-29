@@ -9,6 +9,7 @@ class lessThan extends Error {};
 setupModule(function () {
 	this.command = 'erase';
 	this.description = 'erase a number of messages from a user or from all users';
+	this.arguments = '[count] [...#channel] [...@user]';
 	this.permissions = 'MANAGE_MESSAGES'
 	this.guildOnly = true;
 

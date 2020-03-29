@@ -7,6 +7,7 @@ const time = require('../etc/time.js');
 setupModule(function () {
 	this.command = 'enable';
 	this.description = 'enables a disabled command on a server';
+	this.arguments = '[...command]';
 	this.permissions = ['MANAGE_GUILD', 'MANAGE_CHANNELS'];
 	this.guildOnly = true;
 
@@ -26,6 +27,7 @@ setupModule(function () {
 setupModule(function () {
 	this.command = 'disable';
 	this.description = 'disables a command on a server (meaning no one can use it)';
+	this.arguments = '[...command]';
 	this.permissions = ['MANAGE_GUILD', 'MANAGE_CHANNELS'];
 	this.guildOnly = true;
 
