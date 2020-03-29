@@ -67,9 +67,9 @@ class cmdmodule {
 		Object.defineProperties(this, {
 			[sym.name]: {writable: true, value: null},
 			[sym.desc]: {writable: true, value: null},
-			[sym.args]: {writable: true, value: null},
 			[sym.exec]: {writable: true, value: null},
 			[sym.gcmd]: {writable: true, value: true},
+			[sym.args]: {writable: true, value: []},
 			[sym.gprm]: {writable: true, value: new Map()},
 			[sym.perm]: {writable: true, value: new Permissions('VIEW_CHANNEL')},
 			[sym.file]: {value: file},
@@ -115,7 +115,7 @@ class cmdmodule {
 	*/
 	set arguments (value) {
 		if (this[sym.args]) log.warn(time(), 'arguments help for', this[sym.name], 'was modified');
-		this[sym.args] = String(value);
+		this[sym.args].push(String(value));
 	}
 
 	get arguments () {

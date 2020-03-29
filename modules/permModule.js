@@ -7,7 +7,10 @@ const fs = require('fs').promises;
 setupModule(function () {
 	this.command = 'permissions';
 	this.description = 'Modifying required permissions for commands';
-	this.arguments = '<list|show|set> <command> [...permission]';
+	this.arguments = 'set <command> [...permission]';
+	this.arguments = 'show <command>';
+	this.arguments = 'list';
+	//this.arguments = '<list|show|set> <command> [...permission]';
 	this.permissions = 'ADMINISTRATOR';
 	this.guildOnly = true;
 

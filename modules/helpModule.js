@@ -35,6 +35,7 @@ setupModule(function () {
 			arg = arg.replace(/`/g, '');
 			if (arg === '') arg = ' ';
 			if (cmd && (!tmp || tmp.hasPermission(cmd.permissions(msg.guild)))) {
+				let comStr = msg.content.substr(0,1) + cmd.command + ' ';
 				log.debug(time(), 'Posting help (args)');
 				return msg.channel.send({
 					embed: {
@@ -43,7 +44,7 @@ setupModule(function () {
 						color: 0xBB0000,
 						fields: [{
 							name: 'Arguments:',
-							value: msg.content.substr(0,1) + cmd.command + ' ' + cmd.arguments,
+							value: cmd.arguments.map(val => comStr + val).join('\n') || comStr,
 						}],
 					}
 				})

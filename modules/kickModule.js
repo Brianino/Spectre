@@ -7,6 +7,7 @@ setupModule(function () {
 	this.command = 'kick';
 	this.description = 'Kick a user';
 	this.arguments = '<@user> [reason]';
+	this.arguments = '<user id> [reason]';
 	this.permissions = 'KICK_MEMBERS'
 	this.guildOnly = true;
 
