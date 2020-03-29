@@ -37,8 +37,8 @@ setupModule(function () {
 				fields: [{
 					name: 'Server: ' + server.region,
 					value: [
-						server.createdAt.toDateString(),
-						server.createdAt.toTimeString(),
+						'Created: ' + server.createdAt.toDateString(),
+						'at ' + server.createdAt.toTimeString(),
 					].join('\n'),
 				}, {
 					name: 'Channels: ' + channels.size,
