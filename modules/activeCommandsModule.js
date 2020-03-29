@@ -6,7 +6,7 @@ const time = require('../etc/time.js');
 
 setupModule(function () {
 	this.command = 'enable';
-	this.description = 'disables a module on a server (meaning no one can use it)';
+	this.description = 'enables a disabled command on a server';
 	this.permissions = ['MANAGE_GUILD', 'MANAGE_CHANNELS'];
 	this.guildOnly = true;
 
@@ -25,14 +25,14 @@ setupModule(function () {
 
 setupModule(function () {
 	this.command = 'disable';
-	this.description = 'disables a module on a server (meaning no one can use it)';
+	this.description = 'disables a command on a server (meaning no one can use it)';
 	this.permissions = ['MANAGE_GUILD', 'MANAGE_CHANNELS'];
 	this.guildOnly = true;
 
 	this.exec((msg, ...commands) => {
 		let config = guildConfig(msg.guild.id), old = config.disabled;
 
-		commands = commands.filter(val => modules.has(val) && !old.includes(val) && (val !== 'enable' || val !== 'disable'));
+		commands = commands.filter(val => modules.has(val) && !old.includes(val) && val !== 'enable' && val !== 'disable');
 		config.disabled = old.concat(commands);
 		if (commands.length > 0) {
 			return msg.channel.send('Disabled commands: `' + commands.join('` `') + '`');
