@@ -22,10 +22,10 @@ bot.on('message', async (msg) => {
 	try {
 		let msgStr = msg.content.split(' '), cmd = modules.get(msgStr[0].substr(1)),
 			pref = msg.guild ? guildConfig(msg.guild).prefix : prefix,
-			disabled = msg.guild ? guildConfig(msg.guild).disabled.includes(cmd.command) : false;
+			disabled = (msg.guild && cmd) ? guildConfig(msg.guild).disabled.includes(cmd.command) : false;
 
 		msgStr.shift();
-		log.debug(time(), 'Found cmd:', cmd !== undefined, 'Message:', msg.content);
+		log.debug(time(), 'Found cmd:', cmd !== undefined, 'Disabled:', disabled, 'Message:', msg.content);
 		if (cmd && msg.content.startsWith(pref) && !disabled) {
 			if (msg.member && msg.member.permissionsIn(msg.channel).has(cmd.permissions(msg.guild))) {
 				return await cmd[exec](msg, ...msgStr);

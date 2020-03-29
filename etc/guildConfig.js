@@ -53,6 +53,8 @@ module.exports.guildConfig = getGuild;
 function getGuild (id) {
 	let res
 
+	if (typeof id === 'object') id = id.id;
+
 	res = cache.get(id);
 	if (!res) cache.set(id, res = new guildConfig(id, {id}));
 
@@ -60,7 +62,7 @@ function getGuild (id) {
 }
 
 class guildConfig {
-	constructor (id, {id: fallbackid, prefix, perms, disabled, ...obj}) {
+	constructor (id, {id: fallbackid, prefix, perms, disabled = [], ...obj}) {
 		Object.defineProperties(this, {
 			id: {value: id || fallbackid},
 			[sym.json]: {value: []},
@@ -68,7 +70,7 @@ class guildConfig {
 		});
 		this._internal(sym.prfx, {prefix});
 		this._internal(sym.perm, {perms: new Map(perms)}, () => [...this[sym.perm]], () => this[sym.perm].size);
-		this._internal(sym.disa, {disabled: new Array(disabled)}, undefined, () => this[sym.disa].length);
+		this._internal(sym.disa, {disabled: Array.from(disabled)}, undefined, () => this[sym.disa].length);
 		this._internal(sym.dmdn, {defClear: obj.defClear});
 		this._internal(sym.mlim, {msgLimit: obj.msgLimit});
 		this._internal(sym.cOld, {msgOld: obj.msgOld});
@@ -121,11 +123,11 @@ class guildConfig {
 			}
 		} else same = false;
 		if (!same) {
-			log.debug(time(), 'Permissions are:', permissions);
-			if (permissions.length === 0) {
-				log.debug(time(), 'Removing permissions config for', command, 'guild -', this.id);
-				this[sym.disa].delete(command);
-			} else this[sym.disa].set(command, permissions);
+			log.debug(time(), 'Commands are:', commands);
+			if (commands.length === 0) {
+				log.debug(time(), 'Removing disabled commands config for guild -', this.id);
+				this[sym.disa] = [];
+			} else this[sym.disa] = commands;
 			saveConfig(this).catch(e => log.error(time(), 'Unable to save file:', e.toString()));
 		}
 	}
