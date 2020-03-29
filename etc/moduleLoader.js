@@ -31,16 +31,26 @@ fs.readdir(path.join('./', 'modules'), {
 	encoding: 'utf8',
 	withFileTypes: true,
 }).then(files => {
+	let oldFunc = global.setupModule;
 	log.debug(time(), 'Found files:', files.length);
 	for (let file of files) {
-		log.info(time(), 'Loading Module:', files.name);
+		log.info(time(), 'Loading Module:', file.name);
 		try {
-			if (file.isFile()) require(path.join('../', 'modules', file.name));
+			let fpath = path.join('../', 'modules', file.name);
+			global.setupModule = (func) => {
+				if (typeof func !== 'function') throw new Error('module function missing');
+				func.call(mod = new cmdmodule(fpath));
+				log.info(time(), 'Module', mod.command, 'finished loading -', fpath);
+				modules.set(mod.command, mod);
+				events.emit('loaded', mod);
+			}
+			if (file.isFile()) require(fpath);
 		} catch (e) {
 			log.error(time(), 'Unable to load module:', file.name, '::', e.toString());
 			log.debug(e.stack);
 		}
 	}
+	global.setupModule = oldFunc;
 	events.emit('ready');
 }).catch(e => {
 	log.error(time(), 'Unable to load modules:', e.toString());
