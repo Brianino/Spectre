@@ -1,6 +1,5 @@
 const log = require('debug-logger')('wipe-module');
 const {modules} = require('../etc/moduleLoader.js');
-const {guildConfig} = require('../etc/guildConfig.js');
 const {MessageMentions, DiscordAPIError, Collection} = require('discord.js');
 const time = require('../etc/time.js');
 
@@ -13,16 +12,21 @@ setupModule(function () {
 	this.permissions = 'MANAGE_MESSAGES'
 	this.guildOnly = true;
 
+	this.configVar('defaultClear', Number, 50);
+	this.configVar('messageLimit', Number, 1000);
+	this.configVar('clearOld', Boolean, true);
+
 	this.exec(async (msg, number) => {
 		let channels = msg.mentions.channels.filter(tmp => tmp.type === 'text');
-			users = msg.mentions.members, roles = msg.mentions.roles, failed = [];
+			users = msg.mentions.members, roles = msg.mentions.roles, failed = [],
+			config = this.config(msg.guild.id);
 
 		number = Number(number);
 		msg.delete();
-		if (isNaN(number)) number = guildConfig(msg.guild.id).defaultClear;
+		if (isNaN(number)) number = config.defaultClear;
 		if (channels.size === 0) channels.set(msg.channel.id, msg.channel);
 		for (let channel of channels.values()) {
-			let messages = new Collection(), sum = 0, limit = guildConfig(msg.guild.id).messageLimit, i = 0;
+			let messages = new Collection(), sum = 0, limit = config.messageLimit, i = 0;
 
 			while (messages.size < number && sum < limit) {
 				let msgs, tmp, obj = {limit: null};
@@ -51,7 +55,7 @@ setupModule(function () {
 					await channel.bulkDelete(chunk, true);
 					log.debug(time(), 'Chunk of', chunk.length - temp.length, 'messages deleted');
 					count += chunk.length - temp.length;
-					if (temp.length > 0  && guildConfig(msg.guild.id).clearOld) {
+					if (temp.length > 0  && config.clearOld) {
 						for (let msg of temp) {
 							await msg.delete();
 							count += 1;
@@ -64,7 +68,7 @@ setupModule(function () {
 				if (count !== number)
 					throw new lessThan('Deleted ' + count + '/' + number + ' messages');
 			} catch (e) {
-				log.error(time(), 'Unable to delete messages from channel', channel.name, 'because', e.message);
+				log.error(time(), 'Unable to delete messages from channel', channel.name, ':', e.message);
 				if (e instanceof DiscordAPIError || e instanceof lessThan) {
 					failed.push({channel, message: e.message});
 				} else {

@@ -10,7 +10,6 @@ setupModule(function () {
 	this.arguments = 'set <command> [...permission]';
 	this.arguments = 'show <command>';
 	this.arguments = 'list';
-	//this.arguments = '<list|show|set> <command> [...permission]';
 	this.permissions = 'ADMINISTRATOR';
 	this.guildOnly = true;
 
@@ -34,20 +33,27 @@ setupModule(function () {
 		}
 	});
 
+
+	/*
 	this.modules.on('ready', async () => {
-		let guildConfig = await configLoad;
-		for (let [id, config] of guildConfig) {
-			let guild = this.bot.guilds.resolve(id);
+		try {
+			for (let [id, config] of guildConfig) {
+				let guild = this.bot.guilds.resolve(id);
 
-			for (let [command, perms] of config.perms) {
-				let cmd = modules.get(command);
+				for (let [command, perms] of config.perms) {
+					let cmd = modules.get(command);
 
-				if (cmd) cmd.permissions(guild, ...perms);
-				else config.perms = [command];
+					if (cmd) cmd.permissions(guild, ...perms);
+					else config.perms = [command];
+				}
+				log.info(time(), 'Loaded custom command permissions for server', guild.name);
 			}
-			log.info(time(), 'Loaded custom command permissions for server', guild.name);
+		} catch (e) {
+			log.error(time(), 'Unable to load saved permissions:');
+			log.error(e.toString());
+			log.debug(e.stack);
 		}
-	});
+	});*/
 
 	//post module load event;
 

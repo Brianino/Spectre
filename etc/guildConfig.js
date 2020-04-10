@@ -1,181 +1,189 @@
-const log = require('debug-logger')('guild-config');
-const config = require('../config.json');
+const log = require('debug-logger')('module-loader');
+const {promises:fs, constants} = require('fs');
+const {Permissions} = require('discord.js');
+const {prefix} = require('../config.json');
 const time = require('./time.js');
-const fs = require('fs').promises;
 
-const cache = new Map(), sym = {
-	prfx: Symbol('command prefix'),
-	perm: Symbol('permissions map'),
-	disa: Symbol('disabled com map'),
-	json: Symbol('to json functions'),
-	empt: Symbol('empty prop functions'),
-	dmdn: Symbol('default number of messages to erase'),
-	mlim: Symbol('message search limit'),
-	cOld: Symbol('clear old messages'),
-}
+const guilds = new Map(), confProp = new Set();
 
-const load = fs.opendir('./data').then(async files => {
-	for await (let file of files) {
-		if (file.isFile()) {
-			try {
-				let tmp = await fs.readFile('./data/' + file.name);
-				let id = String(file.name).split('.')[0];
+async function saveConfig (guildObj) {
+	let path = './data/' + guildObj.id + '.json', data = guildObj.toJsonObj();
 
-				cache.set(id, new guildConfig(id, JSON.parse(tmp)));
-			} catch (e) {
-				log.error(time(), 'Unable to read config for', file.name);
-				log.error(e.stack);
-			}
-		}
-	}
-	return cache;
-}).catch(e => {
-	log.error(time(), 'Unable to load data directory:', e.toString());
-	log.debug(e.stack);
-});
-
-const saveConfig = (config) => {
-	let name = config.id + '.json';
-
-	log.debug(time(), 'Empty Config:', config.isEmpty());
-	if (!config.isEmpty()) {
-		log.debug(time(), 'Attempting to save config:', name);
-		return fs.writeFile('./data/' + name, config.toJSON(), {flag: 'w'});
+	if (data) {
+		log.debug(time(), 'Attempting to save config:', path);
+		return fs.writeFile(path, JSON.stringify(data), {flag: 'w'});
 	} else {
-		log.debug(time(), 'Deleting config:', name);
-		return fs.unlink('./data/' + name);
+		let exists = true;
+
+		await fs.access(name, constants.F_OK).catch(e => exists = false);
+
+		if (exists) {
+			log.debug(time(), 'Deleting config:', path);
+			return fs.unlink(+ path);
+		}
 	}
 }
 
-module.exports.configLoad = load;
-module.exports.guildConfig = getGuild;
+class config {
+	constructor (guildid) {
+		Object.defineProperty(this, 'id', {value: guildid});
+		this.prefix();
+		this.permissions();
+		this.disabled();
+	}
 
-function getGuild (id) {
-	let res
+	prefix () {
+		let prop = 'prefix', internal, tmp;
+		//WARNING DO NOT CHANGE THE INITIAL VALUE OF INTERNAL
 
-	if (typeof id === 'object') id = id.id;
-
-	res = cache.get(id);
-	if (!res) cache.set(id, res = new guildConfig(id, {id}));
-
-	return res;
-}
-
-class guildConfig {
-	constructor (id, {id: fallbackid, prefix, perms, disabled = [], ...obj}) {
-		Object.defineProperties(this, {
-			id: {value: id || fallbackid},
-			[sym.json]: {value: []},
-			[sym.empt]: {value: []},
+		if (this.saved && (tmp = this.saved(prop))) internal = String(tmp);
+		Object.defineProperty(this, prop, {
+			set: (val) => {
+				if (val !== undefined) internal = String(val);
+				else internal = undefined;
+				saveConfig(this).catch(e => {
+					log.error(time(), 'Unable to save config for', this.id);
+					log.error(e.toString());
+					log.debug(e.stack);
+				});
+			},
+			get: () => internal || prefix,
 		});
-		this._internal(sym.prfx, {prefix});
-		this._internal(sym.perm, {perms: new Map(perms)}, () => [...this[sym.perm]], () => this[sym.perm].size);
-		this._internal(sym.disa, {disabled: Array.from(disabled)}, undefined, () => this[sym.disa].length);
-		this._internal(sym.dmdn, {defClear: obj.defClear});
-		this._internal(sym.mlim, {msgLimit: obj.msgLimit});
-		this._internal(sym.cOld, {msgOld: obj.msgOld});
 	}
 
-	set prefix (value) {
-		value = String(value).replace(/ /g, '');
-		if (value === '') value = undefined;
-		if (value !== this[sym.prfx]) {
-			this[sym.prfx] = value;
-			saveConfig(this).catch(e => log.error(time(), 'Unable to save file:', e.toString()));
-		}
+	permissions () {
+		let prop = 'permissions', internal, tmp;
+		//WARNING DO NOT CHANGE THE INITIAL VALUE OF INTERNAL
+
+		if (this.saved && (tmp = this.saved(prop))) internal = new Permissions(tmp);
+		Object.defineProperty(this, prop, {
+			set: (val) => {
+				if (val !== undefined) internal = new Permissions(val);
+				else internal = undefined;
+				saveConfig(this).catch(e => {
+					log.error(time(), 'Unable to save config for', this.id);
+					log.error(e.toString());
+					log.debug(e.stack);
+				});
+			},
+			get: () => internal,
+		});
 	}
 
-	get prefix () {return this[sym.prfx] || config.prefix}
+	disabled () {
+		let prop = 'disabled', internal, tmp;
+		//WARNING DO NOT CHANGE THE INITIAL VALUE OF INTERNAL
 
-	set perms ([command, ...permissions]) {
-		let old = this[sym.perm].get(command), same = true;
-
-		if (old && old.length === permissions.length) {
-			for (let val of old) {
-				if (!permissions.includes(val)) {
-					same = false;
-					break;
-				}
-			}
-		} else same = false;
-		if (!same) {
-			log.debug(time(), 'Permissions are:', permissions);
-			if (permissions.length === 0) {
-				log.debug(time(), 'Removing permissions config for', command, 'guild -', this.id);
-				this[sym.perm].delete(command);
-			} else this[sym.perm].set(command, permissions);
-			saveConfig(this).catch(e => log.error(time(), 'Unable to save file:', e.toString()));
-		}
+		if (this.saved && (tmp = this.saved(prop))) internal = Boolean(tmp);
+		else internal = false;
+		Object.defineProperty(this, prop, {
+			set: (val) => {
+				if (val !== undefined) internal = new Boolean(val);
+				else internal = undefined;
+				saveConfig(this).catch(e => {
+					log.error(time(), 'Unable to save config for', this.id);
+					log.error(e.toString());
+					log.debug(e.stack);
+				});
+			},
+			get: () => internal,
+		});
 	}
 
-	get perms () {return [...this[sym.perm]]}
-
-	set disabled (commands) {
-		let same = true;
-
-		if (!commands instanceof Array) return;
-		if (commands.length === this[sym.disa].length) {
-			for (let val of this[sym.disa]) {
-				if (!commands.includes(val)) {
-					same = false;
-					break;
-				}
-			}
-		} else same = false;
-		if (!same) {
-			log.debug(time(), 'Commands are:', commands);
-			if (commands.length === 0) {
-				log.debug(time(), 'Removing disabled commands config for guild -', this.id);
-				this[sym.disa] = [];
-			} else this[sym.disa] = commands;
-			saveConfig(this).catch(e => log.error(time(), 'Unable to save file:', e.toString()));
-		}
-	}
-
-	get disabled () {return [...this[sym.disa]]}
-
-	set defaultClear (input) {
-		if (!isNaN(input = Number(input))) {
-			this[sym.dmdn] = input;
-		}
-	}
-
-	get defaultClear () {return this[sym.dmdn] || 50}
-
-	set messageLimit (input) {
-		if (!isNaN(input = Number(input))) {
-			this[sym.mlim] = input;
-		}
-	}
-
-	get messageLimit () {return this[sym.mlim] || 1000}
-
-	set clearOld (input) {this[sym.cOld] = Boolean(input)}
-
-	get clearOld () {return this[sym.cOld] || true}
-
-	isEmpty() {
-		for (let func of this[sym.empt]) {
-			if (func()) return false;
-		}
-		return true;
-	}
-
-	toJSON () {
+	toJsonObj () {
 		let obj = {id: this.id};
-		for (let [name, func] of this[sym.json]) {
-			obj[name] = func();
+
+		if (this.prefix !== prefix) obj.prefix = this.prefix;
+		if (this.permissions) obj.permissions = this.permissions.bitfield;
+		if (this.disabled !== false) obj.disabled = this.disabled;
+		for (let {name, val, func} of confProp) {
+			if (val() !== undefined) obj[name] = func(this[name]);
 		}
-		return JSON.stringify(obj);
+		if (Object.getOwnPropertyNames(this).length > 1) return obj;
+		return;
 	}
+}
 
-	_internal (prop, val, jsonFunc, emptyFunc) {
-		let [name] = Object.getOwnPropertyNames(val);
+module.exports.saved = guilds;
 
-		this[prop] = val[name];
-		if (!jsonFunc) jsonFunc = () => this[prop];
-		if (!emptyFunc) emptyFunc = () => this[prop];
-		this[sym.json].push([name, jsonFunc]);
-		this[sym.empt].push(emptyFunc);
+module.exports.config = config;
+
+/*
+ * @param {String} name: the property name to put the value under on the config object
+ * @param {Functions} type: constructor function, or primative type for the value
+ * @param {*} defaultVal: the default value to return if there is no alternative stored
+ * @param {Function} func: a function to convert the stored config value into a json stringifiable value
+    * the result of the function should be a valid contructor argument
+*/
+module.exports.register = function registerConfig (name, type, defaultVal, func) {
+	let internal;
+
+	name = String(name);
+	if (typeof type !== 'function') {
+		log.error(time(), 'Error registering', name, '; constructor not passed for type');
+		return;
 	}
+	switch (type) {
+		// Only primative types should exist between here and the break
+		case String:
+		case Number:
+		case Boolean:
+
+		func = (val) => val;
+		if (typeof defaultVal !== type.name.toLowerCase()) {
+			log.warn('Default value of', name, 'not of the same type, setting to', '"' + type() + '"', 'instead');
+			defaultVal = type(); internal = type();
+		}
+		Object.defineProperty(config.prototype, name, {
+			set (val) {
+				log.debug(time(), 'Setting config:', this.id, name);
+				if (val[0] !== undefined) internal = type(val[0]);
+				else internal = undefined;
+
+				saveConfig(this).catch(e => {
+					log.error(time(), 'Unable to save config for', this.id);
+					log.error(e.toString());
+					log.debug(e.stack);
+				});
+			},
+			get () {
+				let saved = this.saved ? this.saved(name) : undefined;
+				log.debug(time(), 'Getting config:', this.id, name);
+				return internal || saved || defaultVal;
+			}
+		});
+		break;
+
+		// Default conversion functions for certain object types can be added here
+		case Object: if (!func) func = (val) => val;
+		case Array: if (!func) func = (val) => val;
+		case Map: if (!func) func = (val) => [...val];
+		case Set: if (!func) func = (val) => [...val];
+		case Permissions: if (!func) func = (val) => val.bitfield;
+		default:
+		if (!defaultVal instanceof type) {
+			log.warn('Default value of', name, 'not an instance of,', type.name, ', setting to undefined instead');
+			defaultVal = undefined;
+		}
+		Object.defineProperty(config.prototype, name, {
+			set (val) {
+				log.debug(time(), 'Setting config:', this.id, name);
+				if (val[0] !== undefined) internal = new type(val[0]);
+				else internal = undefined;
+
+				saveConfig(this).catch(e => {
+					log.error(time(), 'Unable to save config for', this.id);
+					log.error(e.toString());
+					log.debug(e.stack);
+				});
+			},
+			get () {
+				let saved = this.saved ? this.saved(name) : undefined;
+				log.debug(time(), 'Getting config:', this.id, name);
+				return internal || saved || defaultVal;
+			}
+		});
+	}
+	confProp.add({name: name, val: () => internal, func: func()});
+	log.debug(time(), 'Should have registered property:', name, 'type', type.name, config.prototype);
 }

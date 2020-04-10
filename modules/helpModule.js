@@ -17,12 +17,12 @@ setupModule(function () {
 				fields: []
 			};
 
-			for (let [cmd, cmdObj] of modules) {
+			for (let [cmd, moduleObj] of modules) {
 				let tmp = msg.member;
-				if (!tmp || tmp.hasPermission(cmdObj.permissions(msg.guild)))
+				if (!tmp || tmp.hasPermission(moduleObj.permissions(msg.guild)))
 					embed.fields.push({
 						name: cmd,
-						value: cmdObj.description,
+						value: moduleObj.description,
 						inline: false
 					});
 			}
