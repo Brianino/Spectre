@@ -11,7 +11,7 @@ const bot = new Discord.Client();
 //ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
 bot.on('ready', async () => {
 	let modLoader;
-	log.info(time(), 'Connected to discord ready');
+	log.info(time(), 'Connected to discord');
 	try {
 		await run();
 		log.info(time(), 'Bot ready');
@@ -26,7 +26,6 @@ bot.on('message', async (msg) => {
 	try {
 		let msgStr = msg.content.split(' '), cmd = modules.get(msgStr[0].substr(1));
 
-		msgStr.shift();
 		if (cmd) return await cmd.run(msg, ...msgStr);
 		return;
 	} catch (e) {

@@ -1,6 +1,5 @@
 const log = require('debug-logger')('active-commands-module');
 const {modules} = require('../etc/moduleLoader.js');
-const {guildConfig} = require('../etc/guildConfig.js');
 const {DiscordAPIError} = require('discord.js');
 const time = require('../etc/time.js');
 
@@ -12,12 +11,16 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.exec((msg, ...commands) => {
-		let config = guildConfig(msg.guild.id), disabled = config.disabled;
+		let disabled = this.config(msg.guild.id).disabled, res = [];
 
-		config.disabled = disabled.filter(val => !commands.includes(val));
-		commands = commands.filter(val => disabled.includes(val));
-		if (commands.length > 0) {
-			return msg.channel.send('Enabled commands: `' + commands.join('` `') + '`');
+		for (let command of commands) {
+			if (disabled.has(command)) {
+				disabled.delete(command);
+				res.push(command);
+			}
+		}
+		if (res.length > 0) {
+			return msg.channel.send('Enabled commands: `' + res.join('` `') + '`');
 		} else {
 			return msg.channel.send('No new commmands to enable');
 		}
@@ -32,12 +35,16 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.exec((msg, ...commands) => {
-		let config = guildConfig(msg.guild.id), old = config.disabled;
+		let disabled = guildConfig(msg.guild.id).disabled, res = [];
 
-		commands = commands.filter(val => modules.has(val) && !old.includes(val) && val !== 'enable' && val !== 'disable');
-		config.disabled = old.concat(commands);
-		if (commands.length > 0) {
-			return msg.channel.send('Disabled commands: `' + commands.join('` `') + '`');
+		for (let command of commands) {
+			if (modules.has(command)) {
+				if (!disabled.has(command)) res.push(command);
+				disabled.add(command);
+			}
+		}
+		if (res.length > 0) {
+			return msg.channel.send('Disabled commands: `' + res.join('` `') + '`');
 		} else {
 			return msg.channel.send('No new commmands to disable');
 		}

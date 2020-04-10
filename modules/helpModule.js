@@ -18,23 +18,22 @@ setupModule(function () {
 			};
 
 			for (let [cmd, moduleObj] of modules) {
-				let tmp = msg.member;
-				if (!tmp || tmp.hasPermission(moduleObj.permissions(msg.guild)))
+				if (moduleObj.access(msg.author, msg.guild)) {
 					embed.fields.push({
 						name: cmd,
 						value: moduleObj.description,
 						inline: false
 					});
+				}
 			}
 			log.debug(time(), 'Posting help (no args)');
 			return msg.channel.send({embed});
 		} else {
 			let cmd = modules.get(arg = String(arg));
-			let tmp = msg.member;
 
 			arg = arg.replace(/`/g, '');
 			if (arg === '') arg = ' ';
-			if (cmd && (!tmp || tmp.hasPermission(cmd.permissions(msg.guild)))) {
+			if (cmd && cmd.access(msg.author, msg.guild)) {
 				let comStr = msg.content.substr(0,1) + cmd.command + ' ';
 				log.debug(time(), 'Posting help (args)');
 				return msg.channel.send({
