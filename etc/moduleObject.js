@@ -86,7 +86,7 @@ module.exports = class module {
 			if (guildid) {
 				let config = this.config(guildid);
 
-				return config.permissions || this[sym.perm];
+				return config.permissions(this.command) || this[sym.perm];
 			}
 			return this[sym.perm];
 		}
@@ -126,11 +126,12 @@ module.exports = class module {
 		}
 	}
 
-	async run (msg, ...params) {
+	async run (msg, cmd, ...params) {
 		//for now just run command, but check perms and enabled status...
 		let tmp = this.config(msg.guild.id), users = this[sym.lcmd].get('users');
 
-		if (!params.shift().startsWith(tmp.prefix)) return;
+		if (!cmd.startsWith(tmp.prefix)) return;
+		log.debug('Prefix matches, continuing check');
 		if (msg.author.bot) return log.info('ignoring bot');
 		if (users.length > 0 && users.indexOf(msg.author.id) < 0) return;
 		if (msg.member) {
@@ -145,8 +146,6 @@ module.exports = class module {
 		} else {
 			if (!this.guildOnly) return this[sym.exec](msg, ...params);
 		}
-		log.debug(time(), tmp.constructor.name, tmp.toJsonObj());
-		return this[sym.exec](msg, ...params);
 	}
 
 	reload () {}

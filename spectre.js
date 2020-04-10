@@ -2,7 +2,8 @@
 if (!process.env.DEBUG) process.env.DEBUG = '*:log,*:info,*:warn,*:error';
 const log = require('debug-logger')('main');
 const {run, modules} = require('./etc/moduleLoader.js');
-const {token} = require('./config.json');
+const {token, prefix} = require('./config.json');
+const {saved} = require('./etc/guildConfig.js');
 const Discord = require('discord.js');
 const time = require('./etc/time.js');
 
@@ -24,8 +25,12 @@ bot.on('ready', async () => {
 
 bot.on('message', async (msg) => {
 	try {
-		let msgStr = msg.content.split(' '), cmd = modules.get(msgStr[0].substr(1));
+		let msgStr = msg.content.split(' '), cmd,
+			conf = saved.get(msg.guild.id);
 
+		if (conf) {
+			cmd = modules.get(msgStr[0].substr(conf.prefix.length));
+		} else cmd = modules.get(msgStr[0].substr(prefix.length));
 		if (cmd) return await cmd.run(msg, ...msgStr);
 		return;
 	} catch (e) {
@@ -37,7 +42,7 @@ bot.on('message', async (msg) => {
 bot.on('error', e => {
 	log.error(time(), e.toString());
 	log.debug(e.stack);
-})
+});
 
 bot.login(token).catch(e => {
 	log.error(time(), e.toString());

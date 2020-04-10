@@ -15,11 +15,11 @@ async function saveConfig (guildObj) {
 	} else {
 		let exists = true;
 
-		await fs.access(name, constants.F_OK).catch(e => exists = false);
+		await fs.access(path, constants.F_OK).catch(e => exists = false);
 
 		if (exists) {
 			log.debug(time(), 'Deleting config:', path);
-			return fs.unlink(+ path);
+			return fs.unlink(path);
 		}
 	}
 }
@@ -41,6 +41,7 @@ class config {
 			set: (val) => {
 				if (val !== undefined) internal = String(val);
 				else internal = undefined;
+
 				saveConfig(this).catch(e => {
 					log.error(time(), 'Unable to save config for', this.id);
 					log.error(e.toString());
@@ -52,42 +53,46 @@ class config {
 	}
 
 	permissions () {
-		let prop = 'permissions', internal, tmp;
+		let prop = 'permissions', internal = new Map(), tmp;
 		//WARNING DO NOT CHANGE THE INITIAL VALUE OF INTERNAL
 
-		if (this.saved && (tmp = this.saved(prop))) internal = new Permissions(tmp);
+		if (this.saved && (tmp = this.saved(prop))) internal = new Map(tmp);
 		Object.defineProperty(this, prop, {
-			set: (val) => {
-				if (val !== undefined) internal = new Permissions(val);
-				else internal = undefined;
+			set: ([cmd, ...permissions]) => {
+				if (permissions[0] !== undefined) internal.set(cmd, new Permissions(permissions));
+				else internal.delete(cmd);
+
 				saveConfig(this).catch(e => {
 					log.error(time(), 'Unable to save config for', this.id);
 					log.error(e.toString());
 					log.debug(e.stack);
 				});
 			},
-			get: () => internal,
+			get: () => cmd => internal.get(cmd),
+		});
+		Object.defineProperty(this, 'internalPerms', {
+			get: () => internal
 		});
 	}
 
 	disabled () {
-		let prop = 'disabled', internal, tmp;
+		let prop = 'disabled', internal = new Set(), tmp;
 		//WARNING DO NOT CHANGE THE INITIAL VALUE OF INTERNAL
 
 		if (this.saved && (tmp = this.saved(prop))) internal = new Set(tmp);
-		else internal = false;
 		Object.defineProperty(this, prop, {
 			set: (val) => {
-				if (val !== undefined && !val instanceof Set) internal = new Set(val);
-				else if (val !== undefined) internal = val;
-				else internal = undefined;
+				if (val instanceof Set) internal = val;
+				else if (val !== undefined) internal = new Set(val);
+				else internal = new Set();
+
 				saveConfig(this).catch(e => {
 					log.error(time(), 'Unable to save config for', this.id);
 					log.error(e.toString());
 					log.debug(e.stack);
 				});
 			},
-			get: () => internal || new Set(),
+			get: () => new Set(internal),
 		});
 	}
 
@@ -95,12 +100,13 @@ class config {
 		let obj = {id: this.id};
 
 		if (this.prefix !== prefix) obj.prefix = this.prefix;
-		if (this.permissions) obj.permissions = this.permissions.bitfield;
-		if (this.disabled !== false) obj.disabled = this.disabled;
+		if (this.internalPerms.size) obj.permissions = [...this.internalPerms].map(([key, val]) => [key, val.bitfield]);
+		if (this.disabled.size) obj.disabled = [...this.disabled];
 		for (let {name, val, func} of confProp) {
 			if (val() !== undefined) obj[name] = func(this[name]);
 		}
-		if (Object.getOwnPropertyNames(this).length > 1) return obj;
+		log.debug('Property count:', Object.getOwnPropertyNames(obj).length);
+		if (Object.getOwnPropertyNames(obj).length > 1) return obj;
 		return;
 	}
 }

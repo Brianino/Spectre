@@ -20,6 +20,7 @@ setupModule(function () {
 			}
 		}
 		if (res.length > 0) {
+			this.config(msg.guild.id).disabled = disabled;
 			return msg.channel.send('Enabled commands: `' + res.join('` `') + '`');
 		} else {
 			return msg.channel.send('No new commmands to enable');
@@ -35,15 +36,15 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.exec((msg, ...commands) => {
-		let disabled = guildConfig(msg.guild.id).disabled, res = [];
+		let disabled = this.config(msg.guild.id).disabled, res = [];
 
 		for (let command of commands) {
 			if (modules.has(command)) {
 				if (!disabled.has(command)) res.push(command);
-				disabled.add(command);
 			}
 		}
 		if (res.length > 0) {
+			this.config(msg.guild.id).disabled = res;
 			return msg.channel.send('Disabled commands: `' + res.join('` `') + '`');
 		} else {
 			return msg.channel.send('No new commmands to disable');

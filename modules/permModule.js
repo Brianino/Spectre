@@ -1,5 +1,4 @@
 const log = require('debug-logger')('perm-module');
-const {configLoad, guildConfig} = require('../etc/guildConfig.js');
 const {modules} = require('../etc/moduleLoader.js');
 const time = require('../etc/time.js');
 const fs = require('fs').promises;
@@ -17,13 +16,13 @@ setupModule(function () {
 	this.exec((msg, ...args) => {
 		switch (args.shift()) {
 			case 'list': // display permissions for all commands
-			return listPermission.call(msg.channel, msg.guild);
+			return listPermission.call(this, msg);
 			break;
 			case 'show': // display permissions for a command
-			return showPermission.call(msg.channel, msg.guild, args.shift());
+			return showPermission.call(this, msg, args.shift());
 			break;
 			case 'set': //set the permissions for a command
-			return setPermission.call(msg.channel, msg.guild, args.shift(), args);
+			return setPermission.call(this, msg, args.shift(), args);
 			break;
 			default:
 			return msg.channel.send('Unknown option, use either:\n' +
@@ -33,31 +32,7 @@ setupModule(function () {
 		}
 	});
 
-
-	/*
-	this.modules.on('ready', async () => {
-		try {
-			for (let [id, config] of guildConfig) {
-				let guild = this.bot.guilds.resolve(id);
-
-				for (let [command, perms] of config.perms) {
-					let cmd = modules.get(command);
-
-					if (cmd) cmd.permissions(guild, ...perms);
-					else config.perms = [command];
-				}
-				log.info(time(), 'Loaded custom command permissions for server', guild.name);
-			}
-		} catch (e) {
-			log.error(time(), 'Unable to load saved permissions:');
-			log.error(e.toString());
-			log.debug(e.stack);
-		}
-	});*/
-
-	//post module load event;
-
-	function setPermission (guild, command, perms) {
+	function setPermission (msg, command, perms) {
 		let cmd = modules.get(command = String(command));
 
 		command = command.replace(/`/g, '');
@@ -69,45 +44,43 @@ setupModule(function () {
 				else perms[index] = String(val).toUpperCase();
 			});
 			try {
-				let config = guildConfig(guild.id);
-				cmd.permissions(guild, ...perms);
+				let config = this.config(msg.guild.id);
 
-				if (config) config.perms = [command, ...perms];
-				else addGuild(guild.id, {perms: [[command, perms]]});
-				return this.send(`Permissions for \`${command}\` updated`);
+				config.permissions = [command, ...perms];
+				return msg.channel.send(`Permissions for \`${command}\` updated`);
 			} catch (e) {
 				log.error(time(), 'Failed to set permissions:', e.toString());
 				log.error(e.stack);
-				return this.send('There was an error updating permissions, check server logs for more info');
+				return msg.channel.send('There was an error updating permissions, check server logs for more info');
 			}
 		} else {
-			return this.send(`Could not find command \`${command}\``);
+			return msg.channel.send(`Could not find command \`${command}\``);
 		}
 	}
 
-	function showPermission (guild, command) {
+	function showPermission (msg, command) {
 		let cmd =  modules.get(command = String(command));
 
 		command = command.replace(/`/g, '');
 		if (command === '') command = ' ';
 		if (cmd) {
-			this.send({
+			msg.channel.send({
 				embed: {
 					title: 'Permissions',
 					fields: {
 						name: command,
-						value: '`' + cmd.permissions(guild).toArray().join('` `') + '`',
+						value: '`' + cmd.permissions(msg.guild.id).toArray(false).join('` `') + '`',
 						inline: false,
 					},
 					color: 0xBB0000
 				}
 			});
 		} else {
-			return this.send(`Could not find command \`${command}\``);
+			return msg.channel.send(`Could not find command \`${command}\``);
 		}
 	}
 
-	function listPermission (guild) {
+	function listPermission (msg) {
 		let embed = {
 				title: 'Permissions',
 				color: 0xBB0000,
@@ -116,10 +89,10 @@ setupModule(function () {
 		for (let cmd of modules.values()) {
 			embed.fields.push({
 				name: cmd.command,
-				value: '`' + cmd.permissions(guild).toArray().join('`\n`') + '`',
+				value: '`' + cmd.permissions(msg.guild.id).toArray(false).join('`\n`') + '`',
 				inline: true,
 			});
 		}
-		return this.send({embed});
+		return msg.channel.send({embed});
 	}
 });
