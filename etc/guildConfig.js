@@ -74,11 +74,12 @@ class config {
 		let prop = 'disabled', internal, tmp;
 		//WARNING DO NOT CHANGE THE INITIAL VALUE OF INTERNAL
 
-		if (this.saved && (tmp = this.saved(prop))) internal = Boolean(tmp);
+		if (this.saved && (tmp = this.saved(prop))) internal = new Set(tmp);
 		else internal = false;
 		Object.defineProperty(this, prop, {
 			set: (val) => {
-				if (val !== undefined) internal = new Boolean(val);
+				if (val !== undefined && !val instanceof Set) internal = new Set(val);
+				else if (val !== undefined) internal = val;
 				else internal = undefined;
 				saveConfig(this).catch(e => {
 					log.error(time(), 'Unable to save config for', this.id);
@@ -86,7 +87,7 @@ class config {
 					log.debug(e.stack);
 				});
 			},
-			get: () => internal,
+			get: () => internal || new Set(),
 		});
 	}
 
@@ -137,7 +138,7 @@ module.exports.register = function registerConfig (name, type, defaultVal, func)
 		Object.defineProperty(config.prototype, name, {
 			set (val) {
 				log.debug(time(), 'Setting config:', this.id, name);
-				if (val[0] !== undefined) internal = type(val[0]);
+				if (val !== undefined) internal = type(val);
 				else internal = undefined;
 
 				saveConfig(this).catch(e => {
@@ -168,7 +169,8 @@ module.exports.register = function registerConfig (name, type, defaultVal, func)
 		Object.defineProperty(config.prototype, name, {
 			set (val) {
 				log.debug(time(), 'Setting config:', this.id, name);
-				if (val[0] !== undefined) internal = new type(val[0]);
+				if (val !== undefined && !val instanceof type) internal = new type(val);
+				else if (val !== undefined) internal = val;
 				else internal = undefined;
 
 				saveConfig(this).catch(e => {
@@ -185,5 +187,5 @@ module.exports.register = function registerConfig (name, type, defaultVal, func)
 		});
 	}
 	confProp.add({name: name, val: () => internal, func: func()});
-	log.debug(time(), 'Should have registered property:', name, 'type', type.name, config.prototype);
+	log.debug(time(), 'Should have registered property:', name, 'type', type.name);
 }
