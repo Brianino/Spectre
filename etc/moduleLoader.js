@@ -18,7 +18,16 @@ const sym = {
 }
 const modules = new Map(), events = new emitter(), saved = new Map();
 
-Object.defineProperty(moduleObj.prototype, 'modules', {value: events});
+Object.defineProperties(moduleObj.prototype, {
+	modules: {value: events},
+	reload: {
+		value: function () {
+			delete require.cache[this.file];
+			loadModule(this.file);
+			global.setupModule = initial;
+		}
+	},
+});
 
 Object.defineProperty(config.prototype, 'saved', {
 	value: function (param) {
@@ -33,7 +42,7 @@ Object.defineProperty(config.prototype, 'saved', {
 });
 
 //need to modify this so that the file name is added to the object....
-global.setupModule = (func) => {
+const initial = global.setupModule = (func) => {
 	let mod;
 
 	if (typeof func !== 'function') throw new Error('module function missing');
@@ -43,6 +52,25 @@ global.setupModule = (func) => {
 	events.emit('loaded', mod);
 }
 
+
+function loadModule (file) {
+	try {
+		let fpath = path.resolve('modules', file);
+
+		log.info(time(), 'Loading Module:', file);
+		global.setupModule = (func) => {
+			if (typeof func !== 'function') throw new Error('module function missing');
+			func.call(mod = new moduleObj(fpath));
+			log.info(time(), 'Module', mod.command, 'finished loading -', fpath);
+			modules.set(mod.command, mod);
+			events.emit('loaded', mod);
+		}
+		require(fpath);
+	} catch (e) {
+		log.error(time(), 'Unable to load module:', file, '::', e.toString());
+		log.debug(e.stack);
+	}
+}
 
 async function loadConfig () {
 	let dirPath = './data/', dir = await fs.readdir(dirPath, {encoding: 'utf8', withFileTypes: true});
@@ -65,30 +93,16 @@ async function loadConfig () {
 //maybe put this all in a large async function, that is triggered by the main module?
 
 module.exports.run = async () => {
-	let dir, oldFunc = global.setupModule;
+	let dir;
 
 	if (modules.size > 0) return modules;
 	await loadConfig();
 	dir = await fs.readdir('./modules', {encoding: 'utf8', withFileTypes: true});
 	log.debug(time(), 'Found module files:', dir.length);
 	for (let file of dir) {
-		log.info(time(), 'Loading Module:', file.name);
-		try {
-			let fpath = path.join('../', 'modules', file.name);
-			global.setupModule = (func) => {
-				if (typeof func !== 'function') throw new Error('module function missing');
-				func.call(mod = new moduleObj(fpath));
-				log.info(time(), 'Module', mod.command, 'finished loading -', fpath);
-				modules.set(mod.command, mod);
-				events.emit('loaded', mod);
-			}
-			if (file.isFile()) require(fpath);
-		} catch (e) {
-			log.error(time(), 'Unable to load module:', file.name, '::', e.toString());
-			log.debug(e.stack);
-		}
+		if (file.isFile()) loadModule(file.name);
 	}
-	global.setupModule = oldFunc;
+	global.setupModule = initial;
 	events.emit('ready');
 	return modules;
 }

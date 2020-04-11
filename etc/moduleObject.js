@@ -147,7 +147,4 @@ module.exports = class module {
 			if (!this.guildOnly) return this[sym.exec](msg, ...params);
 		}
 	}
-
-	reload () {}
-
 }
