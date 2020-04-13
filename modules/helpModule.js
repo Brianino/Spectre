@@ -8,6 +8,9 @@ setupModule(function () {
 	this.arguments = '[command]';
 	this.guildOnly = false;
 
+	/* TO DO:
+	 * Implement paging based on categories
+	*/
 	this.exec((msg, arg) => {
 		if (!arg) {
 			let embed = {
@@ -19,11 +22,15 @@ setupModule(function () {
 
 			for (let [cmd, moduleObj] of modules) {
 				if (moduleObj.access(msg.author, msg.guild)) {
-					embed.fields.push({
+					let field = {
 						name: cmd,
 						value: moduleObj.description,
 						inline: false
-					});
+					}
+					if (moduleObj.extraDesc)
+						field.value += '\n' + moduleObj.extraDesc;
+
+					embed.fields.push(field);
 				}
 			}
 			log.debug(time(), 'Posting help (no args)');
