@@ -13,7 +13,7 @@ setupModule(function () {
 
 	this.exec((msg, input, message) => {
 		let mention = /(?<=\<@!?)\d{17,19}(?=\>)/.exec(input = String(input)) || [];
-		let user = msg.guild.member(mention[1] || input);
+		let user = msg.guild.member(mention[0] || input);
 
 		if (user) {
 			return user.ban({

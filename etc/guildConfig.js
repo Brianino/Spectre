@@ -4,7 +4,7 @@ const {Permissions} = require('discord.js');
 const {prefix} = require('../config.json');
 const time = require('./time.js');
 
-const guilds = new Map(), confProp = new Set();
+const guilds = new Map(), confProp = new Set(), configurable = new Map();
 
 async function saveConfig (guildObj) {
 	let path = './data/' + guildObj.id + '.json', data = guildObj.toJsonObj();
@@ -50,6 +50,7 @@ class config {
 			},
 			get: () => internal || prefix,
 		});
+		configurable.set(prop, [String, 'prefix to use for commands']);
 	}
 
 	permissions () {
@@ -109,6 +110,10 @@ class config {
 		if (Object.getOwnPropertyNames(obj).length > 1) return obj;
 		return;
 	}
+
+	getConfigurable () {
+		return new Map(configurable);
+	}
 }
 
 module.exports.saved = guilds;
@@ -122,14 +127,15 @@ module.exports.config = config;
  * @param {Function} func: a function to convert the stored config value into a json stringifiable value
     * the result of the function should be a valid contructor argument
 */
-module.exports.register = function registerConfig (name, type, defaultVal, func) {
-	let internal;
+module.exports.register = function registerConfig (name, type, defaultVal, userEditable = true, desc) {
+	let internal, func;
 
 	name = String(name);
 	if (typeof type !== 'function') {
 		log.error(time(), 'Error registering', name, '; constructor not passed for type');
 		return;
 	}
+	if (name in config.prototype) return log.warn('Config property', name, 'already exists');
 	switch (type) {
 		// Only primative types should exist between here and the break
 		case String:
@@ -137,9 +143,9 @@ module.exports.register = function registerConfig (name, type, defaultVal, func)
 		case Boolean:
 
 		func = (val) => val;
-		if (typeof defaultVal !== type.name.toLowerCase()) {
+		if (defaultVal && typeof defaultVal !== type.name.toLowerCase()) {
 			log.warn('Default value of', name, 'not of the same type, setting to', '"' + type() + '"', 'instead');
-			defaultVal = type(); internal = type();
+			defaultVal = type();
 		}
 		Object.defineProperty(config.prototype, name, {
 			set (val) {
@@ -154,21 +160,23 @@ module.exports.register = function registerConfig (name, type, defaultVal, func)
 				});
 			},
 			get () {
-				let saved = this.saved ? this.saved(name) : undefined;
+				if (!internal) internal = this.saved(name);
 				log.debug(time(), 'Getting config:', this.id, name);
-				return internal || saved || defaultVal;
+				return internal || defaultVal;
 			}
 		});
 		break;
 
-		// Default conversion functions for certain object types can be added here
+		// Below are object config types that don't support user configuration (meaning they are not exposed to the user for configuration)
 		case Object: if (!func) func = (val) => val;
-		case Array: if (!func) func = (val) => val;
 		case Map: if (!func) func = (val) => [...val];
+		userEditable = false;
+
+		// Below are object types that support user configuration
+		case Array: if (!func) func = (val) => val;
 		case Set: if (!func) func = (val) => [...val];
 		case Permissions: if (!func) func = (val) => val.bitfield;
-		default:
-		if (!defaultVal instanceof type) {
+		if (defaultVal && !defaultVal instanceof type) {
 			log.warn('Default value of', name, 'not an instance of,', type.name, ', setting to undefined instead');
 			defaultVal = undefined;
 		}
@@ -186,12 +194,18 @@ module.exports.register = function registerConfig (name, type, defaultVal, func)
 				});
 			},
 			get () {
-				let saved = this.saved ? this.saved(name) : undefined;
+				if (!internal) internal = new type(this.saved(name));
 				log.debug(time(), 'Getting config:', this.id, name);
-				return internal || saved || defaultVal;
+				return internal || defaultVal;
 			}
 		});
+		break;
+
+		default: throw new Error('Type not supported');
 	}
-	confProp.add({name: name, val: () => internal, func: func()});
+	if (typeof userEditable === 'string') {
+		configurable.set(name, [type, userEditable]);
+	} else if (userEditable) configurable.set(name, [type, desc]);
+	confProp.add({name: name, val: () => internal, func: func});
 	log.debug(time(), 'Should have registered property:', name, 'type', type.name);
 }

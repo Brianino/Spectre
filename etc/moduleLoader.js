@@ -1,6 +1,7 @@
 const log = require('debug-logger')('module-loader');
-const {config} = require('./guildConfig.js');
 const moduleObj = require('./moduleObject.js');
+const {config} = require('./guildConfig.js');
+const {Client} = require('discord.js');
 const emitter = require('events');
 const time = require('./time.js');
 const fs = require('fs').promises;
@@ -16,9 +17,11 @@ const sym = {
 	exec: Symbol('module subroutine'),
 	file: Symbol('file path for module'),
 }
-const modules = new Map(), events = new emitter(), saved = new Map();
+const modules = new Map(), events = new emitter(), saved = new Map(), estEvents = new Set();
+var bot;
 
 Object.defineProperties(moduleObj.prototype, {
+	bot: {value: undefined, configurable: true},
 	modules: {value: events},
 	reload: {
 		value: function () {
@@ -42,16 +45,10 @@ Object.defineProperty(config.prototype, 'saved', {
 });
 
 //need to modify this so that the file name is added to the object....
-const initial = global.setupModule = (func) => {
-	let mod;
-
-	if (typeof func !== 'function') throw new Error('module function missing');
-	func.call(mod = new moduleObj());
-	log.info(time(), 'Module', mod.command, 'finished loading');
-	modules.set(mod.command, mod);
-	events.emit('loaded', mod);
+const initial = global.setupModule = () => {
+	log.error(time(), 'Somehow function was called without loading a file?');
+	throw new Error();
 }
-
 
 function loadModule (file) {
 	try {
@@ -59,15 +56,38 @@ function loadModule (file) {
 
 		log.info(time(), 'Loading Module:', file);
 		global.setupModule = (func) => {
+			let mod = new moduleObj(fpath), ev = new emitter();
 			if (typeof func !== 'function') throw new Error('module function missing');
-			func.call(mod = new moduleObj(fpath));
+			Object.defineProperty(mod, 'bot', {
+				value: new Proxy(bot, {
+					get (target, prop, prox) {
+						if (prop in ev) {
+							log.debug('Intercepted listener:', prop);
+							return ev[prop].bind(ev);
+						} else return target[prop];
+					}
+				}),
+			});
+			ev.on('newListener', event => {
+				if (!estEvents.has(event)) {
+					if (bot) {
+						bot.on(event, forwardEvent.bind(undefined, event));
+					}
+					estEvents.add(event);
+				}
+			});
+			func.call(mod);
 			log.info(time(), 'Module', mod.command, 'finished loading -', fpath);
 			modules.set(mod.command, mod);
+			ev.on('error', e => {
+				log.error(time(), 'Listener for module', mod.command, 'resulted in an error:', e.toString());
+				log.debug(e.stack);
+			});
 			events.emit('loaded', mod);
 		}
 		require(fpath);
 	} catch (e) {
-		log.error(time(), 'Unable to load module:', file, '::', e.toString());
+		log.error(time(), 'Unable to load module', file, ' successfully:', e.toString());
 		log.debug(e.stack);
 	}
 }
@@ -90,13 +110,29 @@ async function loadConfig () {
 	}
 }
 
-//maybe put this all in a large async function, that is triggered by the main module?
+function forwardEvent(event, ...input) {
+	for (let moduleObj of modules.values()) {
+		try {
+			moduleObj.bot.emit(event, ...input);
+		} catch (e) {
+			log.error(time(), 'uncaught listener error');
+			log.error(e);
+		}
+	}
+}
 
-module.exports.run = async () => {
+module.exports.run = async (input) => {
 	let dir;
 
-	if (modules.size > 0) return modules;
-	await loadConfig();
+	if (input && input instanceof Client && !bot) {
+		bot = input;
+		if (estEvents.size) {
+			for (let event of estEvents) {
+				bot.on(event, forwardEvent.bind(undefined, event));
+			}
+		}
+	}
+	if (modules.size === 0) await loadConfig();
 	dir = await fs.readdir('./modules', {encoding: 'utf8', withFileTypes: true});
 	log.debug(time(), 'Found module files:', dir.length);
 	for (let file of dir) {

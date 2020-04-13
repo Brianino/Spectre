@@ -9,12 +9,16 @@ const time = require('./etc/time.js');
 
 const bot = new Discord.Client();
 
+process.on('unhandledRejection', (e, origin) => {
+	log.error(time(), 'Promise Error:', e.toString());
+	log.debug(e.stack);
+});
+
 //ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
 bot.on('ready', async () => {
-	let modLoader;
 	log.info(time(), 'Connected to discord');
 	try {
-		await run();
+		await run(bot);
 		log.info(time(), 'Bot ready');
 	} catch (e) {
 		log.error(time(), 'Something when wrong during startup for the bot');
@@ -40,7 +44,7 @@ bot.on('message', async (msg) => {
 });
 
 bot.on('error', e => {
-	log.error(time(), e.toString());
+	log.error(time(), 'Bot error:', e.toString());
 	log.debug(e.stack);
 });
 
