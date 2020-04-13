@@ -41,7 +41,12 @@ module.exports = class module {
 	}
 
 	config (guildid) {
-		let res = saved.get((typeof guildid === 'string') ? guildid: guildid = guildid.id);
+		let res
+
+		if (!guildid) return new config(undefined);
+		else if (typeof guildid === 'object') guildid = guildid.id;
+
+		res = saved.get(guildid);
 		if (!res) saved.set(guildid, res = new config(guildid));
 
 		return res;
@@ -128,7 +133,7 @@ module.exports = class module {
 
 	async run (msg, cmd, ...params) {
 		//for now just run command, but check perms and enabled status...
-		let tmp = this.config(msg.guild.id), users = this[sym.lcmd].get('users');
+		let tmp = this.config(msg.guild), users = this[sym.lcmd].get('users');
 
 		if (!cmd.startsWith(tmp.prefix)) return;
 		log.debug('Prefix matches, continuing check');

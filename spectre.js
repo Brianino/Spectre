@@ -29,11 +29,10 @@ bot.on('ready', async () => {
 
 bot.on('message', async (msg) => {
 	try {
-		let msgStr = msg.content.split(' '), cmd,
-			conf = saved.get(msg.guild.id);
+		let msgStr = msg.content.split(' '), cmd, tmp;
 
-		if (conf) {
-			cmd = modules.get(msgStr[0].substr(conf.prefix.length));
+		if (msg.guild && (tmp = saved.get(msg.guild.id))) {
+			cmd = modules.get(msgStr[0].substr(tmp.prefix.length));
 		} else cmd = modules.get(msgStr[0].substr(prefix.length));
 		if (cmd) return await cmd.run(msg, ...msgStr);
 		return;

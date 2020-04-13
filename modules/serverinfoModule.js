@@ -1,6 +1,4 @@
 const log = require('debug-logger')('serverinfo-module');
-const {modules} = require('../etc/moduleLoader.js');
-const {MessageMentions, DiscordAPIError} = require('discord.js');
 const time = require('../etc/time.js');
 
 setupModule(function () {

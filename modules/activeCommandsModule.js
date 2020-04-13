@@ -1,6 +1,5 @@
 const log = require('debug-logger')('active-commands-module');
 const {modules} = require('../etc/moduleLoader.js');
-const {DiscordAPIError} = require('discord.js');
 const time = require('../etc/time.js');
 
 setupModule(function () {
