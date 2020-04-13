@@ -3,7 +3,7 @@ const time = require('../etc/time.js');
 
 setupModule(function () {
 	this.command = 'ping';
-	this.description = 'get the ping to discord';
+	this.description = 'ping discord';
 	this.guildOnly = false;
 
 	this.exec(msg => {
