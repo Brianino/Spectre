@@ -1,7 +1,7 @@
 const log = require('debug-logger')('module-loader');
 const {config, saved, register} = require('./guildConfig.js');
 const {promises:fs, constants} = require('fs');
-const {Permissions} = require('discord.js');
+const {Permissions, Guild} = require('discord.js');
 const time = require('./time.js');
 
 const sym = {
@@ -44,7 +44,13 @@ module.exports = class module {
 		let res
 
 		if (!guildid) return new config(undefined);
-		else if (typeof guildid === 'object') guildid = guildid.id;
+		else if (typeof guildid === 'object' && guildid instanceof Guild) {
+			guildid = guildid.id;
+			log.debug('Getting config for', guildid, '(Guild Object)');
+		} else {
+			guildid = String(guildid);
+			log.debug('Getting config for', guildid, '(String)');
+		}
 
 		res = saved.get(guildid);
 		if (!res) saved.set(guildid, res = new config(guildid));

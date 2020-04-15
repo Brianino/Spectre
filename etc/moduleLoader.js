@@ -62,7 +62,6 @@ function loadModule (file) {
 				value: new Proxy(bot, {
 					get (target, prop, prox) {
 						if (prop in ev) {
-							log.debug('Intercepted listener:', prop);
 							return ev[prop].bind(ev);
 						} else return target[prop];
 					}

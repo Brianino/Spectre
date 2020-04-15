@@ -8,7 +8,7 @@ setupModule(function () {
 	this.extraDesc = 'Adding no arguments will display the available settings to configure\n' +
 	'using the setting with no value will display more info on the setting.'
 	this.arguments = '<setting> [value]';
-	this.arguments = 'list';
+	this.arguments = '';
 	this.permissions = 'MANAGE_GUILD';
 	this.guildOnly = true;
 
