@@ -9,7 +9,7 @@ setupModule(function () {
 	this.permissions = 'MANAGE_GUILD';
 	this.guildOnly = false;
 
-	this.configVar('welcome_message', String, 'Welcome to {user} to {server}', 'welcome message for users');
+	this.configVar('welcome_message', String, 'Welcome {user} to {server}', 'welcome message for users');
 	this.configVar('welcome_bot_message', String, undefined, 'message to display when bots join');
 	this.configVar('welcome_channel', String, undefined, 'where to display welcome message\n if it fails to display a message the value is changed back to undefined');
 
