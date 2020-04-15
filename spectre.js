@@ -31,7 +31,7 @@ bot.on('message', async (msg) => {
 	try {
 		let msgStr = msg.content.split(' '), cmd, tmp;
 
-		if (msg.guild && (tmp = saved.get(msg.guild.id))) {
+		if (msg.guild && (tmp = saved.get(msg.guild.id) || prefix)) {
 			cmd = modules.get(msgStr[0].substr(tmp.prefix.length));
 		} else cmd = modules.get(msgStr[0].substr(prefix.length));
 		if (cmd) return await cmd.run(msg, ...msgStr);

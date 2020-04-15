@@ -104,7 +104,7 @@ class config {
 		if (this.internalPerms.size) obj.permissions = [...this.internalPerms].map(([key, val]) => [key, val.bitfield]);
 		if (this.disabled.size) obj.disabled = [...this.disabled];
 		for (let {name, val, func} of confProp) {
-			if (val() !== undefined) obj[name] = func(this[name]);
+			if (this[val()] !== undefined) obj[name] = func(this[name]);
 		}
 		log.debug('Property count:', Object.getOwnPropertyNames(obj).length);
 		if (Object.getOwnPropertyNames(obj).length > 1) return obj;
@@ -128,7 +128,7 @@ module.exports.config = config;
     * the result of the function should be a valid contructor argument
 */
 module.exports.register = function registerConfig (name, type, defaultVal, userEditable = true, desc) {
-	let internal, func;
+	let internal = Symbol('Internal val'), func;
 
 	name = String(name);
 	if (typeof type !== 'function') {
@@ -150,8 +150,8 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 		Object.defineProperty(config.prototype, name, {
 			set (val) {
 				log.debug(time(), 'Setting config:', this.id, name);
-				if (val !== undefined) internal = type(val);
-				else internal = undefined;
+				if (val !== undefined) this[internal] = type(val);
+				else this[internal] = undefined;
 
 				saveConfig(this).catch(e => {
 					log.error(time(), 'Unable to save config for', this.id);
@@ -160,9 +160,9 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 				});
 			},
 			get () {
-				if (!internal) internal = this.saved(name);
+				if (!this[internal]) this[internal] = this.saved(name);
 				log.debug(time(), 'Getting config:', this.id, name);
-				return internal || defaultVal;
+				return this[internal] || defaultVal;
 			}
 		});
 		break;
@@ -183,9 +183,9 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 		Object.defineProperty(config.prototype, name, {
 			set (val) {
 				log.debug(time(), 'Setting config:', this.id, name);
-				if (val !== undefined && !val instanceof type) internal = new type(val);
-				else if (val !== undefined) internal = val;
-				else internal = undefined;
+				if (val !== undefined && !val instanceof type) this[internal] = new type(val);
+				else if (val !== undefined) this[internal] = val;
+				else this[internal] = undefined;
 
 				saveConfig(this).catch(e => {
 					log.error(time(), 'Unable to save config for', this.id);
@@ -194,9 +194,9 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 				});
 			},
 			get () {
-				if (!internal) internal = new type(this.saved(name));
+				if (!this[internal]) this[internal] = new type(this.saved(name));
 				log.debug(time(), 'Getting config:', this.id, name);
-				return internal || defaultVal;
+				return this[internal] || defaultVal;
 			}
 		});
 		break;
