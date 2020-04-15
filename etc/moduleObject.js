@@ -53,7 +53,10 @@ module.exports = class module {
 		}
 
 		res = saved.get(guildid);
-		if (!res) saved.set(guildid, res = new config(guildid));
+		if (!res) {
+			log.debug('Creating new instance for', guildid);
+			saved.set(guildid, res = new config(guildid));
+		}
 
 		return res;
 	}
