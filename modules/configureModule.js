@@ -49,8 +49,8 @@ setupModule(function () {
 			}
 			switch (type) {
 				case String: config[setting] = input.join(' '); break;
-				case Boolean: config[setting] = Boolean(input); break;
-				case Number: config[setting] = Number(input.shift()); break;
+				case Boolean: config[setting] = input.shift(); break;
+				case Number: config[setting] = input.shift(); break;
 
 				case Set:
 				case Array: config[setting] = input; break;
