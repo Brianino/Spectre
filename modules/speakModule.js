@@ -9,6 +9,9 @@ setupModule(function () {
 
 	this.exec((msg, ...input) => {
 		log.debug('Repeating:', escape(input.join(' ')));
+		msg.delete().catch(e => {
+			log.warn('unable to delete command issuer message');
+		});
 		return msg.channel.send(input.join(' '), {disableMentions: 'all'});
 	});
 });
