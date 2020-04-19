@@ -138,8 +138,10 @@ setupModule(function () {
 			log.debug('Added reaction for option', i);
 		}
 		active.set(poll.channel.id, [col = poll.createReactionCollector((reaction, user) => {
+			if (!options.has(reaction.emoji)) return false;
 			if (Number.isFinite(obj.limit)) {
-				if (col.collected.filter(tmpcol => tmpcol.users.cache.has(user.id)).size >= obj.limit) {
+				if (col.collected.filter(val => val.users.resolve(user.id)).size > obj.limit) {
+					log.debug(col.collected.filter(val => val.users.cache.has(user.id)));
 					try {
 						reaction.users.remove(user);
 					} catch (e) {
@@ -147,6 +149,7 @@ setupModule(function () {
 					}
 					return false;
 				} else {
+					log.debug('user hasn\'t voted yet', user.username);
 					return true;
 				}
 			}
@@ -158,7 +161,7 @@ setupModule(function () {
 				return resolve(collected.reduce((acc, reaction) => {
 					if (options.has(reaction.emoji)) {
 						let tmp = [...options.values()];
-						if (reaction.users.cache.has(poll.author.id)) {
+						if (reaction.me) {
 							acc[tmp.indexOf(reaction.emoji)] = reaction.count - 1;
 						} else {
 							acc[tmp.indexOf(reaction.emoji)] = reaction.count;
