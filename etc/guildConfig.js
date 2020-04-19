@@ -1,5 +1,6 @@
 const log = require('debug-logger')('module-loader');
 const {promises:fs, constants} = require('fs');
+const {parseBool} = require('./utilities.js');
 const {Permissions} = require('discord.js');
 const {prefix} = require('../config.json');
 const time = require('./time.js');
@@ -134,8 +135,10 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 	if (typeof type !== 'function') {
 		log.error(time(), 'Error registering', name, '; constructor not passed for type');
 		return;
+	} else if (name in config.prototype) {
+		log.warn('Config property', name, 'already exists');
+		return false;
 	}
-	if (name in config.prototype) return log.warn('Config property', name, 'already exists');
 	switch (type) {
 		// Only primative types should exist between here and the break
 		case String:
@@ -149,8 +152,13 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 		}
 		Object.defineProperty(config.prototype, name, {
 			set (val) {
-				log.debug(time(), 'Setting config:', this.id, name);
-				if (val !== undefined) this[internal] = type(val);
+				if (this[internal] === undefined) this[internal] = this.saved(name);
+				log.debug(time(), 'Setting config:', this.id, name, typeof val, `'${val}'`);
+				if (val !== undefined) {
+					if (type === Boolean) {
+						this[internal] = parseBool(val);
+					} else this[internal] = type(val);
+				}
 				else this[internal] = undefined;
 
 				saveConfig(this).catch(e => {
@@ -160,9 +168,9 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 				});
 			},
 			get () {
-				if (!this[internal]) this[internal] = this.saved(name);
-				log.debug(time(), 'Getting config:', this.id, name);
-				return this[internal] || defaultVal;
+				if (this[internal] === undefined) this[internal] = this.saved(name);
+				log.debug(time(), 'Getting config:', this.id, name, typeof this[internal], this[internal]);
+				return (this[internal] === undefined)? defaultVal : this[internal];
 			}
 		});
 		break;
@@ -182,7 +190,7 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 		}
 		Object.defineProperty(config.prototype, name, {
 			set (val) {
-				log.debug(time(), 'Setting config:', this.id, name);
+				log.debug(time(), 'Setting config:', this.id, name, typeof val);
 				if (val !== undefined && !val instanceof type) this[internal] = new type(val);
 				else if (val !== undefined) this[internal] = val;
 				else this[internal] = undefined;
@@ -195,7 +203,7 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 			},
 			get () {
 				if (!this[internal]) this[internal] = new type(this.saved(name));
-				log.debug(time(), 'Getting config:', this.id, name);
+				log.debug(time(), 'Getting config:', this.id, name, type.name);
 				return this[internal] || defaultVal;
 			}
 		});
@@ -208,4 +216,5 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 	} else if (userEditable) configurable.set(name, [type, desc]);
 	confProp.add({name: name, val: () => internal, func: func});
 	log.debug(time(), 'Should have registered property:', name, 'type', type.name);
+	return userEditable;
 }

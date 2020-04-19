@@ -22,38 +22,37 @@ setupModule(function () {
 
 			for (let [cmd, moduleObj] of modules) {
 				if (moduleObj.access(msg.author, msg.guild)) {
-					let field = {
+					embed.fields.push({
 						name: cmd,
 						value: moduleObj.description,
 						inline: false
-					}
-					if (moduleObj.extraDesc)
-						field.value += '\n' + moduleObj.extraDesc;
-
-					embed.fields.push(field);
+					});
 				}
 			}
 			log.debug(time(), 'Posting help (no args)');
 			return msg.channel.send({embed});
 		} else {
-			let cmd = modules.get(arg = String(arg));
+			let cmd = modules.get(arg = String(arg)), config = this.config(msg.guild);
 
 			arg = arg.replace(/`/g, '');
 			if (arg === '') arg = ' ';
 			if (cmd && cmd.access(msg.author, msg.guild)) {
-				let comStr = msg.content.substr(0,1) + cmd.command + ' ';
+				let comStr = config.prefix + cmd.command + ' ',
+					desc = cmd.description;
+
+				if (cmd.extraDesc) desc += '\n' + cmd.extraDesc;
 				log.debug(time(), 'Posting help (args)');
 				return msg.channel.send({
 					embed: {
 						title: arg,
-						description: cmd.description,
+						description: desc,
 						color: 0xBB0000,
 						fields: [{
 							name: 'Arguments:',
 							value: cmd.arguments.map(val => comStr + val).join('\n') || comStr,
 						}],
 					}
-				})
+				});
 			} else {
 				return msg.channel.send(`Could not find command \`${arg}\``);
 			}

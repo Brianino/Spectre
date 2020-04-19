@@ -37,7 +37,7 @@ setupModule(function () {
 
 		command = command.replace(/`/g, '');
 		if (command === '') command = ' ';
-		if (cmd) {
+		if (cmd && cmd.access(msg.author, msg.guild)) {
 			perms.forEach((val, index) => {
 				let tmp = Number(val);
 				if (!isNaN(tmp)) perms[index] = tmp;
@@ -63,7 +63,7 @@ setupModule(function () {
 
 		command = command.replace(/`/g, '');
 		if (command === '') command = ' ';
-		if (cmd) {
+		if (cmd && cmd.access(msg.author, msg.guild)) {
 			msg.channel.send({
 				embed: {
 					title: 'Permissions',
@@ -87,11 +87,13 @@ setupModule(function () {
 				fields: [],
 			};
 		for (let cmd of modules.values()) {
-			embed.fields.push({
-				name: cmd.command,
-				value: '`' + cmd.permissions(msg.guild.id).toArray(false).join('`\n`') + '`',
-				inline: true,
-			});
+			if (cmd.access(msg.author, msg.guild)) {
+				embed.fields.push({
+					name: cmd.command,
+					value: '`' + cmd.permissions(msg.guild.id).toArray(false).join('`\n`') + '`',
+					inline: true,
+				});
+			}
 		}
 		return msg.channel.send({embed});
 	}
