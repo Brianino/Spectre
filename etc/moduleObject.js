@@ -11,6 +11,7 @@ const sym = {
 	gcmd: Symbol('module guild only'),
 	lcmd: Symbol('module access limitations'),
 	args: Symbol('command arguments'),
+	conf: Symbol('configurable settings'),
 	perm: Symbol('command permissions'),
 	exec: Symbol('module subroutine'),
 	file: Symbol('file'),
@@ -26,6 +27,7 @@ module.exports = class module {
 			[sym.extd]: {writable: true, value: null},
 			[sym.gcmd]: {writable: true, value: true},
 			[sym.args]: {writable: true, value: []},
+			[sym.conf]: {writable: true, value: []},
 			[sym.perm]: {writable: true, value: new Permissions('VIEW_CHANNEL')},
 			[sym.exec]: {writable: true, value: null},
 			[sym.lcmd]: {writable: false, value: new Map([['users', []],['guilds', []]])},
@@ -37,7 +39,8 @@ module.exports = class module {
 	}
 
 	configVar (name, type, defaultVal, func) {
-		return register(name, type, defaultVal, func);
+		let conf = register(name, type, defaultVal, func);
+		if (conf) this[sym.conf].push(name);
 	}
 
 	config (guildid) {
@@ -46,10 +49,8 @@ module.exports = class module {
 		if (!guildid) return new config(undefined);
 		else if (typeof guildid === 'object' && guildid instanceof Guild) {
 			guildid = guildid.id;
-			log.debug('Getting config for', guildid, '(Guild Object)');
 		} else {
 			guildid = String(guildid);
-			log.debug('Getting config for', guildid, '(String)');
 		}
 
 		res = saved.get(guildid);
@@ -145,7 +146,6 @@ module.exports = class module {
 		let tmp = this.config(msg.guild), users = this[sym.lcmd].get('users');
 
 		if (!cmd.startsWith(tmp.prefix)) return;
-		log.debug('Prefix matches, continuing check');
 		if (msg.author.bot) return log.info('ignoring bot');
 		if (users.length > 0 && users.indexOf(msg.author.id) < 0) return;
 		if (msg.member) {
@@ -156,9 +156,9 @@ module.exports = class module {
 			if (!user.permissionsIn(msg.channel).has(this.permissions(msg.guild.id)))
 				return log.warn(time(), 'User missing permissions for', this.command);
 
-			return this[sym.exec](msg, ...params);
+			return await this[sym.exec](msg, ...params);
 		} else {
-			if (!this.guildOnly) return this[sym.exec](msg, ...params);
+			if (!this.guildOnly) return await this[sym.exec](msg, ...params);
 		}
 	}
 }
