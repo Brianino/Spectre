@@ -11,8 +11,8 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.exec((msg, input, message) => {
-		let mention = /(?<=\<@!?)\d{17,19}(?=\>)/.exec(input = String(input)) || [];
-		let user = msg.guild.member(mention[0] || input);
+		let mention = /(?<=\<@!?)\d{17,19}(?=\>)/.exec(input = String(input)) || [],
+			user = msg.guild.member(mention[0] || input);
 
 		if (user) {
 			return user.ban({
