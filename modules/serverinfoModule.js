@@ -67,7 +67,7 @@ setupModule(function () {
 				}],
 				footer: {
 					text: 'Owner: ' + server.owner.user.tag,
-					icon_url: server.owner.user.avatarURL({
+					icon_url: server.owner.user.displayAvatarURL({
 						format: 'png',
 						dynamic: true,
 					}),
