@@ -26,22 +26,18 @@ setupModule(function () {
 					user.user.createdAt.toDateString(),
 					'at ' + user.user.createdAt.toTimeString(),
 				].join('\n'),
-				//inline: true,
 			}, {
 				name: 'Joined',
 				value: [
 					user.joinedAt.toDateString(),
 					'at ' + user.joinedAt.toTimeString(),
 				].join('\n'),
-				//inline: true,
 			}, {
 				name: 'Roles',
 				value: '`' + user.roles.cache.map(role => role.name).join('` `') + '`',
-				//inline: true,
 			}, {
 				name: 'Permissions',
 				value: '`' + user.permissions.toArray(false).join('` `') + '`',
-				//inline: true,
 			}],
 			footer: {
 				text: user.presence.status + ' - ' + user.id,
