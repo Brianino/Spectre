@@ -38,8 +38,8 @@ module.exports = class module {
 		return this[sym.file];
 	}
 
-	configVar (name, type, defaultVal, func) {
-		let conf = register(name, type, defaultVal, func);
+	configVar (name, type, defaultVal, userEditable, desc) {
+		let conf = register(name, type, defaultVal, userEditable, desc);
 		if (conf) this[sym.conf].push(name);
 	}
 
@@ -60,6 +60,10 @@ module.exports = class module {
 		}
 
 		return res;
+	}
+
+	get vars () {
+		return [...this[sym.conf]];
 	}
 
 	set command (value) {
@@ -116,6 +120,11 @@ module.exports = class module {
 
 	set limit ([type, ...ids]) {
 		if (this[sym.lcmd].has(type)) this[sym.lcmd].set(type, ids);
+	}
+
+	get hasExec () {
+		if (this[sym.exec]) return true;
+		return false;
 	}
 
 	access (user, guild) {

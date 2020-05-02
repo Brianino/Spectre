@@ -5,6 +5,11 @@ const time = require('../etc/time.js');
 setupModule(function () {
 	this.command = 'help';
 	this.description = 'Display command help';
+	this.extraDesc = 'Command arguments in the help will display a quick summary of the different format a command can take\n' +
+					'Arguments surrounded with `[]` are optional, meaning that you can choose to leave it out (do not include the brackets when typing out the command)\n' +
+					'Arguments surrounded with `<>` are required, meaning that you have to enter something for it (do not include the brackets when typing out the command)\n' +
+					'Arguments not surrounded with brackets are fixed, meaning that exactly that input needs to be provided\n' +
+					'Arguments with `...` infront of them means that one or more of it can be provided';
 	this.arguments = '[command]';
 	this.guildOnly = false;
 
@@ -37,22 +42,28 @@ setupModule(function () {
 			arg = arg.replace(/`/g, '');
 			if (arg === '') arg = ' ';
 			if (cmd && cmd.access(msg.author, msg.guild)) {
-				let comStr = config.prefix + cmd.command + ' ',
-					desc = cmd.description;
+				let comStr = config.prefix + cmd.command + ' ', embed = {
+					title: arg,
+					description: cmd.description,
+					color: 0xBB0000,
+					fields: [],
+				};
 
-				if (cmd.extraDesc) desc += '\n' + cmd.extraDesc;
+				if (cmd.extraDesc) embed.description += '\n' + cmd.extraDesc;
+				if (cmd.hasExec) {
+					embed.fields.push({
+						name: 'Command Usage:',
+						value: cmd.arguments.map(val => comStr + val).join('\n') || comStr,
+					});
+				}
+				if (cmd.vars.length) {
+					embed.fields.push({
+						name: 'Configurable Settings:',
+						value: '`' + cmd.vars.join('` `') + '`',
+					});
+				}
 				log.debug(time(), 'Posting help (args)');
-				return msg.channel.send({
-					embed: {
-						title: arg,
-						description: desc,
-						color: 0xBB0000,
-						fields: [{
-							name: 'Arguments:',
-							value: cmd.arguments.map(val => comStr + val).join('\n') || comStr,
-						}],
-					}
-				});
+				return msg.channel.send({embed});
 			} else {
 				return msg.channel.send(`Could not find command \`${arg}\``);
 			}
