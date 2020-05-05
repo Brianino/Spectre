@@ -50,7 +50,14 @@ setupModule(function () {
 				}
 			}
 
-			emMsg = await msg.channel.send({embed});
+			if (msg.attachments.size) {
+				let temp = msg.attachments.first();
+
+				embed.image = {url: 'attachment://' + temp.name};
+				emMsg = await msg.channel.send({embed: embed, files: [{attachment: temp.url, name: temp.name}]});
+			} else {
+				emMsg = await msg.channel.send({embed});
+			}
 			if (tmp.options.length <= 10 && config.poll_reactions) {
 				votes = await reactionPoll(emMsg, tmp, msg.author.id);
 			} else {
@@ -73,7 +80,15 @@ setupModule(function () {
 			for (let i = 0; i < tmp.options.length; i++) {
 				embed.description += `${tmp.options[i]}: ${votes[i] || 0} votes\n`;
 			}
-			return msg.channel.send({embed});
+
+			if (msg.attachments.size) {
+				let temp = msg.attachments.first();
+
+				embed.image = {url: 'attachment://' + temp.name};
+				return msg.channel.send({embed: embed, files: [{attachment: temp.url, name: temp.name}]});
+			} else {
+				return msg.channel.send({embed});
+			}
 		} else if (tmp && !activeWarn.has(msg.channel.id)) {
 			let mtmp = await msg.channel.send('Poll is already active in this channel');
 
