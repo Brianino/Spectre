@@ -12,6 +12,18 @@ setupModule(function () {
 		msg.delete().catch(e => {
 			log.warn('unable to delete command issuer message');
 		});
-		return msg.channel.send(input.join(' '), {disableMentions: 'all'});
+		if (msg.attachments.size) {
+			return msg.channel.send({
+				content: input.join(' '),
+				files: msg.attachments.map(att => {
+					return {
+						attachment: att.url,
+						name: att.name,
+					}
+				}),
+			});
+		} else {
+			return msg.channel.send(input.join(' '), {disableMentions: 'all'});
+		}
 	});
 });
