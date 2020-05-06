@@ -4,7 +4,7 @@ const {MessageCollector} = require('discord.js');
 const {split} = require('../etc/utilities.js');
 const time = require('../etc/time.js');
 
-const hardlimit = timespan.parse('1M');
+const hardlimit = timespan.parse('1 month');
 
 setupModule(function () {
 	this.command = 'poll';
