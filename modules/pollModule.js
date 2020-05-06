@@ -4,6 +4,8 @@ const {MessageCollector} = require('discord.js');
 const {split} = require('../etc/utilities.js');
 const time = require('../etc/time.js');
 
+const hardlimit = timespan.parse('1M');
+
 setupModule(function () {
 	this.command = 'poll';
 	this.description = 'create a poll in the channel';
@@ -29,7 +31,6 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.configVar('poll_timespan', String, '5m', 'default timespan for polls, after which it posts the results');
-	this.configVar('poll_max', String, '1M', 'max timespan allowed (there is a hard limit of 1 month)');
 	this.configVar('poll_reactions', Boolean, true, 'use reactions for voting (only works with 10 or less options)');
 	//this.configVar('poll_marker', Boolean, false, 'posts a link to the poll message (always updated to be the last message in a channel)');
 	//this.configVar('poll_active', Map, new Map(), false);
@@ -68,7 +69,7 @@ setupModule(function () {
 				return;
 			}
 			if (list.length === 0) return (await msg.channel.send('You are unable to end any polls')).delete({timeout: 10000});
-			if (list.length === 1) list[0][0].stop();
+			if (list.length === 1) return list[0][0].stop();
 			return pollChoices(list, msg.channel, msg.author);
 		} else {
 			return (await msg.channel.send('Missing parameters, refer to help')).delete({timeout: 10000});
@@ -89,6 +90,7 @@ setupModule(function () {
 			} catch (ignore) {
 				log.debug('Last poll option is not a timespan:', ignore.toString());
 				res.time = timespan.parse(config.poll_timespan);
+				if (res.time > hardlimit) res.time = hardlimit;
 			}
 			log.debug('Time is', res.time);
 			return res;
@@ -113,6 +115,7 @@ setupModule(function () {
 			}
 		}
 
+		log.debug('Creating poll', tmp.question, 'for user', msg.author.tag);
 		if (msg.attachments.size) {
 			let temp = msg.attachments.first();
 
@@ -227,7 +230,6 @@ setupModule(function () {
 			if (!options.has(reaction.emoji)) return false;
 			if (Number.isFinite(obj.limit)) {
 				if (col.collected.filter(val => val.users.resolve(user.id)).size > obj.limit) {
-					log.debug(col.collected.filter(val => val.users.cache.has(user.id)));
 					try {
 						reaction.users.remove(user);
 					} catch (e) {
@@ -243,7 +245,7 @@ setupModule(function () {
 		}, {time: obj.time}), owner, poll.embeds[0].title, Date.now() + obj.time]);
 		votes = await new Promise(resolve => {
 			col.on('end', collected => {
-				log.debug('Vote ended, counting up votes', collected.size);
+				log.debug(poll.embeds[0].title, 'ended, counting up votes');
 				return resolve(collected.reduce((acc, reaction) => {
 					if (options.has(reaction.emoji)) {
 						let tmp = [...options.values()];
@@ -257,7 +259,7 @@ setupModule(function () {
 				}, []));
 			});
 		});
-		log.debug('Votes:', votes);
+		log.debug(poll.embeds[0].title, 'votes:', votes);
 		active.splice(active.indexOf(col), 1);
 		return votes;
 	}
@@ -299,7 +301,7 @@ setupModule(function () {
 		}, {time: obj.time}), owner, poll.embeds[0].title, Date.now() + obj.time]);
 		votes = await new Promise(resolve => {
 			col.on('end', collected => {
-				log.debug('Vote ended, counting up votes', collected.size);
+				log.debug(poll.embeds[0].title, 'ended, counting up votes');
 				return resolve(collected.reduce((acc, message) => {
 					let m = message.content.split(' ')[1];
 					if (Number(m) < obj.options.length) {
@@ -311,7 +313,7 @@ setupModule(function () {
 				}, []));
 			});
 		});
-		log.debug('Votes:', votes);
+		log.debug(poll.embeds[0].title, 'votes:', votes);
 		active.splice(active.indexOf(col), 1);
 		return votes;
 	}
