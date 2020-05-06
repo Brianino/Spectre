@@ -1,5 +1,6 @@
 const log = require('debug-logger')('poll-module');
 const timespan = require('timespan-parser')('msec');
+const {MessageCollector} = require('discord.js');
 const {split} = require('../etc/utilities.js');
 const time = require('../etc/time.js');
 
@@ -22,98 +23,55 @@ setupModule(function () {
 					'- `rvote` to clear existing votes';
 	this.arguments = 'single <question> [...option] [timespan]';
 	this.arguments = 'multi <question> [...option] [timespan]';
-	this.arguments = '<question> [...option] [timespan]'
+	this.arguments = '<question> [...option] [timespan]';
+	this.arguments = 'end all';
 	this.arguments = 'end';
 	this.guildOnly = true;
 
 	this.configVar('poll_timespan', String, '5m', 'default timespan for polls, after which it posts the results');
-	this.configVar('poll_max', String, '5m', 'max timespan allowed (there is a hard limit of 1 month)');
+	this.configVar('poll_max', String, '1M', 'max timespan allowed (there is a hard limit of 1 month)');
 	this.configVar('poll_reactions', Boolean, true, 'use reactions for voting (only works with 10 or less options)');
-	//this.configVar('poll_active', Map, new Map());
+	//this.configVar('poll_marker', Boolean, false, 'posts a link to the poll message (always updated to be the last message in a channel)');
+	//this.configVar('poll_active', Map, new Map(), false);
 
-	let active = new Map(), activeWarn = new Set();
+	let active = [], activeWarn = new Set();
 
 	this.exec(async (msg, ...input) => {
 		let config = this.config(msg.guild), tmp = parseInput(input.join(' '), config), votes;
 
-		if (tmp && !active.has(msg.channel.id)) {
-			let emMsg, embed = {
-				title: 'Poll: ' + tmp.question,
-				description: tmp.options.map((val, i) => `**${i + 1}:** ${val}`).join('\n'),
-				color: 0xBB0000,
-				footer: {
-					text: 'Poll from ' + msg.author.tag,
-					icon_url: msg.author.avatarURL({
-						format: 'png',
-						dynamic: true,
-					}),
-				}
-			}
+		if (typeof tmp === 'object') {
+			let emMsg;
 
-			if (msg.attachments.size) {
-				let temp = msg.attachments.first();
-
-				embed.image = {url: 'attachment://' + temp.name};
-				emMsg = await msg.channel.send({embed: embed, files: [{attachment: temp.url, name: temp.name}]});
-			} else {
-				emMsg = await msg.channel.send({embed});
-			}
 			if (tmp.options.length <= 10 && config.poll_reactions) {
-				votes = await reactionPoll(emMsg, tmp, msg.author.id);
+				votes = await reactionPoll(emMsg = await postPoll(msg, tmp), tmp, msg.author);
 			} else {
-				votes = await cmdPoll(emMsg, tmp, msg.author.id, config);
+				let cmdPolls = active.filter(([poll]) => poll instanceof MessageCollector);
+
+				if (cmdPolls.length > 0) return sendWarning(msg.channel);
+				votes = await cmdPoll(emMsg = await postPoll(msg, tmp), tmp, msg.author, config);
 			}
 			await emMsg.delete();
 
-			embed = {
-				title: tmp.question + ' - results',
-				description: '',
-				color: 0xBB0000,
-				footer: {
-					text: 'Poll from ' + msg.author.tag,
-					icon_url: msg.author.avatarURL({
-						format: 'png',
-						dynamic: true,
-					}),
-				}
-			}
-			for (let i = 0; i < tmp.options.length; i++) {
-				embed.description += `${tmp.options[i]}: ${votes[i] || 0} votes\n`;
-			}
-
-			if (msg.attachments.size) {
-				let temp = msg.attachments.first();
-
-				embed.image = {url: 'attachment://' + temp.name};
-				return msg.channel.send({embed: embed, files: [{attachment: temp.url, name: temp.name}]});
+			return postResults(msg, tmp, votes);
+		} else if (typeof tmp === 'string') {
+			let list;
+			if (msg.member.permissions.has('MANAGE_MESSAGES')) {
+				list = [...active];
 			} else {
-				return msg.channel.send({embed});
+				list = active.filter(([poll, owner]) => owner.id === msg.author.id);
 			}
-		} else if (tmp && !activeWarn.has(msg.channel.id)) {
-			let mtmp = await msg.channel.send('Poll is already active in this channel');
 
-			activeWarn.add(msg.channel.id);
-			return setTimeout(() => {
-				activeWarn.delete(msg.channel.id);
-				return mtmp.delete().catch(e => {
-					log.warn(time(), 'Unable to delete poll warning message', e.toString());
-					log.debug(e.stack);
-				});
-			}, 10000);
-		} else if (tmp === null) {
-			let [poll, user] = active.get(msg.channel.id) || [];
-
-			if (msg.author.id === user || msg.member.permissions.has('MANAGE_MESSAGES')) {
-				if (poll) return poll.stop();
-				return setTimeout(mtmp => {
-					return mtmp.delete().catch(e => {
-						log.warn(time(), 'Unable to delete poll warning message', e.toString());
-						log.debug(e.stack);
-					});
-				}, 10000, await msg.channel.send('No active poll in this channel'));
+			if (tmp === 'all') {
+				for (let [poll] of list) {
+					poll.stop();
+				}
+				return;
 			}
+			if (list.length === 0) return (await msg.channel.send('You are unable to end any polls')).delete({timeout: 10000});
+			if (list.length === 1) list[0][0].stop();
+			return pollChoices(list, msg.channel, msg.author);
 		} else {
-			return msg.channel.send('The first parameter has to be one of `single` `multi` `end`');
+			return (await msg.channel.send('Missing parameters, refer to help')).delete({timeout: 10000});
 		}
 	});
 
@@ -135,10 +93,123 @@ setupModule(function () {
 			log.debug('Time is', res.time);
 			return res;
 			break;
-			case 'end': return null;
-			break;
 
+			case 'end': return question || '';
+			break;
 		}
+	}
+
+	function postPoll (msg, tmp) {
+		let embed = {
+			title: 'Poll: ' + tmp.question,
+			description: tmp.options.map((val, i) => `**${i + 1}:** ${val}`).join('\n'),
+			color: 0xBB0000,
+			footer: {
+				text: 'Poll from ' + msg.author.tag,
+				icon_url: msg.author.avatarURL({
+					format: 'png',
+					dynamic: true,
+				}),
+			}
+		}
+
+		if (msg.attachments.size) {
+			let temp = msg.attachments.first();
+
+			embed.image = {url: 'attachment://' + temp.name};
+			return msg.channel.send({embed: embed, files: [{attachment: temp.url, name: temp.name}]});
+		} else {
+			return msg.channel.send({embed});
+		}
+	}
+
+	function postResults (msg, tmp, votes) {
+		let embed = {
+			title: tmp.question + ' - results',
+			description: '',
+			color: 0xBB0000,
+			footer: {
+				text: 'Poll from ' + msg.author.tag,
+				icon_url: msg.author.avatarURL({
+					format: 'png',
+					dynamic: true,
+				}),
+			}
+		}
+		for (let i = 0; i < tmp.options.length; i++) {
+			embed.description += `${tmp.options[i]}: ${votes[i] || 0} votes\n`;
+		}
+
+		if (msg.attachments.size) {
+			let temp = msg.attachments.first();
+
+			embed.image = {url: 'attachment://' + temp.name};
+			return msg.channel.send({embed: embed, files: [{attachment: temp.url, name: temp.name}]});
+		} else {
+			return msg.channel.send({embed});
+		}
+	}
+
+	async function pollChoices (list, channel, author) {
+		let menu, choice, embed = {
+			title: 'Active Polls:',
+			fields: [],
+			color: 0xBB0000,
+			footer: {
+				text: 'Enter the index number of the poll to end, or all, or cancel',
+				icon_url: author.avatarURL({
+					format: 'png',
+					dynamic: true,
+				}),
+			}
+		}
+
+		list.forEach(([poll, owner, title, end], i) => {
+			log.debug('Listing poll', title, end, 'from', owner.username);
+			embed.fields.push({
+				name: `${i + 1} - ${title}`,
+				value: `By ${owner.tag} - ${timespan.getString(Math.ceil((end - Date.now()) / 1000), 's')} remaining`,
+			});
+		});
+
+		menu = await channel.send({embed});
+		choice = await channel.awaitMessages(msg => {
+			if (msg.author.id === author.id) {
+				let i = Number(msg.content);
+				if ((!isNaN(i) && i > 0 && i <= list.length) || msg.content === 'cancel' || msg.content === 'all') {
+					msg.delete().catch(e => {
+						log.warn(time(), 'Unable to delete poll choice message', e.toString());
+					});
+					return true;
+				}
+			}
+			return false;
+		}, {max: 1, time: 30000});
+
+		if (choice.first()) {
+			let temp = choice.first().content, i = Number(temp);
+
+			log.debug('Choice is', i, 'msg:', choice.first().content);
+			if (!isNaN(i) && i > 0) list[i - 1][0].stop();
+			else if (temp === 'all') {
+				for (let [poll] of list) {
+					poll.stop();
+				}
+			}
+			return menu.delete();
+		}
+	}
+
+	async function sendWarning (channel) {
+		if (activeWarn.has(channel.id)) return;
+		(await channel.send('Poll is already active in this channel')).delete({timeout: 10000})
+			.then(() => activeWarn.delete(channel.id))
+			.catch(e => {
+				activeWarn.channel.delete(channel.id);
+				log.warn(time(), 'Unable to delete poll warning message', e.toString());
+			});
+		activeWarn.add(channel.id);
+		return;
 	}
 
 	async function reactionPoll (poll, obj, owner) {
@@ -152,7 +223,7 @@ setupModule(function () {
 			options.add(temp.emoji);
 			log.debug('Added reaction for option', i);
 		}
-		active.set(poll.channel.id, [col = poll.createReactionCollector((reaction, user) => {
+		active.push([col = poll.createReactionCollector((reaction, user) => {
 			if (!options.has(reaction.emoji)) return false;
 			if (Number.isFinite(obj.limit)) {
 				if (col.collected.filter(val => val.users.resolve(user.id)).size > obj.limit) {
@@ -169,7 +240,7 @@ setupModule(function () {
 				}
 			}
 			return true;
-		}, {time: obj.time}), owner]);
+		}, {time: obj.time}), owner, poll.embeds[0].title, Date.now() + obj.time]);
 		votes = await new Promise(resolve => {
 			col.on('end', collected => {
 				log.debug('Vote ended, counting up votes', collected.size);
@@ -187,13 +258,13 @@ setupModule(function () {
 			});
 		});
 		log.debug('Votes:', votes);
-		active.delete(poll.channel.id);
+		active.splice(active.indexOf(col), 1);
 		return votes;
 	}
 
 	async function cmdPoll (poll, obj, owner, config) {
 		let col, votes;
-		active.set(poll.channel.id, [col = poll.channel.createMessageCollector(msg => {
+		active.push([col = poll.channel.createMessageCollector(msg => {
 			if (msg.content.startsWith(config.prefix + 'vote')) {
 				let input = msg.content.split(' ')[1];
 
@@ -225,7 +296,7 @@ setupModule(function () {
 				}
 			}
 			return false;
-		}, {time: obj.time}), owner]);
+		}, {time: obj.time}), owner, poll.embeds[0].title, Date.now() + obj.time]);
 		votes = await new Promise(resolve => {
 			col.on('end', collected => {
 				log.debug('Vote ended, counting up votes', collected.size);
@@ -240,7 +311,8 @@ setupModule(function () {
 				}, []));
 			});
 		});
-		active.delete(poll.channel.id);
+		log.debug('Votes:', votes);
+		active.splice(active.indexOf(col), 1);
 		return votes;
 	}
 });
