@@ -35,7 +35,7 @@ setupModule(function () {
 	//this.configVar('poll_marker', Boolean, false, 'posts a link to the poll message (always updated to be the last message in a channel)');
 	//this.configVar('poll_active', Map, new Map(), false);
 
-	let active = [], activeWarn = new Set();
+	let active = new Map(), activeWarn = new Set();
 
 	this.exec(async (msg, ...input) => {
 		let config = this.config(msg.guild), tmp = parseInput(input.join(' '), config), votes;
@@ -46,7 +46,7 @@ setupModule(function () {
 			if (tmp.options.length <= 10 && config.poll_reactions) {
 				votes = await reactionPoll(emMsg = await postPoll(msg, tmp), tmp, msg.author);
 			} else {
-				let cmdPolls = active.filter(([poll]) => poll instanceof MessageCollector);
+				let cmdPolls = Array.from(active.values()).filter(([poll]) => poll instanceof MessageCollector);
 
 				if (cmdPolls.length > 0) return sendWarning(msg.channel);
 				votes = await cmdPoll(emMsg = await postPoll(msg, tmp), tmp, msg.author, config);
@@ -57,9 +57,9 @@ setupModule(function () {
 		} else if (typeof tmp === 'string') {
 			let list;
 			if (msg.member.permissions.has('MANAGE_MESSAGES')) {
-				list = [...active];
+				list = Array.from(active.values());
 			} else {
-				list = active.filter(([poll, owner]) => owner.id === msg.author.id);
+				list = Array.from(active.values()).filter(([poll, owner]) => owner.id === msg.author.id);
 			}
 
 			if (tmp === 'all') {
@@ -216,7 +216,7 @@ setupModule(function () {
 	}
 
 	async function reactionPoll (poll, obj, owner) {
-		let options = new Set(), col, votes;
+		let options = new Set(), col, votes, ind = Symbol('identifier');
 
 		for (let i = 1; i <= obj.options.length; i++) {
 			let temp;
@@ -226,7 +226,7 @@ setupModule(function () {
 			options.add(temp.emoji);
 			log.debug('Added reaction for option', i);
 		}
-		active.push([col = poll.createReactionCollector((reaction, user) => {
+		active.set(ind, [col = poll.createReactionCollector((reaction, user) => {
 			if (!options.has(reaction.emoji)) return false;
 			if (Number.isFinite(obj.limit)) {
 				if (col.collected.filter(val => val.users.resolve(user.id)).size > obj.limit) {
@@ -260,13 +260,15 @@ setupModule(function () {
 			});
 		});
 		log.debug(poll.embeds[0].title, 'votes:', votes);
-		active.splice(active.indexOf(col), 1);
+		if (!active.delete(ind)) {
+			log.debug('Unable to find poll', poll.embeds[0].title);
+		}
 		return votes;
 	}
 
 	async function cmdPoll (poll, obj, owner, config) {
-		let col, votes;
-		active.push([col = poll.channel.createMessageCollector(msg => {
+		let col, votes, ind = Symbol('identifier');
+		active.set(ind, [col = poll.channel.createMessageCollector(msg => {
 			if (msg.content.startsWith(config.prefix + 'vote')) {
 				let input = msg.content.split(' ')[1];
 
@@ -314,7 +316,9 @@ setupModule(function () {
 			});
 		});
 		log.debug(poll.embeds[0].title, 'votes:', votes);
-		active.splice(active.indexOf(col), 1);
+		if (!active.delete(ind)) {
+			log.debug('Unable to find poll', poll.embeds[0].title);
+		}
 		return votes;
 	}
 });
