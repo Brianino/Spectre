@@ -401,11 +401,11 @@ setupModule(function () {
 
 		collector = pollMsg.createReactionCollector(reaction => options.has(reaction.emoji.name), {time: obj.time});
 		collected = await handlePoll(collector, tmp, async (reaction, user) => {
-			let count = pollMsg.reactions.cache.filter(reaction => reaction.users.cache.has(user.id)).size;
+			let count = pollMsg.reactions.cache.filter(reaction => reaction.users.cache.has(user.id) && options.has(reaction.emoji.name)).size;
 
 			if (count > obj.limit && user.id !== user.client.user.id) {
 				log.debug('Count of reactions for user', user.username, 'is', count, 'of', obj.limit);
-				log.debug('Reactions:', ...pollMsg.reactions.cache.map((reaction, i) => 'Option[' + i + ']-' + reaction.count));
+				log.debug('Reactions:', ...pollMsg.reactions.cache.map((reaction, key) => key + '-' + reaction.count));
 				await reaction.users.remove(user);
 			}
 		});
@@ -413,8 +413,8 @@ setupModule(function () {
 		return [...options].map(name => {
 			let reaction = collected.find(reaction => reaction.emoji.name === name);
 			if (!reaction) return 0;
-			else if (reaction.me) reaction.count - 1
-			else reaction.count;
+			else if (reaction.me) return reaction.count - 1;
+			else return reaction.count;
 		});
 	}
 
