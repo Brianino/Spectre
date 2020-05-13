@@ -70,7 +70,7 @@ setupModule(function () {
 				tmpType = 'reaction';
 				votes = await reactionPoll(emMsg = await postPoll(msg, tmp), tmp, msg.author);
 			} else {
-				let cmdPolls = Array.from(active.values()).filter(({type}) => type === 'MessageCollector');
+				let cmdPolls = Array.from(active.values()).filter(({type, channel, guild}) => type === 'MessageCollector' && channel.id === msg.channel.id && guild.id === msg.guild.id);
 
 				tmpType = 'command';
 				if (cmdPolls.length > 0) return sendWarning(msg.channel);
@@ -331,7 +331,7 @@ setupModule(function () {
 	}
 
 
-	function handlePoll (collector, {dynamic, question, time, owner, guild, ...func}, filter) {
+	function handlePoll (collector, {dynamic, question, time, owner, channel, guild, ...func}, filter) {
 		return new Promise(resolve => {
 			let ind = Symbol('identifier');
 
@@ -341,6 +341,7 @@ setupModule(function () {
 				delete: func.delete,
 				owner: owner,
 				title: question,
+				channel: channel,
 				guild: guild,
 				end: Date.now() + time,
 				type: collector.constructor.name,
@@ -364,6 +365,7 @@ setupModule(function () {
 		let options = new Set(), collector, collected, tmp = Object.assign({
 			owner: owner,
 			guild: pollMsg.guild,
+			channel: pollMsg.channel,
 			add: async (option, attachment) => {
 				let temp;
 
@@ -421,6 +423,7 @@ setupModule(function () {
 		let collector, collected, tmp = Object.assign({
 			owner: owner,
 			guild: pollMsg.guild,
+			channel: pollMsg.channel,
 			add: async (option, attachment) => {
 				pollMsg = await editPoll(pollMsg, {question: obj.question, options: [...obj.options, option]}, owner, attachment);
 				obj.options.push(option);
@@ -478,80 +481,5 @@ setupModule(function () {
 			} catch (e) {log.warn('Invalid vote:', msg.content)};
 			return acc;
 		}, obj.options.map(val => 0));
-	}
-
-	async function OldcmdPoll (poll, obj, owner, config) {
-		let col, votes, ind = Symbol('identifier');
-		active.set(ind, [col = poll.channel.createMessageCollector(msg => {
-			if (msg.content.startsWith(config.prefix + 'vote')) {
-				let input = msg.content.split(' ')[1];
-
-				msg.delete().catch(e => {
-					log.debug('unable to delete vote message');
-				});
-				if (isNaN(Number(input))) {
-					return false;
-				} else {
-					if (Number.isFinite(obj.limit)) {
-						if (col.collected.filter(val => val.author.id === msg.author.id).size >= obj.limit) {
-							return false;
-						} else {
-							log.debug('user hasn\'t voted yet', col.collected.size, col.collected.map(val => val.author.id));
-							return true;
-						}
-					}
-					return true;
-				}
-			} else if (msg.content.startsWith(config.prefix + 'rvote')) {
-				msg.delete().catch(e => {
-					log.debug('unable to delete vote removal message');
-				});
-				for (let temp of col.collected.values()) {
-					if (temp.author.id === msg.author.id) {
-						col.collected.delete(temp.id);
-						log.debug('Removed vote from:', temp.author.username);
-					}
-				}
-			}
-			return false;
-		}, {time: obj.time}), owner, obj.question, Date.now() + obj.time, poll.guild]);
-
-		if (obj.dynamic) {
-			dynamicPolls.add(ind);
-
-			col.add = async (option, attachment) => {
-				poll = await editPoll(poll, {question: obj.question, options: [...obj.options, option]}, owner, attachment);
-				obj.options.push(option);
-				return true;
-			}
-
-			col.delete = async () => {
-				let newopt = obj.options.slice(0, -1);
-				poll = await editPoll(poll, {question: obj.question, options: newopt}, owner);
-				obj.options = newopt;
-				return true;
-			}
-		}
-
-		votes = await new Promise(resolve => {
-			col.on('end', collected => {
-				log.debug(obj.question, 'ended, counting up votes');
-				return resolve(collected.reduce((acc, message) => {
-					let m = message.content.split(' ')[1];
-					if (Number(m) < obj.options.length) {
-						let option = Number(m);
-						if (acc[option - 1]) acc[option] += 1;
-						else acc[option - 1] = 1;
-					}
-					return acc;
-				}, []));
-			});
-		});
-		log.debug(poll.embeds[0].title, 'votes:', votes);
-		dynamicPolls.delete(ind);
-		if (!active.delete(ind)) {
-			log.debug('Unable to find poll', poll.embeds[0].title);
-		}
-		return votes;
 	}
 });
