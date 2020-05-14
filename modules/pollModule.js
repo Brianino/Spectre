@@ -39,7 +39,7 @@ setupModule(function () {
 					'valid units for the timespan are: seconds (s, sec, second, seconds), minutes (m, min, minute, minutes), hours (h, hr, hour, hours), days (d, day, days)\n' +
 					'the timespan should be a combination of numbers and units\n' +
 					'image - to add an image upload the image as part of the command\n' +
-					'To vote in polls not using reactions, use the commands `vote [option number]` to vote, and `vote remove [option number]` to remove votes, or `vote list` to votes';
+					'To vote in polls not using reactions, use the commands `vote [option number]` to vote, and `vote remove [option number]` to remove votes, or `vote list` to view current votes';
 
 	this.arguments = 'single <question> [...option] [timespan]';
 	this.arguments = 'dynamic <question> [...option] [timespan]';
