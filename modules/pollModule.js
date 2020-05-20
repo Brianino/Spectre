@@ -76,10 +76,10 @@ setupModule(function () {
 				if (cmdPolls.length > 0) return sendWarning(msg.channel);
 				votes = await cmdPoll(emMsg = await postPoll(msg, tmp), tmp, msg.author, config);
 			}
-			await emMsg.delete();
 
 			if (!votes) log.warn('Undefined votes for poll', tmp.question, 'type', tmpType);
-			return postResults(msg, tmp, votes);
+			await postResults(msg, tmp, votes);
+			return emMsg.delete();
 		} else if (tmp.type === 2) {
 			let list;
 			if (msg.member.permissions.has('MANAGE_MESSAGES')) {
@@ -202,6 +202,7 @@ setupModule(function () {
 		if (msg.attachments.size) {
 			let temp = msg.attachments.first();
 
+			log.debug('Attaching attachment to poll message');
 			embed.image = {url: 'attachment://' + temp.name};
 			return msg.channel.send({embed: embed, files: [{attachment: temp.url, name: temp.name}]});
 		} else {
@@ -230,6 +231,7 @@ setupModule(function () {
 		} else if (msg.attachments.size) {
 			let temp = msg.attachments.first();
 
+			log.debug('Attaching attachment to modified poll');
 			embed.image = {url: 'attachment://' + temp.name};
 			return msg.edit({embed: embed, files: [{attachment: temp.url, name: temp.name}]});
 		} else {
@@ -257,6 +259,7 @@ setupModule(function () {
 		if (msg.attachments.size) {
 			let temp = msg.attachments.first();
 
+			log.debug('Attaching attachment to results');
 			embed.image = {url: 'attachment://' + temp.name};
 			return msg.channel.send({embed: embed, files: [{attachment: temp.url, name: temp.name}]});
 		} else {
@@ -409,12 +412,32 @@ setupModule(function () {
 				await reaction.users.remove(user);
 			}
 		});
+		try {
+			await pollMsg.fetch();
+			for (let reaction of pollMsg.reactions.cache.values()) {
+				if (options.has(reaction.emoji.name)) {
+					log.debug('Fetching updated reactions for', reaction.emoji.name);
+					await reaction.fetch();
+				}
+			}
+		} catch (e) {
+			log.error('Error updating poll message/reactions:', e.toString());
+			log.debug(e.stack);
+			log.warn('Will use cached results');
+		}
 
 		return [...options].map(name => {
 			let reaction = collected.find(reaction => reaction.emoji.name === name);
-			if (!reaction) return 0;
-			else if (reaction.me) return reaction.count - 1;
-			else return reaction.count;
+			if (!reaction) {
+				log.debug('Couldn\'t find reaction for option', [...options].indexOf(name));
+				return 0;
+			} else if (reaction.me) {
+				log.debug('Found reaction', name, 'with', reaction.count, '- including bot');
+				return reaction.count - 1;
+			} else {
+				log.debug('Found reaction', name, 'with', reaction.count, '- without bot vote');
+				return reaction.count;
+			}
 		});
 	}
 
