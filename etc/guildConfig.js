@@ -125,8 +125,8 @@ module.exports.config = config;
  * @param {String} name: the property name to put the value under on the config object
  * @param {Functions} type: constructor function, or primative type for the value
  * @param {*} defaultVal: the default value to return if there is no alternative stored
- * @param {Function} func: a function to convert the stored config value into a json stringifiable value
-    * the result of the function should be a valid contructor argument
+ * @param {Boolean} userEditable: optional argument for if the config var should be configurable by a user
+ * @param {String} desc: a description of the config variable to display to the end user
 */
 module.exports.register = function registerConfig (name, type, defaultVal, userEditable = true, desc) {
 	let internal = Symbol('Internal val'), func;
@@ -134,7 +134,7 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 	name = String(name);
 	if (typeof type !== 'function') {
 		log.error(time(), 'Error registering', name, '; constructor not passed for type');
-		return;
+		return false;
 	} else if (name in config.prototype) {
 		log.warn('Config property', name, 'already exists');
 		return false;
@@ -169,7 +169,7 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 			},
 			get () {
 				if (this[internal] === undefined) this[internal] = this.saved(name);
-				log.debug(time(), 'Getting config:', this.id, name, typeof this[internal], this[internal]);
+				log.debug(time(), 'Getting config:', this.id, name, type.name, this[internal]);
 				return (this[internal] === undefined)? defaultVal : this[internal];
 			}
 		});
@@ -211,6 +211,7 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 
 		default: throw new Error('Type not supported');
 	}
+
 	if (typeof userEditable === 'string') {
 		configurable.set(name, [type, userEditable]);
 	} else if (userEditable) configurable.set(name, [type, desc]);

@@ -8,7 +8,7 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.exec((msg, ...input) => {
-		log.debug('Repeating:', escape(input.join(' ')));
+		log.debug('Repeating:', encodeURIComponent(input.join(' ')));
 		msg.delete().catch(e => {
 			log.warn('unable to delete command issuer message');
 		});
