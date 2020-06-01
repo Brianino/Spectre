@@ -13,8 +13,7 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.exec((msg, setting, ...input) => {
-		let config = this.config(msg.guild.id), options = config.getConfigurable(),
-			type, desc;
+		let options = this.config.getConfigurable(), type, desc;
 
 		if (options.has(setting)) {
 			[type, desc] = options.get(setting)
@@ -43,22 +42,22 @@ setupModule(function () {
 		if (input.length > 0) {
 			//set value
 			if (input[0] === 'undefined') {
-				config[setting] = undefined;
+				this.config[setting] = undefined;
 				log.info(time(), 'Setting', setting, 'for guild', msg.guild.name, 'reverted to default');
 				return msg.channel.send('Setting reverted to default');
 			}
 			switch (type) {
-				case String: config[setting] = input.join(' '); break;
-				case Boolean: config[setting] = input.shift(); break;
-				case Number: config[setting] = input.shift(); break;
+				case String: this.config[setting] = input.join(' '); break;
+				case Boolean: this.config[setting] = input.shift(); break;
+				case Number: this.config[setting] = input.shift(); break;
 
 				case Set:
-				case Array: config[setting] = input; break;
+				case Array: this.config[setting] = input; break;
 				case Permissions: let temp = Number(input[0]);
 				if (isNaN(temp)) temp = input;
-				config[setting] = temp; break;
+				this.config[setting] = temp; break;
 			}
-			log.info(time(), 'Updated', setting, 'setting to', config[setting], 'for guild', msg.guild.name);
+			log.info(time(), 'Updated', setting, 'setting to', this.config[setting], 'for guild', msg.guild.name);
 			return msg.channel.send('Updated the setting ' + setting);
 		} else {
 			//show setting info
@@ -70,7 +69,7 @@ setupModule(function () {
 
 			if (desc) embed.description = desc + '\n';
 			embed.description += 'Type: ' + type.name + '\n';
-			embed.description += 'Current: ' + config[setting];
+			embed.description += 'Current: ' + this.config[setting];
 
 			return msg.channel.send({embed});
 		}

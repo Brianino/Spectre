@@ -28,7 +28,7 @@ setupModule(function () {
 			for (let [cmd, moduleObj] of modules) {
 				if (moduleObj.access(msg.author, msg.guild)) {
 					embed.fields.push({
-						name: cmd,
+						name: this.config.prefix + cmd,
 						value: moduleObj.description,
 						inline: false
 					});
@@ -37,12 +37,12 @@ setupModule(function () {
 			log.debug(time(), 'Posting help (no args)');
 			return msg.channel.send({embed});
 		} else {
-			let cmd = modules.get(arg = String(arg)), config = this.config(msg.guild);
+			let cmd = modules.get(arg = String(arg));
 
 			arg = arg.replace(/`/g, '');
 			if (arg === '') arg = ' ';
 			if (cmd && cmd.access(msg.author, msg.guild)) {
-				let comStr = config.prefix + cmd.command + ' ', embed = {
+				let comStr = this.config.prefix + cmd.command + ' ', embed = {
 					title: arg,
 					description: cmd.description,
 					color: 0xBB0000,

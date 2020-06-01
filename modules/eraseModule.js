@@ -11,29 +11,35 @@ setupModule(function () {
 	this.permissions = 'MANAGE_MESSAGES'
 	this.guildOnly = true;
 
-	this.configVar('default_clear', Number, 50, 'default number of messages to clear');
-	this.configVar('message_limit', Number, 1000, 'max number of messages to check through to delete');
-	this.configVar('clear_old', Boolean, true, 'allow the clearing for messages older than two weeks (clearing these messages is much slower)');
+	this.addConfig('default_clear', Number, 50, 'default number of messages to clear');
+	this.addConfig('message_limit', Number, 1000, 'max number of messages to check through to delete');
+	this.addConfig('clear_old', Boolean, true, 'allow the clearing for messages older than two weeks (clearing these messages is much slower)');
 
 	this.exec(async (msg, number) => {
 		let channels = msg.mentions.channels.filter(tmp => tmp.type === 'text');
-			users = msg.mentions.members, roles = msg.mentions.roles, failed = [],
-			config = this.config(msg.guild.id);
+			users = msg.mentions.members, roles = msg.mentions.roles, failed = [];
 
 		number = Number(number);
 		msg.delete();
-		if (isNaN(number)) number = config.default_clear;
+		if (isNaN(number)) number = this.config.default_clear;
 		if (channels.size === 0) channels.set(msg.channel.id, msg.channel);
 		for (let channel of channels.values()) {
 			let messages = new Collection(), sum = 0, i = 0;
 
-			while (messages.size < number && sum < config.message_limit) {
+			while (messages.size < number && sum < this.config.message_limit) {
 				let msgs, tmp, obj = {limit: null};
 
 				obj.limit = number * (i || 1);
-				if (obj.limit > 100) obj.limit = 100;
-				if (sum + obj.limit > config.message_limit) obj.limit = config.message_limit - sum;
-				if (messages.size > 0) obj.before = messages.last().id;
+
+				if (obj.limit > 100)
+					obj.limit = 100;
+
+				if (sum + obj.limit > this.config.message_limit)
+					obj.limit = this.config.message_limit - sum;
+
+				if (messages.size > 0)
+					obj.before = messages.last().id;
+
 				sum += obj.limit;
 				msgs = await channel.messages.fetch(obj);
 
@@ -54,7 +60,7 @@ setupModule(function () {
 					await channel.bulkDelete(chunk, true);
 					log.debug(time(), 'Chunk of', chunk.length - temp.length, 'messages deleted');
 					count += chunk.length - temp.length;
-					if (temp.length > 0  && config.clear_old) {
+					if (temp.length > 0  && this.config.clear_old) {
 						for (let msg of temp) {
 							await msg.delete();
 							count += 1;

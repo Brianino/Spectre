@@ -10,7 +10,7 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.exec((msg, ...commands) => {
-		let disabled = this.config(msg.guild.id).disabled, res = [];
+		let disabled = this.config.disabled, res = [];
 
 		for (let command of commands) {
 			if (disabled.has(command)) {
@@ -19,7 +19,7 @@ setupModule(function () {
 			}
 		}
 		if (res.length > 0) {
-			this.config(msg.guild.id).disabled = disabled;
+			this.config.disabled = disabled;
 			return msg.channel.send('Enabled commands: `' + res.join('` `') + '`');
 		} else {
 			return msg.channel.send('No new commmands to enable');
@@ -35,7 +35,7 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.exec((msg, ...commands) => {
-		let disabled = this.config(msg.guild.id).disabled, res = [];
+		let disabled = this.config.disabled, res = [];
 
 		for (let command of commands) {
 			if (modules.has(command)) {
@@ -43,7 +43,7 @@ setupModule(function () {
 			}
 		}
 		if (res.length > 0) {
-			this.config(msg.guild.id).disabled = res;
+			this.config.disabled = res;
 			return msg.channel.send('Disabled commands: `' + res.join('` `') + '`');
 		} else {
 			return msg.channel.send('No new commmands to disable');

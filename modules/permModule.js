@@ -44,9 +44,7 @@ setupModule(function () {
 				else perms[index] = String(val).toUpperCase();
 			});
 			try {
-				let config = this.config(msg.guild.id);
-
-				config.permissions = [command, ...perms];
+				this.config.permissions = [command, ...perms];
 				return msg.channel.send(`Permissions for \`${command}\` updated`);
 			} catch (e) {
 				log.error(time(), 'Failed to set permissions:', e.toString());
