@@ -1,7 +1,6 @@
 const log = require('debug-logger')('poll-module');
 const timespan = require('timespan-parser')('msec');
-const {split} = require('../etc/utilities.js');
-const time = require('../etc/time.js');
+const {split, time} = require('../etc/utilities.js');
 
 const hardlimit = timespan.parse('1 month'), emoteSet = [
 	'\u26AA', //WHITE CIRCLE

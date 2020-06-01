@@ -1,9 +1,8 @@
 const log = require('debug-logger')('module-loader');
+const {parseBool, time} = require('./utilities.js');
 const {promises:fs, constants} = require('fs');
-const {parseBool} = require('./utilities.js');
 const {Permissions} = require('discord.js');
 const {prefix} = require('../config.json');
-const time = require('./time.js');
 
 const guilds = new Map(), confProp = new Set(), configurable = new Map();
 

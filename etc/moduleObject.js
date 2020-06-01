@@ -1,8 +1,8 @@
 const log = require('debug-logger')('module-object');
 const {config, saved, register} = require('./guildConfig.js');
 const {Permissions, Guild, Message, Collection} = require('discord.js');
+const {time} = require('./utilities.js');
 const emitter = require('events');
-const time = require('./time.js');
 
 const sym = {
 	name: Symbol('command name'),
@@ -106,6 +106,8 @@ class moduleObj {
 		if (this[sym.exec]) return true;
 		return false;
 	}
+
+	get modules ()  {return new emitter()}
 
 	exec (func) {
 		if (typeof func !== 'function') {

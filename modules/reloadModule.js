@@ -1,7 +1,7 @@
 const log = require('debug-logger')('reload-module');
 const {modules, run} = require('../etc/moduleLoader.js');
+const {time} = require('../etc/utilities.js');
 const {owner} = require('../config.json');
-const time = require('../etc/time.js');
 
 setupModule(function () {
 	this.command = 'reload';

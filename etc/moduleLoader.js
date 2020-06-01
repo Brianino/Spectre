@@ -1,9 +1,9 @@
 const log = require('debug-logger')('module-loader');
 const moduleObj = require('./moduleObject.js');
 const {config} = require('./guildConfig.js');
+const {time} = require('./utilities.js');
 const {Client} = require('discord.js');
 const emitter = require('events');
-const time = require('./time.js');
 const fs = require('fs').promises;
 const path = require('path');
 

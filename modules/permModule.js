@@ -1,6 +1,6 @@
 const log = require('debug-logger')('perm-module');
 const {modules} = require('../etc/moduleLoader.js');
-const time = require('../etc/time.js');
+const {time} = require('../etc/utilities.js');
 const fs = require('fs').promises;
 
 setupModule(function () {
@@ -48,7 +48,7 @@ setupModule(function () {
 				return msg.channel.send(`Permissions for \`${command}\` updated`);
 			} catch (e) {
 				log.error(time(), 'Failed to set permissions:', e.toString());
-				log.error(e.stack);
+				log.debug(e.stack);
 				return msg.channel.send('There was an error updating permissions, check server logs for more info');
 			}
 		} else {

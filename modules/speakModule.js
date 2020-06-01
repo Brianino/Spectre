@@ -1,5 +1,5 @@
 const log = require('debug-logger')('serverinfo-module');
-const time = require('../etc/time.js');
+const {time} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'say';
@@ -12,7 +12,9 @@ setupModule(function () {
 		msg.delete().catch(e => {
 			log.warn('unable to delete command issuer message');
 		});
+		if (input[0] === 'dump') log.debug(msg);
 		if (msg.attachments.size) {
+			log.debug('Found', msg.attachments.size, 'attachments in message');
 			return msg.channel.send({
 				content: input.join(' '),
 				files: msg.attachments.map(att => {

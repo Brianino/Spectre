@@ -1,6 +1,6 @@
 const log = require('debug-logger')('active-commands-module');
 const {modules} = require('../etc/moduleLoader.js');
-const time = require('../etc/time.js');
+const {time} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'enable';

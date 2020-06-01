@@ -1,6 +1,6 @@
 const log = require('debug-logger')('erase-module');
 const {DiscordAPIError, Collection} = require('discord.js');
-const time = require('../etc/time.js');
+const {time} = require('../etc/utilities.js');
 
 class lessThan extends Error {};
 

@@ -1,6 +1,6 @@
 const log = require('debug-logger')('server-management-module');
+const {time} = require('../etc/utilities.js');
 const {owner} = require('../config.json');
-const time = require('../etc/time.js');
 
 setupModule(function () {
 	this.command = 'servers';

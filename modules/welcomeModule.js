@@ -1,5 +1,5 @@
 const log = require('debug-logger')('welcome-module');
-const time = require('../etc/time.js');
+const {time} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'welcome';

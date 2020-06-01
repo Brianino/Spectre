@@ -1,6 +1,6 @@
 const log = require('debug-logger')('configure-module');
 const {Permissions} = require('discord.js');
-const time = require('../etc/time.js');
+const {time} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'config';

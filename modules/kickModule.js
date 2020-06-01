@@ -1,6 +1,6 @@
 const log = require('debug-logger')('kick-module');
 const {DiscordAPIError} = require('discord.js');
-const time = require('../etc/time.js');
+const {time} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'kick';

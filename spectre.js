@@ -4,8 +4,8 @@ const log = require('debug-logger')('main');
 const {run, modules} = require('./etc/moduleLoader.js');
 const {token, prefix} = require('./config.json');
 const {saved} = require('./etc/guildConfig.js');
+const {time} = require('./etc/utilities.js');
 const Discord = require('discord.js');
-const time = require('./etc/time.js');
 
 const bot = new Discord.Client();
 
