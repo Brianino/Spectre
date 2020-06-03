@@ -7,7 +7,7 @@ setupModule(function () {
 	this.extraDesc = 'user mention: {user}\nserver name: {server}'
 	this.arguments = '<message>';
 	this.permissions = 'MANAGE_GUILD';
-	this.guildOnly = false;
+	this.guildOnly = true;
 
 	this.addConfig('welcome_message', String, 'Welcome {user} to {server}', 'welcome message for users');
 	this.addConfig('welcome_bot_message', String, undefined, 'message to display when bots join');
