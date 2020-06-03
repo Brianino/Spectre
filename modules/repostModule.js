@@ -5,6 +5,9 @@ const {GuildChannel, DiscordAPIError} = require('discord.js');
 setupModule(function () {
 	this.command = 'repost';
 	this.description = 'Repost images into an image gallery channel';
+	this.extraDesc = 'At least one source channel needs to be provided, and a gallery channel';
+	this.arguments = '<...source> to <gallery>';
+	this.permissions = 'MANAGE_GUILD';
 	this.guildOnly = true;
 
 	this.addConfig('repost_galleries', Map, new Map(), false);
