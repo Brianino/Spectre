@@ -1,4 +1,4 @@
-const log = require('debug-logger')('module-loader');
+const log = require('debug-logger')('guild-config');
 const {parseBool, time} = require('./utilities.js');
 const {promises:fs, constants} = require('fs');
 const {Permissions} = require('discord.js');
@@ -103,8 +103,8 @@ class config {
 		if (this.prefix !== prefix) obj.prefix = this.prefix;
 		if (this.internalPerms.size) obj.permissions = [...this.internalPerms].map(([key, val]) => [key, val.bitfield]);
 		if (this.disabled.size) obj.disabled = [...this.disabled];
-		for (let {name, val, func} of confProp) {
-			if (this[val()] !== undefined) obj[name] = func(this[name]);
+		for (let {name, val, toPrim} of confProp) {
+			if (this[val()] !== undefined) obj[name] = toPrim(this[name]);
 		}
 		log.debug('Property count:', Object.getOwnPropertyNames(obj).length);
 		if (Object.getOwnPropertyNames(obj).length > 1) return obj;
@@ -128,7 +128,7 @@ module.exports.config = config;
  * @param {String} desc: a description of the config variable to display to the end user
 */
 module.exports.register = function registerConfig (name, type, defaultVal, userEditable = true, desc) {
-	let internal = Symbol('Internal val'), func;
+	let internal = Symbol('Internal val'), toPrim, toObj;
 
 	name = String(name);
 	if (typeof type !== 'function') {
@@ -144,8 +144,8 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 		case Number:
 		case Boolean:
 
-		func = (val) => val;
-		if (defaultVal && typeof defaultVal !== type.name.toLowerCase()) {
+		toPrim = (val) => val;
+		if (defaultVal !== undefined && typeof defaultVal !== type.name.toLowerCase()) {
 			log.warn('Default value of', name, 'not of the same type, setting to', '"' + type() + '"', 'instead');
 			defaultVal = type();
 		}
@@ -168,29 +168,36 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 			},
 			get () {
 				if (this[internal] === undefined) this[internal] = this.saved(name);
-				log.debug(time(), 'Getting config:', this.id, name, type.name, this[internal]);
 				return (this[internal] === undefined)? defaultVal : this[internal];
 			}
 		});
 		break;
 
 		// Below are object config types that don't support user configuration (meaning they are not exposed to the user for configuration)
-		case Object: if (!func) func = (val) => val;
-		case Map: if (!func) func = (val) => [...val];
+		case Object: toPrim = toPrim || ((val) => val); toObj = toObj || ((val) => {val ? new Object(val) : undefined});
+		case Map: toPrim = toPrim || ((val) => [...val]); toObj = toObj || ((val) => {
+			if (!val) return undefined;
+			val = Array.from(val);
+			if (val[0] && val[0] instanceof Array) {
+				return new Map(val);
+			} else if (val[0]) {
+				return new Map([val]);
+			}
+		});
 		userEditable = false;
 
 		// Below are object types that support user configuration
-		case Array: if (!func) func = (val) => val;
-		case Set: if (!func) func = (val) => [...val];
-		case Permissions: if (!func) func = (val) => val.bitfield;
-		if (defaultVal && !defaultVal instanceof type) {
+		case Array: toPrim = toPrim || ((val) => val); toObj = toObj || ((val) => {val? Array.from(val) : undefined});
+		case Set: toPrim = toPrim || ((val) => [...val]); toObj = toObj || ((val) => {val ? new Set(Array.from(val)) : undefined});
+		case Permissions: toPrim = toPrim || ((val) => val.bitfield); toObj = toObj || ((val) => {val ? new Permissions(val) : undefined});
+		if (defaultVal !== undefined && !defaultVal instanceof type) {
 			log.warn('Default value of', name, 'not an instance of,', type.name, ', setting to undefined instead');
 			defaultVal = undefined;
 		}
 		Object.defineProperty(config.prototype, name, {
 			set (val) {
 				log.debug(time(), 'Setting config:', this.id, name, typeof val);
-				if (val !== undefined && !val instanceof type) this[internal] = new type(val);
+				if (val !== undefined && !val instanceof type) this[internal] = toObj(val);
 				else if (val !== undefined) this[internal] = val;
 				else this[internal] = undefined;
 
@@ -201,8 +208,7 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 				});
 			},
 			get () {
-				if (!this[internal]) this[internal] = new type(this.saved(name));
-				log.debug(time(), 'Getting config:', this.id, name, type.name);
+				if (!this[internal]) this[internal] = toObj(this.saved(name));
 				return this[internal] || defaultVal;
 			}
 		});
@@ -214,7 +220,7 @@ module.exports.register = function registerConfig (name, type, defaultVal, userE
 	if (typeof userEditable === 'string') {
 		configurable.set(name, [type, userEditable]);
 	} else if (userEditable) configurable.set(name, [type, desc]);
-	confProp.add({name: name, val: () => internal, func: func});
+	confProp.add({name: name, val: () => internal, toPrim: toPrim});
 	log.debug(time(), 'Should have registered property:', name, 'type', type.name);
 	return userEditable;
 }

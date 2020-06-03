@@ -3,15 +3,14 @@ const moduleObj = require('./moduleObject.js');
 const {config} = require('./guildConfig.js');
 const {time} = require('./utilities.js');
 const {Client} = require('discord.js');
-const emitter = require('events');
 const fs = require('fs').promises;
 const path = require('path');
 
-const modules = new Map(), events = new emitter(), saved = new Map(), estEvents = new Set();
+const modules = new Map(), saved = new Map(), estEvents = new Set();
 var bot;
 
 Object.defineProperties(moduleObj.prototype, {
-	modules: {value: events},
+	savedServers: {get () {return saved.keys()}},
 	reload: {
 		value: function () {
 			delete require.cache[this.file];
@@ -44,12 +43,12 @@ function loadModule (file) {
 
 		log.info(time(), 'Loading Module:', file);
 		global.setupModule = (func) => {
-			let mod = new moduleObj(fpath, func, bot);//, ev = new emitter();
+			let mod = new moduleObj(fpath, func, bot);
 			if (typeof func !== 'function') throw new Error('module function missing');
 			func.call(mod);
 			log.info(time(), 'Module', mod.command, 'finished loading -', fpath);
 			modules.set(mod.command, mod);
-			events.emit('loaded', mod);
+			try{mod.bot.emit('thisReady')} catch (ignore) {};
 		}
 		require(fpath);
 	} catch (e) {
@@ -101,7 +100,7 @@ module.exports.run = async (input) => {
 		if (file.isFile()) loadModule(file.name);
 	}
 	global.setupModule = initial;
-	events.emit('ready');
+	modules.forEach(mod => {try{mod.bot.emit('ready')} catch (ignore) {}})
 	return modules;
 }
 

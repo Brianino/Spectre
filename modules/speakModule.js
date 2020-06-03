@@ -1,5 +1,5 @@
 const log = require('debug-logger')('serverinfo-module');
-const {time} = require('../etc/utilities.js');
+const {time, checkForUrl, waitFor} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'say';
@@ -7,7 +7,7 @@ setupModule(function () {
 	this.permissions = 'MANAGE_MESSAGES';
 	this.guildOnly = true;
 
-	this.exec((msg, ...input) => {
+	this.exec(async (msg, ...input) => {
 		log.debug('Repeating:', encodeURIComponent(input.join(' ')));
 		msg.delete().catch(e => {
 			log.warn('unable to delete command issuer message');

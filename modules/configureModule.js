@@ -1,6 +1,7 @@
 const log = require('debug-logger')('configure-module');
-const {Permissions} = require('discord.js');
 const {time} = require('../etc/utilities.js');
+const {Permissions} = require('discord.js');
+const {inspect} = require('util');
 
 setupModule(function () {
 	this.command = 'config';
@@ -68,8 +69,9 @@ setupModule(function () {
 			}
 
 			if (desc) embed.description = desc + '\n';
+			log.debug('Option', String(this.config[setting]));
 			embed.description += 'Type: ' + type.name + '\n';
-			embed.description += 'Current: ' + this.config[setting];
+			embed.description += 'Current: ' + inspect(this.config[setting]);
 
 			return msg.channel.send({embed});
 		}

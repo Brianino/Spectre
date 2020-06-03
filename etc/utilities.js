@@ -1,5 +1,4 @@
 const log = require('debug-logger')('utilities');
-const URL = require('url');
 
 module.exports = exports;
 
@@ -84,24 +83,64 @@ exports.getAttachments = function (msg, formats) {
 	for (let attachment of msg.attachments.values()) {
 		let name = attachment.name, url = attachment.url, temp = name.split('.').pop();
 
-		log.debug('Found attachment', name, 'type', temp, aformats.find(val => val === temp));
 		if (aformats.find(val => val === temp)) res.push({name, url});
 	}
 	for (let embed of msg.embeds) {
-		log.debug('embed type', embed.type);
-		if (embed.type === 'image') {
+		if (embed.type === 'image' || embed.type === 'gifv') {
 			try {
-				let url = embed.url, name = new URL(url).pathname.split('/').pop(),
-					temp = name.split('.').pop();
+				let url = embed.url, name = new URL(url).pathname.split('/').pop(), temp = name.split('.').pop();
 
-				log.debug('Found image embed', name, 'type', temp, aformats.find(val => val === temp));
 				if (aformats.find(val => val === temp)) res.push({name, url});
+				else res.push({url});
 			} catch (e) {
 				log.warn(exports.time(), 'Unable to parse url embed:', e.message);
 				log.warn('url is:', embed.url);
 			}
 		}
 	}
-	log.debug('Found', res.length, 'attachments in message from', msg.author.username);
 	return res;
+}
+
+const urlReg = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
+
+exports.checkForUrl = function (text, getMatches = false, flags = '') {
+	if (!getMatches) {
+		return urlReg.test(text);
+	} else {
+		let treg = urlReg, res = [];
+
+		if (flags) treg = new RegExp(urlReg, String(flags));
+
+		if (treg.global || treg.sticky) {
+			let temp;
+			while (temp = treg.exec(text)) {
+				res.push(temp);
+			}
+			return res;
+		} else {
+			return treg.exec(text);
+		}
+	}
+}
+
+
+exports.waitFor = function (time = 1000, interval = 10, checkFunc) {
+	interval =  Number(interval);
+	if (isNaN(interval) || interval === 0) interval = 10;
+	return new Promise(resolve => {
+		let func = async (passed, tFunc) => {
+			let newTime = interval + passed - time;
+			if (await tFunc()) return resolve(true);
+			else if (newTime > 0) {
+				interval -= newTime;
+				if (interval <= 0) return resolve(false);
+			}
+			setTimeout(func, interval, passed + interval, tFunc);
+		}
+		if (interval && typeof checkFunc === 'function') {
+			setTimeout(func, interval, interval, checkFunc);
+		} else {
+			setTimeout(func, time, time, () => true);
+		}
+	})
 }

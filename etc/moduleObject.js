@@ -31,7 +31,6 @@ class moduleObj {
 			[sym.extd]: {writable: true, value: null},
 			[sym.gcmd]: {writable: true, value: true},
 			[sym.args]: {writable: true, value: []},
-			[sym.conf]: {writable: true, value: []},
 			[sym.perm]: {writable: true, value: new Permissions('VIEW_CHANNEL')},
 			[sym.lcmd]: {writable: false, value: new Map([['users', []],['guilds', []]])},
 			[sym.exec]: {writable: true, value: null},
@@ -46,20 +45,15 @@ class moduleObj {
 			}
 		});
 		ev.on('newListener', (event, func) => {
-			if (ev.listenerCount(event) == 0) {
-				if (evHandler) evHandler.on(event, func);
-				else bot.on(event, this.bot.emit.bind(undefined, event));
+			if (ev.listenerCount(event)) {
+				if (evHandler && evHandler.listenerCount(event)) evHandler.on(event, func);
+				else if (!evHandler) bot.on(event, this.bot.emit.bind(undefined, event, func));
 			}
 		});
 	};
 
-	get vars () {
-		return [...this[sym.conf]];
-	}
-
-	addConfig (name, type, defaultVal, userEditable, desc) {
-		let conf = register(name, type, defaultVal, userEditable, desc);
-		if (conf) this[sym.conf].push(name);
+	addConfig () {
+		//does nothing when called on the stripped down object
 	}
 
 	set command (value) {
@@ -143,7 +137,9 @@ module.exports = class moduleHandler extends moduleObj {
 		let ev = new emitter(), forwardEvent = async (event, first, ...params) => {
 			let guild, comEnv;
 
-			if (first instanceof Guild) guild = first;
+			if ((event === 'ready' || event === 'thisReady') && !first)
+				return readyEvent(event);
+			else if (first instanceof Guild) guild = first;
 			else if ('guild' in first) guild = first.guild;
 			else if (first.message) guild = first.message.guild;
 			else if (first instanceof Collection) {
@@ -152,23 +148,42 @@ module.exports = class moduleHandler extends moduleObj {
 				if ('guild' in temp) guild = temp.guild;
 			}
 
-			if (guild) {
-				log.debug('Event belongs to guild', guild.name, 'getting module object for that guild');
+			if (guild)
 				comEnv = this[sym.imap].get(guild.id);
-			}
+
 			if (!comEnv) {
-				log.debug('Creating new command handler object for guild', guild.name);
 				comEnv = new moduleObj(this[sym.ivar], this.bot);
 				await this[sym.func].call(comEnv);
 				comEnv.config = getConfig(guild);
 				if (guild)
 					this[sym.imap].set(guild.id, comEnv);
 			}
-			return comEnv.bot.emit(event, first, ...params);
+			try {
+				return comEnv.bot.emit(event, first, ...params);
+			} catch (e) {
+				log.error(time(), 'Error occured forwarding event to command', this.command);
+				log.error(e);
+			}
+		}, readyEvent = async (event) => {
+			for (let guildid of this.savedServers) {
+				let guild = this.bot.guilds.resolve(guildid);
+
+				if (guild) {
+					try {
+						await forwardEvent(event, guild);
+					} catch (e) {
+						log.error(time(), 'Error occured on ready for guild', guild.name, 'command', this.command);
+						log.error(e);
+					}
+				} else {
+					log.debug('Unable to resolve saved guild id', guildid);
+				}
+			}
 		}
 		Object.defineProperties(this, {
 			[sym.file]: {value: file},
 			[sym.func]: {value: func},
+			[sym.conf]: {writable: true, value: []},
 			[sym.imap]: {value: new Map()},
 			[sym.ivar]: {value: bot},
 			emit: {value: ev.emit.bind(ev)},
@@ -181,8 +196,10 @@ module.exports = class moduleHandler extends moduleObj {
 				}),
 			}
 		});
+		ev.on('ready', readyEvent.bind({}, 'ready'));
+		ev.on('thisReady', readyEvent.bind({}, 'thisReady'));
 		ev.on('newListener', event => {
-			if (ev.listenerCount(event) == 0) {
+			if (ev.listenerCount(event) === 0) {
 				bot.on(event, async (...params) => {
 					try {
 						await forwardEvent(event, ...params);
@@ -197,6 +214,15 @@ module.exports = class moduleHandler extends moduleObj {
 
 	get file () {
 		return this[sym.file];
+	}
+
+	get vars () {
+		return [...this[sym.conf]];
+	}
+
+	addConfig (name, type, defaultVal, userEditable, desc) {
+		let conf = register(name, type, defaultVal, userEditable, desc);
+		if (conf) this[sym.conf].push(name);
 	}
 
 	access (user, guild) {
