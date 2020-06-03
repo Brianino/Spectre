@@ -196,8 +196,8 @@ module.exports = class moduleHandler extends moduleObj {
 				}),
 			}
 		});
-		ev.on('ready', readyEvent.bind({}, 'ready'));
-		ev.on('thisReady', readyEvent.bind({}, 'thisReady'));
+		ev.on('ready', readyEvent);
+		ev.on('thisReady', readyEvent);
 		ev.on('newListener', event => {
 			if (ev.listenerCount(event) === 0) {
 				bot.on(event, async (...params) => {

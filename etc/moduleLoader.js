@@ -100,7 +100,7 @@ module.exports.run = async (input) => {
 		if (file.isFile()) loadModule(file.name);
 	}
 	global.setupModule = initial;
-	modules.forEach(mod => {try{mod.bot.emit('ready')} catch (ignore) {}})
+	modules.forEach(mod => {try{mod.bot.emit('ready')} catch (ignore) {}});
 	return modules;
 }
 
