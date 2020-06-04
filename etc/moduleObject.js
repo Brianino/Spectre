@@ -160,7 +160,7 @@ module.exports = class moduleHandler extends moduleObj {
 					this[sym.imap].set(guild.id, comEnv);
 			}
 			try {
-				log.warn('Emitting event', event, 'on command', this.command);
+				//log.warn('Emitting event', event, 'on command', this.command);
 				return comEnv.bot.emit(event, first, ...params);
 			} catch (e) {
 				log.error(time(), 'Error occured forwarding event to command', this.command);
@@ -187,7 +187,6 @@ module.exports = class moduleHandler extends moduleObj {
 		evProx.on('newListener', event => {
 			if (!ev.listenerCount(event)) {
 				let func = async (...params) => {
-					log.debug('Running event', event);
 					try {
 						await forwardEvent(event, ...params);
 					} catch (e) {
