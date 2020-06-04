@@ -19,7 +19,6 @@ setupModule(function () {
 	this.bot.on('message', async msg => {
 		let gallList = this.config.repost_galleries.get(msg.channel.id) || [], attachments = [], urlCount = checkForUrl(msg.content, true, 'g').length;
 
-		log.debug('Checking if message should be reposted');
 		if (msg.author.id === this.bot.user.id) return;
 		if (urlCount > 0) {
 			await waitFor(10000, 50, async () => {
