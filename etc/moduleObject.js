@@ -45,9 +45,11 @@ class moduleObj {
 			}
 		});
 		ev.on('newListener', (event, func) => {
-			if (ev.listenerCount(event)) {
-				if (evHandler && evHandler.listenerCount(event)) evHandler.on(event, func);
-				else if (!evHandler) bot.on(event, this.bot.emit.bind(undefined, event, func));
+			if (!ev.listenerCount(event)) {
+				if (evHandler) evHandler.on(event, func);
+				else if (!evHandler) {
+					bot.on(event, this.bot.emit.bind(undefined, event, func));
+				}
 			}
 		});
 	};
@@ -131,15 +133,14 @@ function getConfig (guildid) {
 	return res;
 }
 
+
 module.exports = class moduleHandler extends moduleObj {
 	constructor (file, func, bot) {
 		super(bot);
-		let ev = new emitter(), forwardEvent = async (event, first, ...params) => {
+		let evProx = new emitter(), ev = new emitter(), forwardEvent = async (event, first, ...params) => {
 			let guild, comEnv;
 
-			if ((event === 'ready' || event === 'thisReady') && !first)
-				return readyEvent(event);
-			else if (first instanceof Guild) guild = first;
+			if (first instanceof Guild) guild = first;
 			else if ('guild' in first) guild = first.guild;
 			else if (first.message) guild = first.message.guild;
 			else if (first instanceof Collection) {
@@ -159,55 +160,43 @@ module.exports = class moduleHandler extends moduleObj {
 					this[sym.imap].set(guild.id, comEnv);
 			}
 			try {
+				log.warn('Emitting event', event, 'on command', this.command);
 				return comEnv.bot.emit(event, first, ...params);
 			} catch (e) {
 				log.error(time(), 'Error occured forwarding event to command', this.command);
 				log.error(e);
 			}
-		}, readyEvent = async (event) => {
-			for (let guildid of this.savedServers) {
-				let guild = this.bot.guilds.resolve(guildid);
-
-				if (guild) {
-					try {
-						await forwardEvent(event, guild);
-					} catch (e) {
-						log.error(time(), 'Error occured on ready for guild', guild.name, 'command', this.command);
-						log.error(e);
-					}
-				} else {
-					log.debug('Unable to resolve saved guild id', guildid);
-				}
-			}
-		}
+		};
 		Object.defineProperties(this, {
 			[sym.file]: {value: file},
 			[sym.func]: {value: func},
 			[sym.conf]: {writable: true, value: []},
 			[sym.imap]: {value: new Map()},
 			[sym.ivar]: {value: bot},
-			emit: {value: ev.emit.bind(ev)},
 			bot: {
 				value: new Proxy(bot, {
 					get (target, prop, prox) {
-						if (prop in ev) target = ev;
+						if (prop === 'emit') target = ev;
+						else if (prop in evProx) target = evProx;
 						return Reflect.get(target, prop);
 					}
 				}),
 			}
 		});
-		ev.on('ready', readyEvent);
-		ev.on('thisReady', readyEvent);
-		ev.on('newListener', event => {
-			if (ev.listenerCount(event) === 0) {
-				bot.on(event, async (...params) => {
+
+		evProx.on('newListener', event => {
+			if (!ev.listenerCount(event)) {
+				let func = async (...params) => {
+					log.debug('Running event', event);
 					try {
 						await forwardEvent(event, ...params);
 					} catch (e) {
 						log.error(time(), 'Error occured forwarding event to command', this.command);
 						log.error(e);
 					}
-				});
+				};
+				ev.on(event, func);
+				bot.on(event, func);
 			}
 		});
 	}
@@ -262,6 +251,7 @@ module.exports = class moduleHandler extends moduleObj {
 			if (msg.guild)
 				this[sym.imap].set(msg.guild.id, comEnv);
 		}
+		log.debug('Running command', this.command);
 		return await comEnv[sym.exec](msg, ...params);
 
 		function checkPass (msg) {

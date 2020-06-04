@@ -106,7 +106,6 @@ class config {
 		for (let {name, val, toPrim} of confProp) {
 			if (this[val()] !== undefined) obj[name] = toPrim(this[name]);
 		}
-		log.debug('Property count:', Object.getOwnPropertyNames(obj).length);
 		if (Object.getOwnPropertyNames(obj).length > 1) return obj;
 		return;
 	}

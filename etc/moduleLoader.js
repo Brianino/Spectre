@@ -48,7 +48,6 @@ function loadModule (file) {
 			func.call(mod);
 			log.info(time(), 'Module', mod.command, 'finished loading -', fpath);
 			modules.set(mod.command, mod);
-			try{mod.bot.emit('thisReady')} catch (ignore) {};
 		}
 		require(fpath);
 	} catch (e) {
@@ -100,7 +99,6 @@ module.exports.run = async (input) => {
 		if (file.isFile()) loadModule(file.name);
 	}
 	global.setupModule = initial;
-	modules.forEach(mod => {try{mod.bot.emit('ready')} catch (ignore) {}});
 	return modules;
 }
 
