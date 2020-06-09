@@ -30,6 +30,8 @@ setupModule(function () {
 				log.error(time(), 'Unable to load new moduleStr');
 				log.error(e);
 			}
+		} else {
+			return (await msg.channel.send('Unknown module `' + moduleStr + '`')).delete({timeout: 100000});
 		}
 	});
 });
