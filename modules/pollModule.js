@@ -45,7 +45,7 @@ setupModule(function () {
 	this.arguments = 'multi <limit> <question> [...option] [timespan]';
 	this.arguments = '<question> [...option] [timespan]';
 	this.arguments = 'add [...options]';
-	this.arguments = 'delete';
+	this.arguments = 'delete_last';
 	this.arguments = 'list';
 	this.arguments = 'end all';
 	this.arguments = 'end';

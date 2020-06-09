@@ -83,15 +83,15 @@ setupModule(function () {
 			}
 		}
 		if (failed.length === 0) {
-			return msg.channel.send('Successfully deleted ' + number + ' messages from each channel');
+			return (await msg.channel.send('Successfully deleted ' + number + ' messages from each channel')).delete({timeout: 10000});
 		} else if (failed.length > 1) {
 			let text = 'Failed to delete messages on some channels:'
 			for (let obj of failed) {
 				text+= '\n<#' + obj.channel.id + '>: ' + obj.message;
 			}
-			return msg.channel.send(text);
+			return (await msg.channel.send(text)).delete({timeout: 10000});
 		} else {
-			return msg.channel.send('Failed to delete messages in <#' + failed[0].channel.id + '>: ' + failed[0].message);
+			return (await msg.channel.send('Failed to delete messages in <#' + failed[0].channel.id + '>: ' + failed[0].message)).delete({timeout: 10000});
 		}
 	});
 });
