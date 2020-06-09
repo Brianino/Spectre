@@ -14,7 +14,13 @@ setupModule(function () {
 		let mention = /(?<=\<@!?)\d{17,19}(?=\>)/.exec(input = String(input)) || [],
 			user = msg.guild.member(mention[0] || input);
 
-		if (user) {
+		if (user && user.manageable) {
+			let r1 = msg.member.roles.highest, r2 = user.roles.highest, otemp = msg.guild.owner.id;
+
+			if (user.id === msg.author.id)
+				return msg.channel.send('You can\'t ban yourself');
+			else if (msg.author.id !== otemp && r1.comparePositionTo(r2) <=0)
+				return msg.channel.send('Target user has a higher role');
 			return user.ban({
 				reason: String(message || 'No reason given'),
 			}).then(() => {
@@ -29,6 +35,8 @@ setupModule(function () {
 					return msg.channel.send('Internal error, check server logs');
 				}
 			});
+		} else if (user && !user.manageable) {
+			msg.channel.send('I lack the permissions to do so');
 		} else {
 			log.debug(time(), 'Search for:', mention[1], 'or', input);
 			msg.channel.send('Unable to find user');
