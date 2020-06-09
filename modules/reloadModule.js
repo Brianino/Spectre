@@ -10,26 +10,26 @@ setupModule(function () {
 	this.limit = ['users', owner];
 	this.guildOnly = false;
 
-	this.exec((msg, moduleStr) => {
+	this.exec(async (msg, moduleStr) => {
 		let moduleObj = modules.get(moduleStr);
 
+		msg.delete();
 		if (moduleObj) {
 			try {
 				moduleObj.reload();
-				return msg.channel.send('Reloaded: ' + moduleStr);
+				return (await msg.channel.send('Reloaded: ' + moduleStr)).delete({timeout: 10000});
 			} catch (e) {
 				log.error(time(), 'Unable to reload module');
 				log.error(e);
-				return msg.channel.send('Check server logs for more info');
 			}
-		} else {
-			return run().then(() => {
-				return msg.channel.send('Loaded new modules');
-			}).catch(e => {
+		} else if (!moduleStr) {
+			try {
+				await run();
+				return (await msg.channel.send('Loaded new modules')).delete({timeout: 10000});
+			} catch (e) {
 				log.error(time(), 'Unable to load new moduleStr');
 				log.error(e);
-				return msg.channel.send('Check server logs for more info');
-			});
+			}
 		}
 	});
 });
