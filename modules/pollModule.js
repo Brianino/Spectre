@@ -2,7 +2,9 @@ const log = require('debug-logger')('poll-module');
 const timespan = require('timespan-parser')('msec');
 const {split, time} = require('../etc/utilities.js');
 
-const hardlimit = timespan.parse('1 month'), emoteSet = [
+const hardlimit = timespan.parse('1 month'), emoteDelete = '\uD83D\uDDD1\uFE0F';
+/* Custom emote set, not used for now
+emoteSet = [
 	'\u26AA', //WHITE CIRCLE
 	'\u26AB', //BLACK CIRCLE
 	'\uD83D\uDD34', //RED CIRCLE
@@ -19,7 +21,7 @@ const hardlimit = timespan.parse('1 month'), emoteSet = [
 	'\uD83D\uDEF9', //GREEN SQUARE
 	'\uD83D\uDEFA', //PURPLE SQUARE
 	'\uD83D\uDEFB', //BROWN SQUARE
-];
+];*/
 
 setupModule(function () {
 	this.command = 'poll';
@@ -30,6 +32,7 @@ setupModule(function () {
 					'The default poll type is single\n' +
 					'question - the title of the poll (either a single word, or a sentence inside of double quotes, e.g. "this is a question")\n' +
 					'option - same format as the question, these are the options users can vote on\n' +
+					'hidden - if one of the options is `-hidden` then the hidden vote feature for reaction polls is enabled\n' +
 					'add - used to add options to dynamic polls\n' +
 					'delete - used to delete the last option in a dynamic poll\n' +
 					'list - used to see what polls are active on the server, and the time remaining for each\n' +
@@ -164,7 +167,7 @@ setupModule(function () {
 	});
 
 	function parseInput (input, config) {
-		let [type, question, ...options] = split(input), res = {type: 1, tvalid: false, question, options};
+		let [type, question, ...options] = split(input), res = {type: 1, tvalid: false, incognito: false, question, options};
 
 		switch (type) {
 			default: res.question = type; if (question) res.options.unshift(question);
@@ -194,6 +197,7 @@ setupModule(function () {
 			res.time = timespan.parse(config.poll_timespan);
 			if (res.time > hardlimit) res.time = hardlimit;
 		}
+		if (res.options.find((val, i, a) => (val === '-hidden') ? a.splice(i, 1)[0] : undefined)) res.incognito = true;
 		if (isNaN(res.limit) || !res.question || !res.options.length) return {};
 		log.debug(res.question, 'poll time is', res.time, 'ms');
 		return res;
@@ -308,7 +312,7 @@ setupModule(function () {
 	}
 
 	async function menu (list, channel, author, allAllowed) {
-		let choice, menu = await pollList(list, channel, author, allAllowed ? 'Enter the index number, or all, or cancel' : 'Enter the index number, or cancel');
+		let choice, menu = await pollList(list, channel, author, allAllowed ? 'Enter the index, \'all\', or \'cancel\'' : 'Enter the index or cancel');
 
 		choice = await channel.awaitMessages(msg => {
 			if (msg.author.id === author.id) {
@@ -385,7 +389,7 @@ setupModule(function () {
 	}
 
 	async function reactionPoll (pollMsg, obj, owner) {
-		let options = new Set(), collector, collected, tmp = Object.assign({
+		let options = new Map(), uList = new Map(), collector, collected, tmp = Object.assign({
 			owner: owner,
 			channel: pollMsg.channel,
 			add: async (option, attachment) => {
@@ -396,7 +400,7 @@ setupModule(function () {
 				if (options.size < 9) temp = await pollMsg.react(`${options.size + 1}\uFE0F\u20E3`);
 				else temp = await pollMsg.react('\uD83D\uDD1F');
 
-				options.add(temp.emoji.name);
+				options.set(temp.emoji.name, obj.incognito ? [] : undefined);
 				log.debug('Added reaction for option', options.size, 'emote', temp.emoji.name);
 				obj.options.push(option);
 				return true;
@@ -417,15 +421,32 @@ setupModule(function () {
 			let temp;
 			if (i < 10) temp = await pollMsg.react(i + '\uFE0F\u20E3');
 			else temp = await pollMsg.react('\uD83D\uDD1F');
-			options.add(temp.emoji.name);
+			options.set(temp.emoji.name, obj.incognito ? [] : undefined);
 			log.debug('Added reaction for option', i, 'emote', temp.emoji.name);
 		}
+		if (obj.incognito) await pollMsg.react(emoteDelete);
 
-		collector = pollMsg.createReactionCollector(reaction => options.has(reaction.emoji.name), {time: obj.time});
+		log.debug('Poll incognito:', obj.incognito);
+		collector = pollMsg.createReactionCollector(reaction => options.has(reaction.emoji.name) || reaction.emoji.name === emoteDelete, {time: obj.time});
 		collected = await handlePoll(collector, tmp, async (reaction, user) => {
 			let count = pollMsg.reactions.cache.filter(reaction => reaction.users.cache.has(user.id) && options.has(reaction.emoji.name)).size;
 
-			if (count > obj.limit && user.id !== user.client.user.id) {
+			if (user.id === user.client.user.id) return;
+			if (obj.incognito) {
+				let arr = options.get(reaction.emoji.name), count = uList.get(user.id) || 0;
+
+				if (reaction.emoji.name === emoteDelete) {
+					if (count) log.debug('Removing votes for', user.username);
+					uList.set(user.id, 0);
+					options.forEach((val, key) => {
+						options.set(key, val.filter(tmp => tmp !== user.id));
+					});
+				} else if (count < obj.limit) {
+					arr.push(user.id);
+					uList.set(user.id, count + 1);
+				}
+				await reaction.users.remove(user);
+			} else if (count > obj.limit) {
 				log.debug('Count of reactions for user', user.username, 'is', count, 'of', obj.limit);
 				log.debug('Reactions:', ...pollMsg.reactions.cache.map((reaction, key) => key + '-' + reaction.count));
 				await reaction.users.remove(user);
@@ -445,17 +466,23 @@ setupModule(function () {
 			log.warn('Will use cached results');
 		}
 
-		return [...options].map(name => {
-			let reaction = collected.find(reaction => reaction.emoji.name === name);
-			if (!reaction) {
-				log.debug('Couldn\'t find reaction for option', [...options].indexOf(name));
-				return 0;
-			} else if (reaction.me) {
-				log.debug('Found reaction', name, 'with', reaction.count, '- including bot');
-				return reaction.count - 1;
+		return [...options.keys()].map(name => {
+			if (obj.incognito) {
+				let count = options.get(name).length;
+				log.debug('Found reaction', name, 'with', count, '- stored');
+				return count;
 			} else {
-				log.debug('Found reaction', name, 'with', reaction.count, '- without bot vote');
-				return reaction.count;
+				let reaction = collected.find(reaction => reaction.emoji.name === name);
+				if (!reaction) {
+					log.debug('Couldn\'t find reaction for option', [...options].indexOf(name));
+					return 0;
+				} else if (reaction.me) {
+					log.debug('Found reaction', name, 'with', reaction.count, '- including bot');
+					return reaction.count - 1;
+				} else {
+					log.debug('Found reaction', name, 'with', reaction.count, '- without bot vote');
+					return reaction.count;
+				}
 			}
 		});
 	}
