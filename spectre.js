@@ -11,6 +11,7 @@ const bot = new Discord.Client();
 
 process.on('unhandledRejection', (e, origin) => {
 	log.error(time(), 'Promise Error:', e.toString());
+	log.error('At Promise:', origin);
 	log.debug(e.stack);
 });
 
@@ -49,6 +50,6 @@ bot.on('error', e => {
 });
 
 bot.login(token).catch(e => {
-	log.error(time(), e.toString());
+	log.error(time(), 'Login error:', e.toString());
 	log.debug(e.stack);
 }); //Bot Token
