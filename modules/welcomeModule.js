@@ -1,5 +1,5 @@
 const log = require('debug-logger')('welcome-module');
-const {time} = require('../etc/utilities.js');
+const {time, checkForUrl} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'welcome';
@@ -13,8 +13,20 @@ setupModule(function () {
 	this.addConfig('welcome_bot_message', String, undefined, 'message to display when bots join');
 	this.addConfig('welcome_channel', String, undefined, 'where to display welcome message\n if it fails to display a message the value is changed back to undefined');
 
+	// Config options specifically for embed welcome messages
+	this.addConfig('welcome_embed', Boolean, false, 'If true then the welcome message for this server will be an embed');
+	this.addConfig('welcome_title', String, undefined, 'The title to use in the embeded welcome message (optional)');
+	this.addConfig('welcome_footer', String, undefined, 'The footer message to use in the embeded welcome message (optional)');
+	this.addConfig('welcome_thumbnail', String, undefined, 'The image link to use as a thumbnail in the embeded welcome message (small image top right)');
+	this.addConfig('welcome_image', String, undefined, 'The image link to attach to an embeded welcome (image below the main text)');
+
 	this.bot.on('guildMemberAdd', member => {
-		let guild = member.guild;
+		let guild = member.guild, replaceText = (input) => {
+			if (typeof input === 'string')
+				return input.replace(/\{server\}/g, guild.name).replace(/\{user\}/g, '<@' + member.id + '>');
+			else
+				return undefined;
+		};
 
 		log.info('member joined:', guild.name, member.user.username);
 		if (this.config.welcome_channel) {
@@ -24,8 +36,9 @@ setupModule(function () {
 
 			if (msg) {
 				let channel, tmp;
-				msg = msg.replace(/\{server\}/g, guild.name);
-				msg = msg.replace(/\{user\}/g, '<@' + member.id + '>');
+				msg = replaceText(msg);
+				//msg = msg.replace(/\{server\}/g, guild.name);
+				//msg = msg.replace(/\{user\}/g, '<@' + member.id + '>');
 
 				if (tmp = /(?<=^\<#)\d{17,19}(?=\>$)/.exec(this.config.welcome_channel)) {
 					channel = guild.channels.resolve(tmp[0])
@@ -36,7 +49,32 @@ setupModule(function () {
 				}
 
 				if (channel && channel.type === 'text') {
-					return channel.send(msg);
+					if (this.config.welcome_embed) {
+						let title = replaceText(this.config.welcome_title),
+							footer = replaceText(this.config.welcome_footer), embed = {description: msg};
+
+						if (title) embed.title = title;
+						if (footer) embed.footer = {text: footer};
+						if (this.config.welcome_thumbnail) {
+							let url = checkForUrl(this.config.welcome_thumbnail, true);
+
+							if (url && url[0] === this.config.welcome_thumbnail) {
+								if (url[0] !== this.config.welcome_thumbnail) this.config.welcome_thumbnail = url[0];
+								embed.thumbnail = {url: url[0]};
+							} else this.config.welcome_thumbnail = undefined;
+						}
+						if (this.config.welcome_image) {
+							let url = checkForUrl(this.config.welcome_image, true);
+
+							if (url && url[0] === this.config.welcome_image) {
+								if (url[0] !== this.config.welcome_image) this.config.welcome_image = url[0];
+								embed.image = {url: url[0]};
+							} else this.config.welcome_image = undefined;
+						}
+						return channel.send({embed});
+					} else {
+						return channel.send(msg);
+					}
 				} else {
 					log.error(time(), 'Unable to find welcome text channel');
 					this.config.welcome_channel = undefined;
