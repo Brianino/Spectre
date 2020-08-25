@@ -17,29 +17,29 @@ setupModule(function () {
 	// ATTACH EVENT LISTENER AFTER THE BOT RESTARTS
 
 	this.bot.on('message', async msg => {
-		let gallList = this.config.repost_galleries.get(msg.channel.id) || [], attachments = [], urlCount = checkForUrl(msg.content, true, 'g').length;
+		try {
+			let gallList = this.config.repost_galleries.get(msg.channel.id) || [], attachments = [], urlCount = checkForUrl(msg.content, true, 'g').length;
 
-		if (msg.author.id === this.bot.user.id) return;
-		if (urlCount > 0) {
-			await waitFor(10000, 50, async () => {
-				await msg.fetch();
-				return msg.embeds.length === urlCount;
-			});
-		}
-		attachments = getAttachments(msg, this.config.repost_formats);
-		if (!attachments.length) return;
-		for (let cid of gallList) {
-			let channel = msg.guild.channels.resolve(cid);
-
-			if (channel) {
-				let urls = attachments.filter(att => !att.name).map(att => att.url), files = attachments.filter(att => att.name).map(att => {
-					return {
-						attachment: att.url,
-						name: att.name,
-					}
+			if (msg.author.id === this.bot.user.id) return;
+			if (urlCount > 0) {
+				await waitFor(10000, 50, async () => {
+					try {await msg.fetch()} catch (ignore) {return false};
+					return msg.embeds.length === urlCount;
 				});
+			}
+			attachments = getAttachments(msg, this.config.repost_formats);
+			if (!attachments.length) return;
+			for (let cid of gallList) {
+				let channel = msg.guild.channels.resolve(cid);
 
-				try {
+				if (channel) {
+					let urls = attachments.filter(att => !att.name).map(att => att.url), files = attachments.filter(att => att.name).map(att => {
+						return {
+							attachment: att.url,
+							name: att.name,
+						}
+					});
+
 					if (this.config.repost_prefer_url) {
 						await channel.send(urls.concat(files.map(att => att.attachment)).join('\n'));
 					} else {
@@ -50,16 +50,11 @@ setupModule(function () {
 							return channel.send(urls.concat(files.map(att => att.attachment)).join('\n'));
 						});
 					}
-				} catch (e) {
-					log.error(time(), 'Unable to post to gallery:', e.message);
-					log.debug(e.stack);
-					if (e instanceof DiscordAPIError)
-						return await channel.send('Unable to post image: ' + e.message);
-					else {
-						return await channel.send('An error occured whilst reposting an image');
-					}
 				}
 			}
+		} catch (e) {
+			log.error(time(), 'Unable to post to gallery:', e.message);
+			log.debug(e.stack);
 		}
 	});
 
