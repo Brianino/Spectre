@@ -9,15 +9,13 @@ const path = require('path');
 const modules = new Map(), saved = new Map(), estEvents = new Set();
 var bot;
 
-Object.defineProperties(moduleObj.prototype, {
-	savedServers: {get () {return saved.keys()}},
-	reload: {
-		value: function () {
-			delete require.cache[this.file];
-			loadModule(this.file);
-			global.setupModule = initial;
-		}
-	},
+Object.defineProperty(moduleObj.prototype, 'reload', {
+	value: function () {
+		this._reload();
+		delete require.cache[this.file];
+		loadModule(this.file);
+		global.setupModule = initial;
+	}
 });
 
 Object.defineProperty(config.prototype, 'saved', {

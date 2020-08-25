@@ -48,6 +48,7 @@ class moduleObj {
 			if (!ev.listenerCount(event)) {
 				if (evHandler) evHandler.on(event, func);
 				else if (!evHandler) {
+					log.debug('event attached directly, config present?', this.config? this.config.id : 'no config');
 					bot.on(event, this.bot.emit.bind(undefined, event, func));
 				}
 			}
@@ -137,7 +138,7 @@ function getConfig (guildid) {
 module.exports = class moduleHandler extends moduleObj {
 	constructor (file, func, bot) {
 		super(bot);
-		let evProx = new emitter(), ev = new emitter(), forwardEvent = async (event, first, ...params) => {
+		let evProx = new emitter(), ev = new emitter(), evList = new Set(), forwardEvent = async (event, first, ...params) => {
 			let guild, comEnv;
 
 			if (first instanceof Guild) guild = first;
@@ -181,7 +182,15 @@ module.exports = class moduleHandler extends moduleObj {
 						return Reflect.get(target, prop);
 					}
 				}),
-			}
+			},
+			_reload: {
+				value: function () {
+					for (let {event, func} of evList) {
+						log.debug('should have removed listener for', event, 'on command', this.command);
+						bot.removeListener(event, func);
+					}
+				}
+			},
 		});
 
 		evProx.on('newListener', event => {
@@ -190,10 +199,12 @@ module.exports = class moduleHandler extends moduleObj {
 					try {
 						await forwardEvent(event, ...params);
 					} catch (e) {
-						log.error(time(), 'Error occured forwarding event to command', this.command);
+						log.error(time(), 'Error occured forwarding event to command (outer)', this.command);
 						log.error(e);
 					}
 				};
+				log.debug('adding forward event rule for command', this.command, 'on event', event);
+				evList.add({event, func});
 				ev.on(event, func);
 				bot.on(event, func);
 			}
@@ -233,7 +244,6 @@ module.exports = class moduleHandler extends moduleObj {
 
 		try {
 			checkPass.call(this, msg);
-			log.debug(time(), msg.author.username, 'running command', this.command);
 		} catch (e) {
 			log.debug(time(), msg.author.username, 'Can\'t run command', this.command, 'because:', e.message);
 			if (!e instanceof reqError)
@@ -250,7 +260,7 @@ module.exports = class moduleHandler extends moduleObj {
 			if (msg.guild)
 				this[sym.imap].set(msg.guild.id, comEnv);
 		}
-		log.debug('Running command', this.command);
+		log.debug(time(), msg.author.username, 'running command', this.command);
 		return await comEnv[sym.exec](msg, ...params);
 
 		function checkPass (msg) {
