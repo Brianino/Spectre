@@ -37,8 +37,6 @@ setupModule(function () {
 			if (msg) {
 				let channel, tmp;
 				msg = replaceText(msg);
-				//msg = msg.replace(/\{server\}/g, guild.name);
-				//msg = msg.replace(/\{user\}/g, '<@' + member.id + '>');
 
 				if (tmp = /(?<=^\<#)\d{17,19}(?=\>$)/.exec(this.config.welcome_channel)) {
 					channel = guild.channels.resolve(tmp[0])
