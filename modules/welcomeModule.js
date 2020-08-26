@@ -4,7 +4,7 @@ const {time, checkForUrl} = require('../etc/utilities.js');
 setupModule(function () {
 	this.command = 'welcome';
 	this.description = 'set the server welcome message';
-	this.extraDesc = 'user mention: {user}\nserver name: {server}'
+	this.extraDesc = 'user mention: {user}\nserver name: {server}\nuser name: {name}'
 	this.arguments = '<message>';
 	this.permissions = 'MANAGE_GUILD';
 	this.guildOnly = true;
@@ -23,7 +23,7 @@ setupModule(function () {
 	this.bot.on('guildMemberAdd', member => {
 		let guild = member.guild, replaceText = (input) => {
 			if (typeof input === 'string')
-				return input.replace(/\{server\}/g, guild.name).replace(/\{user\}/g, '<@' + member.id + '>');
+				return input.replace(/\{server\}/g, guild.name).replace(/\{user\}/g, '<@' + member.id + '>').replace(/\{name\}/g, member.displayName);
 			else
 				return undefined;
 		};
