@@ -1,4 +1,4 @@
-const log = require('debug-logger')('perm-module');
+const log = require('../etc/logger.js')('perm-module');
 const {modules} = require('../etc/moduleLoader.js');
 const {time} = require('../etc/utilities.js');
 const fs = require('fs').promises;

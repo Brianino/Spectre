@@ -1,4 +1,4 @@
-const log = require('debug-logger')('active-commands-module');
+const log = require('../etc/logger.js')('active-commands-module');
 const {modules} = require('../etc/moduleLoader.js');
 const {time} = require('../etc/utilities.js');
 

@@ -1,4 +1,4 @@
-const log = require('debug-logger')('module-loader');
+const log = require('./logger.js')('module-loader');
 const moduleObj = require('./moduleObject.js');
 const {config} = require('./guildConfig.js');
 const {time} = require('./utilities.js');

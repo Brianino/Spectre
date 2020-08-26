@@ -1,7 +1,6 @@
-const log = require('debug-logger')('utilities');
+const log = require('./logger.js')('utilities');
 
 module.exports = exports;
-
 
 exports.time = (function () {
 	let formatter = new Intl.DateTimeFormat('en-GB', {

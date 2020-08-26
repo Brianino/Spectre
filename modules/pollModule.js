@@ -1,4 +1,4 @@
-const log = require('debug-logger')('poll-module');
+const log = require('../etc/logger.js')('poll-module');
 const timespan = require('timespan-parser')('msec');
 const {split, time} = require('../etc/utilities.js');
 

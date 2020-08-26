@@ -1,4 +1,4 @@
-const log = require('debug-logger')('ping-module');
+const log = require('../etc/logger.js')('ping-module');
 const {time} = require('../etc/utilities.js');
 
 setupModule(function () {

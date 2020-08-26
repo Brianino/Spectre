@@ -1,4 +1,4 @@
-const log = require('debug-logger')('serverinfo-module');
+const log = require('../etc/logger.js')('serverinfo-module');
 const {time} = require('../etc/utilities.js');
 
 setupModule(function () {

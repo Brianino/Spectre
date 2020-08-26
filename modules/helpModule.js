@@ -1,4 +1,4 @@
-const log = require('debug-logger')('help-module');
+const log = require('../etc/logger.js')('help-module');
 const {modules} = require('../etc/moduleLoader.js');
 const {time} = require('../etc/utilities.js');
 

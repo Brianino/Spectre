@@ -1,4 +1,4 @@
-const log = require('debug-logger')('welcome-module');
+const log = require('../etc/logger.js')('welcome-module');
 const {time, checkForUrl} = require('../etc/utilities.js');
 
 setupModule(function () {

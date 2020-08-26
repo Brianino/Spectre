@@ -1,4 +1,4 @@
-const log = require('debug-logger')('ban-module');
+const log = require('../etc/logger.js')('ban-module');
 const {DiscordAPIError} = require('discord.js');
 const {time} = require('../etc/utilities.js');
 

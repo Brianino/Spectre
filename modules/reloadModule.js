@@ -1,4 +1,4 @@
-const log = require('debug-logger')('reload-module');
+const log = require('../etc/logger.js')('reload-module');
 const {modules, run} = require('../etc/moduleLoader.js');
 const {time} = require('../etc/utilities.js');
 const {owner} = require('../config.json');

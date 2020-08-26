@@ -1,4 +1,4 @@
-const log = require('debug-logger')('erase-module');
+const log = require('../etc/logger.js')('erase-module');
 const {DiscordAPIError, Collection} = require('discord.js');
 const {time} = require('../etc/utilities.js');
 

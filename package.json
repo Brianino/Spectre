@@ -5,14 +5,20 @@
   "engines": {
     "node": "12.14.1"
   },
-  "main": "spectre.js",
+  "bin": "./spectre.js",
+  "config": {
+    "DEBUG": "*:log,*:info,*:warn,*:error"
+  },
   "scripts": {
     "start": "node spectre.js"
   },
   "dependencies": {
-    "debug-logger": "^0.4.1",
+    "@discordjs/opus": "^0.3.2",
+    "debug": "^4.1.1",
     "discord.js": "^12.0.2",
-    "timespan-parser": "^1.0.2"
+    "supports-color": "^7.1.0",
+    "timespan-parser": "^1.0.2",
+    "ytdl-core": "^2.1.7"
   },
   "repository": {
     "type": "git",

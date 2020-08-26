@@ -1,4 +1,4 @@
-const log = require('debug-logger')('guild-config');
+const log = require('./logger.js')('guild-config');
 const {parseBool, time} = require('./utilities.js');
 const {promises:fs, constants} = require('fs');
 const {Permissions} = require('discord.js');

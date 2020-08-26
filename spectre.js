@@ -1,11 +1,13 @@
+#!/usr/bin/env node
 "use strict";
 if (!process.env.DEBUG) process.env.DEBUG = '*:log,*:info,*:warn,*:error';
-const log = require('debug-logger')('main');
+const {time} = require('./etc/utilities.js');
+const log = require('./etc/logger.js')('main');
 const {run, modules} = require('./etc/moduleLoader.js');
 const {token, prefix} = require('./config.json');
 const {saved} = require('./etc/guildConfig.js');
-const {time} = require('./etc/utilities.js');
 const Discord = require('discord.js');
+//const log2 = logFile('main');
 
 const bot = new Discord.Client();
 
@@ -47,6 +49,15 @@ bot.on('message', async (msg) => {
 bot.on('error', e => {
 	log.error(time(), 'Bot error:', e.toString());
 	log.debug(e.stack);
+	log.file('ERROR', e);
+});
+
+bot.on('warn', info => {
+	log.file('WARN', info);
+});
+
+bot.on('debug', info => {
+	log.file.debug('debug', info);
 });
 
 bot.login(token).catch(e => {

@@ -1,4 +1,4 @@
-const log = require('debug-logger')('kick-module');
+const log = require('../etc/logger.js')('kick-module');
 const {DiscordAPIError} = require('discord.js');
 const {time} = require('../etc/utilities.js');
 

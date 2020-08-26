@@ -1,4 +1,4 @@
-const log = require('debug-logger')('module-object');
+const log = require('./logger.js')('module-object');
 const {config, saved, register} = require('./guildConfig.js');
 const {Permissions, Guild, Message, Collection} = require('discord.js');
 const {time} = require('./utilities.js');

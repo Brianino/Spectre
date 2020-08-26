@@ -1,4 +1,4 @@
-const log = require('debug-logger')('configure-module');
+const log = require('../etc/logger.js')('configure-module');
 const {time} = require('../etc/utilities.js');
 const {Permissions} = require('discord.js');
 const {inspect} = require('util');

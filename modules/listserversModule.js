@@ -1,4 +1,4 @@
-const log = require('debug-logger')('server-management-module');
+const log = require('../etc/logger.js')('server-management-module');
 const {time} = require('../etc/utilities.js');
 const {owner} = require('../config.json');
 

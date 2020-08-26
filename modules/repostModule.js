@@ -1,4 +1,4 @@
-const log = require('debug-logger')('repost-module');
+const log = require('../etc/logger.js')('repost-module');
 const {time, getAttachments, getChannelID, checkForUrl, waitFor} = require('../etc/utilities.js');
 const {GuildChannel, DiscordAPIError} = require('discord.js');
 
