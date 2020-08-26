@@ -474,7 +474,7 @@ setupModule(function () {
 			} else {
 				let reaction = collected.find(reaction => reaction.emoji.name === name);
 				if (!reaction) {
-					log.debug('Couldn\'t find reaction for option', [...options].indexOf(name));
+					log.debug('Couldn\'t find reaction for option', [...options].indexOf(name), name);
 					return 0;
 				} else if (reaction.me) {
 					log.debug('Found reaction', name, 'with', reaction.count, '- including bot');

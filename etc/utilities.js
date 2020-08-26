@@ -126,15 +126,19 @@ exports.checkForUrl = function (text, getMatches = false, flags = '') {
 exports.waitFor = function (time = 1000, interval = 10, checkFunc) {
 	interval =  Number(interval);
 	if (isNaN(interval) || interval === 0) interval = 10;
-	return new Promise(resolve => {
+	return new Promise((resolve, reject) => {
 		let func = async (passed, tFunc) => {
 			let newTime = interval + passed - time;
-			if (await tFunc()) return resolve(true);
-			else if (newTime > 0) {
-				interval -= newTime;
-				if (interval <= 0) return resolve(false);
+			try {
+				if (await tFunc()) return resolve(true);
+				else if (newTime > 0) {
+					interval -= newTime;
+					if (interval <= 0) return resolve(false);
+				}
+				setTimeout(func, interval, passed + interval, tFunc);
+			} catch (e) {
+				return reject(e);
 			}
-			setTimeout(func, interval, passed + interval, tFunc);
 		}
 		if (interval && typeof checkFunc === 'function') {
 			setTimeout(func, interval, interval, checkFunc);
