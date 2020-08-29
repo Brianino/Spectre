@@ -30,5 +30,8 @@
     "discord",
     "general purpose"
   ],
-  "license": "None"
+  "license": "None",
+  "devDependencies": {
+    "jsdoc": "^3.6.5"
+  }
 }
