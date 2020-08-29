@@ -6,6 +6,7 @@ module.exports = exports;
 
 /**
  * Gets the current time nicely formatted
+ * @function
  *
  * @return {string} the current date formatted in a specific way for logging
 */
@@ -25,7 +26,13 @@ exports.time = (function () {
 	}
 })();
 
-
+/**
+ * Split a string up whilst keeping anything within double quotes grouped
+ *
+ * @param  {string}  str         - the input string to split
+ * @param  {boolean} filterEmpty - when true empty groups are removed
+ * @return {string[]} the input string split by space with quoted groups kept together
+*/
 exports.split = function (str, filterEmpty = true) {
 	let groups = str.split('"'), res = [];
 
@@ -157,6 +164,7 @@ function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText = '', 
 	return res;
 }
 
+const channelReg = /<#(\d{17,19})>/;
 /**
  * Gets channel object(s) it finds in the input string
  *
@@ -167,26 +175,26 @@ function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText = '', 
  * @prop   {boolean}               [resolve=false] - whether to return the id, or the channel object
  * @prop   {boolean}               [allowID=true]  - toggle to allow searching for id strings
  * @prop   {string}                [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
- * @return ({string|string[]|GuildChannel|GuildChannel[])} either a list of channels, or the channel itself
+ * @return {(string|string[]|GuildChannel|GuildChannel[])} either a list of channels, or the channel itself
 */
-const channelReg = /<#(\d{17,19})>/;
-exports.getChannelID = function (input, guild, {maxCount = 1, ...options} = {resolve = false}) {
+exports.getChannelID = function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
 	let reg = channelReg, manager = guild.channels.cache, prop = 'name', res;
 
 	log.debug('Looking for channel, input:', input, 'max', maxCount, 'options', options);
 	if (typeof input === 'object' && input instanceof GuildChannel) {
-		let temp = options.resolve? input : input.id;
+		let temp = resolve? input : input.id;
 		if (manager.has(input.id))
 			return maxCount <= 1 ? temp : [temp];
 		else
 			return maxCount <= 1 ? undefined : [];
 	}
-	res = getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount}));
+	res = getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount, resolve}));
 	log.debug('Found channel(s):', res);
 	return maxCount > 1? res : res[0];
 }
 
 
+const userReg = /<@!?(\d{17,19})>/;
 /**
  * Gets guild members object(s) it finds in the input string
  *
@@ -199,9 +207,7 @@ exports.getChannelID = function (input, guild, {maxCount = 1, ...options} = {res
  * @prop   {string}               [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
  * @return {(string|string[]|GuildMember)} either a list of guild members, or the member itself
 */
-const userReg = /<@!?(\d{17,19})>/;
-// Refer to the getIDs function to find out what the options should be
-exports.getUserID = function (input, guild, {maxCount = 1, ...options} = {resolve = false}) {
+exports.getUserID = function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
 	let reg = channelReg, manager = guild.members.cache, prop = 'displayName', res;
 
 	log.debug('Looking for user, input:', input, 'max', maxCount, 'options', options);
@@ -212,7 +218,7 @@ exports.getUserID = function (input, guild, {maxCount = 1, ...options} = {resolv
 		else
 			return maxCount <= 1 ? undefined : [];
 	}
-	res = getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount}));
+	res = getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount, resolve}));
 	log.debug('Found user(s):', res);
 	return maxCount > 1? res : res[0];
 }
@@ -255,6 +261,7 @@ exports.getAttachments = function (msg, formats) {
 }
 
 
+const urlReg = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
 /**
  * Scans the input text for urls, and returns the matches
  *
@@ -263,7 +270,6 @@ exports.getAttachments = function (msg, formats) {
  * @param  {string}            flags     - the regex flags to use when getting matches
  * @return {(boolean|Array[])} returns either the list of matching regex results, or a boolean value
 */
-const urlReg = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
 exports.checkForUrl = function (text, getMatches = false, flags = '') {
 	if (!getMatches) {
 		return urlReg.test(text);
