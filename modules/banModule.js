@@ -1,6 +1,6 @@
 const log = require('../etc/logger.js')('ban-module');
+const {time, getUserID} = require('../etc/utilities.js');
 const {DiscordAPIError} = require('discord.js');
-const {time} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'ban';
@@ -11,8 +11,7 @@ setupModule(function () {
 	this.guildOnly = true;
 
 	this.exec((msg, input, message) => {
-		let mention = /(?<=\<@!?)\d{17,19}(?=\>)/.exec(input = String(input)) || [],
-			user = msg.guild.member(mention[0] || input);
+		let user = msg.guild.member(getUserID(input.join(' '), msg.guild));
 
 		if (user && user.manageable) {
 			let r1 = msg.member.roles.highest, r2 = user.roles.highest, otemp = msg.guild.owner.id;

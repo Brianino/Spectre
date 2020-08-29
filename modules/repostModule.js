@@ -103,15 +103,15 @@ setupModule(function () {
 					case 'to': tSwitch = true; break;
 
 					default:
-					if (tSwitch) gallery = getChannelID(val, guild);
-					else source.push(getChannelID(val, guild));
+					if (tSwitch) gallery = getChannelID(val, guild, {allowText: 'partial'});
+					else source.push(getChannelID(val, guild, {allowText: 'partial'}));
 					break;
 				}
 				if (tSwitch && gallery) break;
 			}
 			break;
 
-			case 'delete': type = 1; gallery = getChannelID(input.slice(1).shift()); break;
+			case 'delete': type = 1; gallery = getChannelID(input.slice(1).shift(), guild, {allowText: 'partial'}); break;
 		}
 		return [type, gallery, source];
 	}

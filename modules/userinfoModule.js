@@ -1,14 +1,13 @@
 const log = require('../etc/logger.js')('userinfo-module');
-const {time} = require('../etc/utilities.js');
+const {time, getUserID} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'userinfo';
 	this.description = 'Displays info on a user';
 	this.guildOnly = true;
 
-	this.exec(async (msg, input) => {
-		let mention = /(?<=\<@!?)\d{17,19}(?=\>)/.exec(input = String(input)) || [],
-			user = msg.guild.member(mention[0] || input) || msg.member, embed, flags;
+	this.exec(async (msg, ...input) => {
+		let user = msg.guild.member(getUserID(input.join(' '), msg.guild, {allowText: 'partial'})) || msg.member, embed;
 
 		embed = {
 			title: user.displayName,

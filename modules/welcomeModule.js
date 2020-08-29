@@ -1,5 +1,5 @@
 const log = require('../etc/logger.js')('welcome-module');
-const {time, checkForUrl} = require('../etc/utilities.js');
+const {time, checkForUrl, getChannelID} = require('../etc/utilities.js');
 
 setupModule(function () {
 	this.command = 'welcome';
@@ -28,23 +28,14 @@ setupModule(function () {
 				return undefined;
 		};
 
-		log.info('member joined:', guild.name, member.user.username);
+		log.file.module('member joined:', guild.name, member.user.username, ':: welcome channel set?', this.config.welcome_channel? true : false);
 		if (this.config.welcome_channel) {
-			let msg = '';
-			if (!member.user.bot) msg = this.config.welcome_message;
-			else msg = this.config.welcome_bot_message;
+			let msg;
+			if (!member.user.bot) msg = replaceText(this.config.welcome_message);
+			else msg = replaceText(this.config.welcome_bot_message);
 
 			if (msg) {
-				let channel, tmp;
-				msg = replaceText(msg);
-
-				if (tmp = /(?<=^\<#)\d{17,19}(?=\>$)/.exec(this.config.welcome_channel)) {
-					channel = guild.channels.resolve(tmp[0])
-				} else if (/^\d{17,19}$/.exec(this.config.welcome_channel)) {
-					channel = guild.channels.resolve(this.config.welcome_channel);
-				} else {
-					channel = guild.channels.cache.find(channel => channel.name.includes(this.config.welcome_channel));
-				}
+				let channel getChannelID(this.config.welcome_channel, guild, {allowText = 'partial'});
 
 				if (channel && channel.type === 'text') {
 					if (this.config.welcome_embed) {
@@ -75,6 +66,7 @@ setupModule(function () {
 					}
 				} else {
 					log.error(time(), 'Unable to find welcome text channel');
+					log.file.module('ERROR: unable to find welcome channel for server', guild.name, '<->', guild.id);
 					this.config.welcome_channel = undefined;
 				}
 			} else return;
@@ -85,6 +77,7 @@ setupModule(function () {
 		let message = input.join(' ');
 
 		log.info(time(), 'Updating welcome message for', msg.guild.name, 'to:', message);
+		log.file.module('INFO: updated welcome message for', msg.guild.name, 'to:', message);
 		if (message === '') this.config.welcome_message = undefined;
 		else this.config.welcome_message = message;
 
