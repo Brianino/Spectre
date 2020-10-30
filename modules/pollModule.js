@@ -100,7 +100,7 @@ setupModule(function () {
 
 
 			case 3: // Add option to dynamic poll
-			list = Array.from(dynamicPolls.values()).map(sym => active.get(sym));
+			list = Array.from(dynamicPolls.values(), sym => active.get(sym));
 			if (!msg.member.permissions.has('MANAGE_MESSAGES')) list = list.filter(({owner}) => owner.id === msg.author.id);
 
 			if (list.length === 0)
@@ -123,7 +123,7 @@ setupModule(function () {
 
 
 			case 4: // Remove the last option in a dynamic poll
-			list = Array.from(dynamicPolls.values()).map(sym => active.get(sym));
+			list = Array.from(dynamicPolls.values(), sym => active.get(sym));
 			if (!msg.member.permissions.has('MANAGE_MESSAGES')) list = list.filter(({owner}) => owner.id === msg.author.id);
 
 			if (list.length === 0)

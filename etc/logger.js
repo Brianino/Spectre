@@ -4,10 +4,10 @@ const debug_logger = require('debug');
 const Path = require('path');
 
 module.exports = (function () {
-	const conMap = new Map(), logDir = Path.resolve(Path.dirname(process.argv0[1]), './log'), wMap = new WeakMap();
+	const conMap = new Map(), logDir = Path.resolve(__dirname, '../log'), wMap = new WeakMap();
 		maxSize = 1024 * 1024 * 512, selfLog = debug_logger('logger:error'); //max size of log files before rolling them up in bytes
 	mkdirSync(logDir, {recursive: true});
-	setInterval(cleanUp, 1000 * 60 * 60);
+	setInterval(cleanUp, 1000 * 60 * 60).unref();
 	selfLog.color = 160;
 
 	// Set default log level here (when the debug level isn't set)
