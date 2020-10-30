@@ -1,230 +1,133 @@
-const log = require('./logger.js')('module-object');
-const {config, saved, register} = require('./guildConfig.js');
-const {Permissions, Guild, Message, Collection} = require('discord.js');
-const {time} = require('./utilities.js');
-const emitter = require('events');
+'use strict';
 
+const log = require('./logger.js')('module-object');
+const {Permissions} = require('discord.js');
 const sym = {
 	name: Symbol('command name'),
-	desc: Symbol('command description'),
-	extd: Symbol('Command indepth description'),
-	gcmd: Symbol('module guild only'),
-	lcmd: Symbol('module access limitations'),
-	args: Symbol('command arguments'),
-	conf: Symbol('configurable settings'),
-	perm: Symbol('command permissions'),
-	exec: Symbol('module subroutine'),
-	func: Symbol('Creation function'),
-	file: Symbol('module file path'),
-	imap: Symbol('internal map'),
-	ivar: Symbol('internal variable'),
+	mgrp: Symbol('command mgrp'),
+	ogrp: Symbol('command ogrp'),
+	desc: Symbol('command desc'),
+	args: Symbol('command args'),
+	conf: Symbol('command conf'),
+	perm: Symbol('command perm'),
+	clim: Symbol('command clim'),
+	ctxg: Symbol('comm srv ctx'),
+	ctxu: Symbol('comm usr ctx'),
+	ctxf: Symbol('ctx type def'),
 }
 
-class reqError extends Error {} // An error that should occur whenever a command is missing a precondition to run;
+/*
+ * possibly link properties with {@link discord.js#Properties}
+*/
 
-class moduleObj {
-	constructor (bot, evHandler) {
-		let ev = new emitter();
+
+/**
+ * Object to store the basic properties of a module
+ *
+ * @param {string} name  - the string used by a user to call the module function
+ * @param {string} group - the name for the group of commands this module is part of
+*/
+module.exports = class module {
+	constructor (name, group) {
 		Object.defineProperties(this, {
-			[sym.name]: {writable: true, value: null},
-			[sym.desc]: {writable: true, value: null},
-			[sym.extd]: {writable: true, value: null},
-			[sym.gcmd]: {writable: true, value: true},
+			[sym.name]: {value: name},
+			[sym.mgrp]: {value: group},
+			[sym.ogrp]: {writable: true, value: null},
+			[sym.ctxg]: {writable: true, value: null},
+			[sym.ctxu]: {writable: true, value: null},
+			[sym.ctxf]: {writable: true, value: 0},
+			[sym.desc]: {writable: true, value: []},
 			[sym.args]: {writable: true, value: []},
+			[sym.conf]: {writable: true, value: []},
 			[sym.perm]: {writable: true, value: new Permissions('VIEW_CHANNEL')},
-			[sym.lcmd]: {writable: false, value: new Map([['users', []],['guilds', []]])},
-			[sym.exec]: {writable: true, value: null},
-			bot: { //move to module part so that each server intance has its own ev object
-				value: new Proxy(bot, {
-					get (target, prop, prox) {
-						if (prop in ev) target = ev;
-						return Reflect.get(target, prop);
-					}
-				}),
-				configurable: true,
-			}
+			[sym.clim]: {value: new Map([['users', new Set()], ['guilds', new Set()]])},
 		});
-		ev.on('newListener', (event, func) => {
-			if (!ev.listenerCount(event)) {
-				if (evHandler) evHandler.on(event, func);
-				else if (!evHandler) {
-					log.debug('event attached directly, config present?', this.config? this.config.id : 'no config');
-					bot.on(event, this.bot.emit.bind(undefined, event, func));
-				}
-			}
-		});
-	};
-
-	addConfig () {
-		//does nothing when called on the stripped down object
 	}
 
-	set command (value) {
-		if (this[sym.name]) throw new Error('command already set, and cannot be changed');
-		value = String(value);
-		this[sym.name] = value.replace(/ /g, '');
-	}
-
+	/**
+	 * Gets the string used to call the command
+	 *
+	 * @return {string} the command name
+	*/
 	get command () {return this[sym.name]}
 
-	set description (value) {
-		this[sym.desc] = String(value);
-	}
+	/**
+	 * Gets the name of the group this module is part of
+	 *
+	 * @return {string} the group name
+	*/
+	get group () {return this[sym.mgrp]}
 
+	/**
+	 * Sets the name of the shared group.
+	 * Modules in this group share the passed global object
+	 *
+	 * @param {string} input - the shared group name
+	*/
+	set objectGroup (input) {this[sym.ogrp] = (typeof input === 'symbol')? input : String(input)}
+
+	/**
+	 * Gets the name of the shared group.
+	 *
+	 * @return {string} the shared group name
+	*/
+	get objectGroup () {return this[sym.ogrp]}
+
+	/**
+	 * Sets decription of the module, multiple calls can be made to add more lines
+	 * First call should be a quick summary
+	 *
+	 * @param {string} input - the description of what the module does
+	*/
+	set description (input) {this[sym.desc].push(String(input))}
+
+	/**
+	 * Gets decription of the module
+	 *
+	 * @return {string[]} the lines of description for the module
+	*/
 	get description () {return this[sym.desc]}
 
-	set extraDesc (value) {
-		this[sym.extd] = String(value);
-	}
+	/**
+	 * Sets the command usage, multiple calls can be made to add more formats
+	 * the format should follow:
+	 *   <param>    - for required parameters (mast have one)
+	 *   [param]    - for optional parameters (0 or 1)
+	 *   <...param> - for at least one required (1 or more)
+	 *   [...param] - for any number (0 or more)
+	 *   param      - for fixed values (exactly the string specified)
+	 *
+	 * @param {string} input - the description of what the module does
+	*/
+	set arguments (input) {this[sym.args].push(String(input))}
 
-	get extraDesc () {return this[sym.extd]}
+	/**
+	 * Gets the command usage, multiple calls can be made to add more formats
+	 *
+	 * @return {string[]} input - the description of what the module does
+	*/
+	get arguments () {this[sym.args].push(String(input))}
 
-	set arguments (value) {
-		this[sym.args].push(String(value));
-	}
+	/**
+	 * Sets the default required permission level to run the command
+	 *
+	 * @param {Permissions} input - what the default required permissions should be
+	*/
+	set permissions (input) {this[sym.perm] = new Permissions(input)}
 
-	get arguments () {return this[sym.args]}
-
-	set permissions (value) {
-		this[sym.perm] = new Permissions(value);
-	}
-
-	set guildOnly (value) {
-		this[sym.gcmd] = Boolean(value);
-	}
-
-	get guildOnly () {return this[sym.gcmd]}
-
-	set limit ([type, ...ids]) {
-		if (this[sym.lcmd].has(type)) this[sym.lcmd].set(type, ids);
-	}
-
-	get hasExec () {
-		if (this[sym.exec]) return true;
-		return false;
-	}
-
-	get modules ()  {return new emitter()}
-
-	exec (func) {
-		if (typeof func !== 'function') {
-			log.warn('Function not set for', this[sym.name]);
-		} else {
-			this[sym.exec] = func;
-		}
-	}
-}
-
-function getConfig (guildid) {
-	let res
-
-	if (!guildid) return new config(undefined);
-	else if (typeof guildid === 'object' && guildid instanceof Guild) {
-		guildid = guildid.id;
-	} else {
-		guildid = String(guildid);
-	}
-
-	res = saved.get(guildid);
-	if (!res) {
-		log.debug('Creating new config instance for', guildid);
-		saved.set(guildid, res = new config(guildid));
-	}
-
-	return res;
-}
-
-
-module.exports = class moduleHandler extends moduleObj {
-	constructor (file, func, bot) {
-		super(bot);
-		let evProx = new emitter(), ev = new emitter(), evList = new Set(), forwardEvent = async (event, first, ...params) => {
-			let guild, comEnv;
-
-			if (first instanceof Guild) guild = first;
-			else if ('guild' in first) guild = first.guild;
-			else if (first.message) guild = first.message.guild;
-			else if (first instanceof Collection) {
-				let temp = first.first();
-
-				if ('guild' in temp) guild = temp.guild;
-			}
-
-			if (guild)
-				comEnv = this[sym.imap].get(guild.id);
-
-			if (!comEnv) {
-				comEnv = new moduleObj(this[sym.ivar], this.bot);
-				await this[sym.func].call(comEnv);
-				comEnv.config = getConfig(guild);
-				if (guild)
-					this[sym.imap].set(guild.id, comEnv);
-			}
-			try {
-				//log.warn('Emitting event', event, 'on command', this.command);
-				return comEnv.bot.emit(event, first, ...params);
-			} catch (e) {
-				log.error(time(), 'Error occured forwarding event to command', this.command);
-				log.error(e);
-			}
-		};
-		Object.defineProperties(this, {
-			[sym.file]: {value: file},
-			[sym.func]: {value: func},
-			[sym.conf]: {writable: true, value: []},
-			[sym.imap]: {value: new Map()},
-			[sym.ivar]: {value: bot},
-			bot: {
-				value: new Proxy(bot, {
-					get (target, prop, prox) {
-						if (prop === 'emit') target = ev;
-						else if (prop in evProx) target = evProx;
-						return Reflect.get(target, prop);
-					}
-				}),
-			},
-			_reload: {
-				value: function () {
-					for (let {event, func} of evList) {
-						log.debug('should have removed listener for', event, 'on command', this.command);
-						bot.removeListener(event, func);
-					}
-				}
-			},
-		});
-
-		evProx.on('newListener', event => {
-			if (!ev.listenerCount(event)) {
-				let func = async (...params) => {
-					try {
-						await forwardEvent(event, ...params);
-					} catch (e) {
-						log.error(time(), 'Error occured forwarding event to command (outer)', this.command);
-						log.error(e);
-					}
-				};
-				log.debug('adding forward event rule for command', this.command, 'on event', event);
-				evList.add({event, func});
-				ev.on(event, func);
-				bot.on(event, func);
-			}
-		});
-	}
-
-	get file () {
-		return this[sym.file];
-	}
-
-	get vars () {
-		return [...this[sym.conf]];
-	}
-
-	addConfig (name, type, defaultVal, userEditable, desc) {
-		let conf = register(name, type, defaultVal, userEditable, desc);
-		if (conf) this[sym.conf].push(name);
+	/**
+	 * Use to limit the access of the command
+	 * e.g. to limit the servers that have access to it, or the users who do
+	 *
+	 * @param {string}    type  - the object type this limit applies to
+	 * @param {...string} [ids] - the ids of the object type that have access to the command
+	*/
+	limit (type, ...ids) {
+		if (this[sym.clim].has(type)) this[sym.clim].set(type, new Set(ids));
 	}
 
 	access (user, guild) {
+		return true;
 		let users = this[sym.lcmd].get('users'), guilds = this[sym.lcmd].get('guilds');
 
 		if (guild) {
@@ -239,50 +142,17 @@ module.exports = class moduleHandler extends moduleObj {
 		return true;
 	}
 
-	async run (msg, cmd, ...params) {
-		let comEnv;
-
-		try {
-			checkPass.call(this, msg);
-		} catch (e) {
-			log.debug(time(), msg.author.username, 'Can\'t run command', this.command, 'because:', e.message);
-			if (!e instanceof reqError)
-				log.error('Error checking requirements:', e);
-			return;
-		}
-		if (msg.guild)
-			comEnv = this[sym.imap].get(msg.guild.id);
-
-		if (!comEnv) {
-			comEnv = new moduleObj(this[sym.ivar], this.bot);
-			await this[sym.func].call(comEnv);
-			comEnv.config = getConfig(msg.guild);
-			if (msg.guild)
-				this[sym.imap].set(msg.guild.id, comEnv);
-		}
-		log.debug(time(), msg.author.username, 'running command', this.command);
-		return await comEnv[sym.exec](msg, ...params);
-
-		function checkPass (msg) {
-			let tmp = getConfig(msg.guild), users = this[sym.lcmd].get('users');
-
-			if (!cmd.startsWith(tmp.prefix))
-				throw new reqError('wrong prefix');
-			if (msg.author.bot)
-				throw new reqError('commands from bots not allowed');
-			if (users.length > 0 && users.indexOf(msg.author.id) < 0)
-				throw new reqError('command can only be used by specific users');
-
-			if (msg.member) {
-				let user = msg.member, guilds = this[sym.lcmd].get('guilds');
-
-				if (guilds.length && guilds.indexOf(msg.guild.id) < 0)
-					throw new reqError('command can only be used on specific guilds');
-				if (tmp.disabled.has(this.command))
-					throw new reqError('command is disabled on this server');
-				if (!user.permissionsIn(msg.channel).has(tmp.permissions(this.command) || this[sym.perm]))
-					throw new reqError('missing permissions for user');
-			}
-		}
-	}
+	/**
+	 * Add a server specific configuration value the persists through restarts
+	 *
+	 * @param {string}  name           - name of the server variable, the module name is appended to the front of the name
+	 * @param {object}  type           - the object wrapper for the type the variable will be
+	 * @param {*}       [defaultVal]   - initial value of the server variable, should be of the type passed to the type parameter
+	 * @param {boolean} [configurable] - true if a user should be allowed to specify the value for this varible
+	 * @param {string}  [desc]         - a description of the variable to present to a user
+	*/
+	addConfig (name, type, defaultVal, configurable, desc) {
+		//register config variable regisert(args)
+		// add to conf
+	};
 }

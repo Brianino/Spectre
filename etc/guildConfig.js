@@ -1,17 +1,55 @@
 const log = require('./logger.js')('guild-config');
 const {parseBool, time} = require('./utilities.js');
+const mappingUtils = require('./mappingUtils.js');
 const {promises:fs, constants} = require('fs');
 const {Permissions} = require('discord.js');
 const {prefix} = require('../config.json');
+const Path = require('path');
 
 const guilds = new Map(), confProp = new Set(), configurable = new Map();
 
+const confDir = Path.resolve(__dirname, '../data/');
+
+const sym = {
+	guildStore: Symbol(),
+	confVars: Symbol(),
+}
+
+function convert (id, obj) {
+	let res = new Map([['id', String(id)]]);
+
+	for (let key in obj) {
+		let {type, val} = obj[key];
+		res.set(key, mappingUtils.asObject(type, val));
+	}
+	return res;
+}
+
+function stringify (map) {
+	let res = {}, moreThanId = false;
+	for (let [key, val] of map) {
+		let str = JSON.stringify(val);
+
+		if (str) {
+			res[key] = {
+				type: val.constructor.name,
+				val: mappingUtils.asString(val.constructor.name, val),
+			}
+			if (key !== 'id')
+				moreThanId = true;
+		}
+	}
+	if (moreThanId)
+		return JSON.stringify(res);
+}
+
 async function saveConfig (guildObj) {
-	let path = './data/' + guildObj.id + '.json', data = guildObj.toJsonObj();
+	let path = Path.resolve(confDir, guildObj.get(id)), data = stringify(guildObj);
 
 	if (data) {
 		log.debug(time(), 'Attempting to save config:', path);
-		return fs.writeFile(path, JSON.stringify(data), {flag: 'w'});
+		log.file.guildConfig('Attempting to save config:', path);
+		return fs.writeFile(path, data, {flag: 'w'});
 	} else {
 		let exists = true;
 
@@ -19,207 +57,173 @@ async function saveConfig (guildObj) {
 
 		if (exists) {
 			log.debug(time(), 'Deleting config:', path);
+			log.file.guildConfig('Deleting config:', path);
 			return fs.unlink(path);
 		}
 	}
 }
 
-class config {
-	constructor (guildid) {
-		Object.defineProperty(this, 'id', {value: guildid});
-		this.prefix();
-		this.permissions();
-		this.disabled();
-	}
+async function loadConfig () {
+	let dir = await fs.readdir(confDir, {encoding: 'utf8', withFileTypes: true}), res = new Map();
 
-	prefix () {
-		let prop = 'prefix', internal, tmp;
-		//WARNING DO NOT CHANGE THE INITIAL VALUE OF INTERNAL
+	for (let file of dir) {
+		if (file.isFile()) {
+			try {
+				let {id, ...conf} = require(path.join('../', dirPath, file.name));
 
-		if (this.saved && (tmp = this.saved(prop))) internal = String(tmp);
-		Object.defineProperty(this, prop, {
-			set: (val) => {
-				if (val !== undefined) internal = String(val);
-				else internal = undefined;
+				if (!id) id = file.name.substr(0, file.name.length - '.json'.length);
 
-				saveConfig(this).catch(e => {
-					log.error(time(), 'Unable to save config for', this.id);
-					log.error(e.toString());
-					log.debug(e.stack);
-				});
-			},
-			get: () => internal || prefix,
-		});
-		configurable.set(prop, [String, 'prefix to use for commands']);
-	}
-
-	permissions () {
-		let prop = 'permissions', internal = new Map(), tmp;
-		//WARNING DO NOT CHANGE THE INITIAL VALUE OF INTERNAL
-
-		if (this.saved && (tmp = this.saved(prop))) internal = new Map(tmp);
-		Object.defineProperty(this, prop, {
-			set: ([cmd, ...permissions]) => {
-				if (permissions[0] !== undefined) internal.set(cmd, new Permissions(permissions));
-				else internal.delete(cmd);
-
-				saveConfig(this).catch(e => {
-					log.error(time(), 'Unable to save config for', this.id);
-					log.error(e.toString());
-					log.debug(e.stack);
-				});
-			},
-			get: () => cmd => internal.get(cmd),
-		});
-		Object.defineProperty(this, 'internalPerms', {
-			get: () => internal
-		});
-	}
-
-	disabled () {
-		let prop = 'disabled', internal = new Set(), tmp;
-		//WARNING DO NOT CHANGE THE INITIAL VALUE OF INTERNAL
-
-		if (this.saved && (tmp = this.saved(prop))) internal = new Set(tmp);
-		Object.defineProperty(this, prop, {
-			set: (val) => {
-				if (val instanceof Set) internal = val;
-				else if (val !== undefined) internal = new Set(val);
-				else internal = new Set();
-
-				saveConfig(this).catch(e => {
-					log.error(time(), 'Unable to save config for', this.id);
-					log.error(e.toString());
-					log.debug(e.stack);
-				});
-			},
-			get: () => new Set(internal),
-		});
-	}
-
-	toJsonObj () {
-		let obj = {id: this.id};
-
-		if (this.prefix !== prefix) obj.prefix = this.prefix;
-		if (this.internalPerms.size) obj.permissions = [...this.internalPerms].map(([key, val]) => [key, val.bitfield]);
-		if (this.disabled.size) obj.disabled = [...this.disabled];
-		for (let {name, val, toPrim} of confProp) {
-			if (this[val()] !== undefined) obj[name] = toPrim(this[name]);
+				res.set(String(id), convert(id, conf));
+			} catch (e) {
+				log.warn(time(), 'Unable to load config for', file.name);
+				log.file('WARN Unable to lead config for', file.name, e);
+			}
 		}
-		if (Object.getOwnPropertyNames(obj).length > 1) return obj;
-		return;
+	}
+	return res;
+}
+
+function proxifyMap (map, varStore) {
+	return new Proxy(map, {
+		get (target, prop, receiver) {
+			let descriptor = varStore.get(prop), value = target.get(prop) || descriptor?.default;
+			if (prop === Symbol.iterator) {
+				log.file.guildConfig('Returning config iterator on', target.get('id'));
+				return target[Symbol.iterator];
+			}
+			if (descriptor?.get && value) {
+				log.file.guildConfig('Using custom getter for', prop, 'on', target.get('id'));
+				return descriptor.get.call(value);
+			}
+			return value;
+		},
+		set (target, prop, value, receiver) {
+			let descriptor = varStore.get(prop);
+			switch (typeof prop) {
+				case 'string':
+				case 'number':
+				case 'bigint':
+					if ((prop = String(prop)) === 'id') {
+						log.file.guildConfig('Blocking set to id', prop, 'on', target.get('id'));
+						return false;
+					}
+					if (!varStore.has(prop)) {
+						log.file.guildConfig('Blocking set to unknown variable:', prop, 'on', target.get('id'));
+						return false;
+					}
+					if (descriptor?.set) {
+						let prop = target.get(prop) || descriptor?.default;
+
+						if (prop) {
+							log.file.guildConfig('Using custom setter for', prop, 'with value', value, 'on', target.get('id'));
+							descriptor.set.call(prop, value);
+						} else {
+							log.file.guildConfig('Unable to use custom setter for', prop, 'due to missing value on', target.get('id'));
+							return false;
+						}
+					} else {
+						target.set(prop, value);
+					}
+					saveConfig(target).catch(e => {
+						log.error(time(), 'Unable to save config for', target.get('id'));
+						log.file('ERROR Unable to save config for', target.get('id'), e);
+					});
+					return true;
+					break;
+
+				default:
+					return false;
+			}
+		},
+		has (target, prop) {
+			return target.has(prop);
+		},
+		getOwnPropertyDescriptor (target, prop) {
+			let value = target.get(prop);
+
+			if (value)
+				return {configurable: false, writable: true, value: value};
+		},
+		ownKeys (target) {
+			return [...target.keys()];
+		},
+		preventExtensions () {return true; },
+		defineProperty () {return false; },
+		deleteProperty () {return false; },
+		setPrototypeOf () {return false; },
+		getPrototypeOf () {return null; },
+		isExtensible () {return false; },
+	});
+}
+
+module.exports = class configManager {
+	constructor () {
+		let confVars = new Map();
+
+		confVars.set('prefix', {
+			type: 'string',
+			default: prefix,
+			desc: 'prefix to use for commands',
+			configurable: true,
+		});
+		confVars.set('permissions', {
+			type: 'Map',
+			default: new Map(),
+			configurable: false,
+			get () {
+				return (cmd) => this.get(cmd);
+			},
+			set ([cmd, ...permissions]) {
+				this.set(cmd, new Permissions(permissions));
+			}
+		});
+		confVars.set('disabled', {
+			type: 'Set',
+			default: new Set(),
+			configurable: false,
+		});
+		Object.defineProperties(this, {
+			[sym.confVars]: {value: confVars},
+			[sym.guildStore]: {value: new Map()},
+		});
+	};
+
+	getGuildConfig (guildId) {
+		let result = this[sym.guildStore].get(guildId = String(guildId));
+
+		if (!result) {
+			this[sym.guildStore].set(guildId, result = new Map([['id', guildId]]));
+		}
+		return result;
 	}
 
 	getConfigurable () {
-		return new Map(configurable);
-	}
-}
+		let res = new Map();
 
-module.exports.saved = guilds;
-
-module.exports.config = config;
-
-/*
- * @param {String} name: the property name to put the value under on the config object
- * @param {Functions} type: constructor function, or primative type for the value
- * @param {*} defaultVal: the default value to return if there is no alternative stored
- * @param {Boolean} userEditable: optional argument for if the config var should be configurable by a user
- * @param {String} desc: a description of the config variable to display to the end user
-*/
-module.exports.register = function registerConfig (name, type, defaultVal, userEditable = true, desc) {
-	let internal = Symbol('Internal val'), toPrim, toObj;
-
-	name = String(name);
-	if (typeof type !== 'function') {
-		log.error(time(), 'Error registering', name, '; constructor not passed for type');
-		return false;
-	} else if (name in config.prototype) {
-		log.warn('Config property', name, 'already exists');
-		return false;
-	}
-	switch (type) {
-		// Only primative types should exist between here and the break
-		case String:
-		case Number:
-		case Boolean:
-
-		toPrim = (val) => val;
-		if (defaultVal !== undefined && typeof defaultVal !== type.name.toLowerCase()) {
-			log.warn('Default value of', name, 'not of the same type, setting to', '"' + type() + '"', 'instead');
-			defaultVal = type();
+		for (let [key, {type, desc, configurable}] of this[sym.confVars]) {
+			if (configurable)
+				res.set(key, [type, desc]);
 		}
-		Object.defineProperty(config.prototype, name, {
-			set (val) {
-				if (this[internal] === undefined) this[internal] = this.saved(name);
-				log.debug(time(), 'Setting config:', this.id, name, typeof val, `'${val}'`);
-				if (val !== undefined) {
-					if (type === Boolean) {
-						this[internal] = parseBool(val);
-					} else this[internal] = type(val);
-				}
-				else this[internal] = undefined;
-
-				saveConfig(this).catch(e => {
-					log.error(time(), 'Unable to save config for', this.id);
-					log.error(e.toString());
-					log.debug(e.stack);
-				});
-			},
-			get () {
-				if (this[internal] === undefined) this[internal] = this.saved(name);
-				return (this[internal] === undefined)? defaultVal : this[internal];
-			}
-		});
-		break;
-
-		// Below are object config types that don't support user configuration (meaning they are not exposed to the user for configuration)
-		case Object: toPrim = toPrim || ((val) => val); toObj = toObj || ((val) => {val ? new Object(val) : undefined});
-		case Map: toPrim = toPrim || ((val) => [...val]); toObj = toObj || ((val) => {
-			if (!val) return undefined;
-			val = Array.from(val);
-			if (val[0] && val[0] instanceof Array) {
-				return new Map(val);
-			} else if (val[0]) {
-				return new Map([val]);
-			}
-		});
-		userEditable = false;
-
-		// Below are object types that support user configuration
-		case Array: toPrim = toPrim || ((val) => val); toObj = toObj || ((val) => {val? Array.from(val) : undefined});
-		case Set: toPrim = toPrim || ((val) => [...val]); toObj = toObj || ((val) => {val ? new Set(Array.from(val)) : undefined});
-		case Permissions: toPrim = toPrim || ((val) => val.bitfield); toObj = toObj || ((val) => {val ? new Permissions(val) : undefined});
-		if (defaultVal !== undefined && !defaultVal instanceof type) {
-			log.warn('Default value of', name, 'not an instance of,', type.name, ', setting to undefined instead');
-			defaultVal = undefined;
-		}
-		Object.defineProperty(config.prototype, name, {
-			set (val) {
-				log.debug(time(), 'Setting config:', this.id, name, typeof val);
-				if (val !== undefined && !val instanceof type) this[internal] = toObj(val);
-				else if (val !== undefined) this[internal] = val;
-				else this[internal] = undefined;
-
-				saveConfig(this).catch(e => {
-					log.error(time(), 'Unable to save config for', this.id);
-					log.error(e.toString());
-					log.debug(e.stack);
-				});
-			},
-			get () {
-				if (!this[internal]) this[internal] = toObj(this.saved(name));
-				return this[internal] || defaultVal;
-			}
-		});
-		break;
-
-		default: throw new Error('Type not supported');
+		return res;
 	}
 
-	if (typeof userEditable === 'string') {
-		configurable.set(name, [type, userEditable]);
-	} else if (userEditable) configurable.set(name, [type, desc]);
-	confProp.add({name: name, val: () => internal, toPrim: toPrim});
-	log.debug(time(), 'Should have registered property:', name, 'type', type.name);
-	return userEditable;
+	register (name, type, defaultVal, {userEditable = true, description, get, set, toJson, from}) {
+		if (toJson && from) {
+			Object.defineProperty(mappingUtils, type.constructor.name.toLowerCase(), {value: {toJson, from}});
+			log.file.guildConfig('Set up json conversion functions for property', name);
+		}
+		this[confVars].set(name, {
+			type: type.constructor.name,
+			default: defaultVal,
+			desc: description,
+			configurable: userEditable,
+			get: typeof type === 'object'? get: undefined,
+			set: typeof type === 'object'? set: undefined,
+		});
+	}
+
+	async loadConfig () {
+		this[sym.guildStore] = await loadConfig();
+		log.info(time(), 'Loaded guild directory successfully');
+	}
 }
