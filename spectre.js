@@ -24,7 +24,7 @@ bot.on('ready', async () => {
 		await run(bot);
 		log.info(time(), 'Bot ready');
 	} catch (e) {
-		log.error(time(), 'Something when wrong during startup for the bot');
+		log.error(time(), 'Something went wrong during startup for the bot');
 		log.error(e);
 		process.exit();
 	}
