@@ -1,6 +1,6 @@
 {
   "name": "Spectre",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A shitty general purpose bot",
   "engines": {
     "node": "^14.0.0"
@@ -10,13 +10,12 @@
     "DEBUG": "*:log,*:info,*:warn,*:error"
   },
   "scripts": {
-    "start": "node spectre.js"
+    "start": "node spectre.js",
+    "test": "mocha"
   },
   "dependencies": {
     "@discordjs/opus": "^0.3.2",
-    "debug": "^4.1.1",
     "discord.js": "^12.0.2",
-    "supports-color": "^7.1.0",
     "timespan-parser": "^1.0.2",
     "ytdl-core": "^2.1.7"
   },
@@ -32,6 +31,9 @@
   ],
   "license": "None",
   "devDependencies": {
-    "jsdoc": "^3.6.5"
+    "debug": "^4.2.0",
+    "jsdoc": "^3.6.5",
+    "mocha": "^8.2.0",
+    "supports-color": "^7.2.0"
   }
 }
