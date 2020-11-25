@@ -4,7 +4,7 @@ const {Permissions} = require('discord.js');
 
 module.exports = class mappingUtilties {
 	static getConverter (type) {
-		let typeName = String(type.toLowerCase());
+		let typeName = String(type).toLowerCase();
 		if (typeName in this)
 			return this[typeName];
 		else
@@ -30,6 +30,21 @@ module.exports = class mappingUtilties {
 				return this[typeName].from(input);
 		} else
 			throw new TypeError('no mapping function for type ' + typeName);
+	}
+
+	static get auto () {
+		return {
+			toJson: (input) => {
+				let typeName = input.constructor.name.toLowerCase();
+				return {
+					type: typeName,
+					value: this.getConverter(typeName).toJson(input),
+				}
+			},
+			from: ({type, value}) => {
+				return this.getConverter(type).from(value);
+			}
+		}
 	}
 
 	static get string () {
@@ -67,39 +82,35 @@ module.exports = class mappingUtilties {
 
 	static get object () {
 		return {
-			toJson (input) {
-				return input;
+			toJson: (input) => {
+				let res = {};
+				for (let key in input)
+					res[key] = this.auto.toJson(input[key]);
+				return res;
 			},
-			from (input) {
-				return input;
+			from: (input) =>  {
+				let res = {};
+				for (let key in input)
+					res[key] = this.auto.from(input[key]);
+				return res;
 			}
 		}
 	}
 
 	static get array () {
 		return {
-			toJson: (input) => {
-				return input;
-			},
-			from: (input) => {
-				return input;
-			}
+			toJson: (input) => input.map(this.auto.toJson),
+			from: (input) => input.map(this.auto.from),
 		}
 	}
 
 	static get map () {
 		return {
 			toJson: (input) => {
-				return [...input].map(([key, val]) => {
-					let type = val.constructor.name;
-					return [key, {
-						val: this.getConverter(type).toJson(val),
-						type: type
-					}];
-				});
+				return [...input].map(([key, val]) => [key, this.auto.toJson(val)]);
 			},
 			from: (input) => {
-				return new Map(input.map(([key, {val, type}]) => [key, this.getConverter(type).from(val)]));
+				return new Map(input.map(([key, val]) => [key, this.auto.from(val)]));
 			}
 		}
 	}
@@ -107,23 +118,17 @@ module.exports = class mappingUtilties {
 	static get set () {
 		return {
 			toJson: (input) => {
-				return [...input].map(val => {
-					let type = val.constructor.name;
-					return {
-						val: this.getConverter(type).toJson(val),
-						type: type
-					}
-				});
+				return [...input].map(val => this.auto.toJson(val));
 			},
 			from: (input) => {
-				return new Set(input.map(({val, type}) => this.getConverter(type).from(val)));
+				return new Set(input.map(val => this.auto.from(val)));
 			}
 		}
 	}
 
 	static get permissions () {
 		return {
-			toJson: (input) => input.bitfiled,
+			toJson: (input) => input.bitfield,
 			from: (input) => new Permissions(input)
 		}
 	}
