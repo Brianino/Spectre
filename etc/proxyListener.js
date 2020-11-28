@@ -6,9 +6,16 @@ const sym = {
 	source: Symbol('source listener'),
 	events: Symbol('events to listeners'),
 	checks: Symbol('listeners to check'),
-	errors: Symbol('forward errors')
+	errors: Symbol('forward errors'),
+	queue: Symbol('queue')
 }
 
+/** Attaches an event listener to the source event emitter
+ * @private
+ * @param {string}     event - name of the event to attach a listener to
+ * @param {function[]} lList - set of listener methods that run when the event is called
+ * @param {listener}   param - the proxy listener
+*/
 function attachToSource (event, lList, {[sym.source]: source, [sym.checks]:checks, [sym.errors]: forwardEv}) {
 	let res;
 
@@ -44,11 +51,10 @@ function attachToSource (event, lList, {[sym.source]: source, [sym.checks]:check
 	return res;
 }
 
-/*
- * Object to store the basic properties of a module
+/** Proxy listener
  *
- * @param {string} name  - the string used by a user to call the module function
- * @param {string} group - the name for the group of commands this module is part of
+ * @param {EventEmitter} [source]                - source event emitter
+ * @param {boolean}      [errorsFromSource=true] - true if uncaught listener errors should be forwarded to the error event
 */
 module.exports = class listener {
 	constructor (source, errorsFromSource = true) {
@@ -61,9 +67,12 @@ module.exports = class listener {
 			[sym.errors]: {value: errorsFromSource? true : false},
 			[sym.queue]: {value: []},
 		});
-		// add queue to handle the source being added later;
 	}
 
+	/** Sets the source event emitter is one wasn't set during the instantiation
+	 * @param {EventEmitter} input - the source event emitter
+	 * @throws will throw an error if the source event emitter is already set
+	*/
 	set source (input) {
 		if (!this[sym.source] && input instanceof eventEmitter) {
 			this[sym.source] = input;
@@ -77,10 +86,29 @@ module.exports = class listener {
 		}
 	}
 
+	/**
+	 * @return {boolean} true if a source event emitter is attached
+	*/
 	get isAttached () {
-		return this[sym.source] && true;
+		return !!this[sym.source];
 	}
 
+	/**
+	 * @callback listener-listener
+	 * @param {...*} args - args supplied by the event
+	*/
+
+	/**
+	 * @callback listener-checkCallback
+	 * @param {...*} args - args supplied by the event
+	 * @return {boolean} truthy value if the listener should run
+	*/
+
+	/** Attaches a listener to the proxy
+	 * @param {string}                 eventName - the name of the event to attach the listener to
+	 * @param {listener-listener}      listener  - listener to run when the specified event on the source emitter occurs
+	 * @param {listener-checkCallback} check     - checks if a listener should run
+	*/
 	on (eventName, listener, check) {
 		let [lList] = this[sym.events].get(eventName = (typeof eventName === 'symbol')? eventName : String(eventName)) || [];
 
@@ -99,51 +127,71 @@ module.exports = class listener {
 		return this;
 	}
 
+	/**
+	 * @alias listener.on
+	*/
 	addListener (eventName, listener, check) {return this.on(eventName, listener, check)}
 
+	/** Attaches a one time listener to the proxy
+	 * @param {string|symbol}          eventName - the name of the event to attach the listener to
+	 * @param {listener-listener}      listener  - listener to run when the specified event on the source emitter occurs
+	 * @param {listener-checkCallback} check     - checks if a listener should run
+	*/
 	once (eventName, listener, check) {
-		let onceWrapper = (function (eventName, listener) {
+		let onceWrapper = (function (eventName, listener, ...params) {
 			this.removeListener(eventName, listener);
-			listener();
+			listener(...params);
 		}).bind(this, eventName, listener);
 		onceWrapper.listener = listener;
 		return this.on(eventName, onceWrapper, check);
 	}
 
+	/** Attaches a listener to the beginning of the listener array in the proxy
+	 * @param {string|symbol}          eventName - the name of the event to attach the listener to
+	 * @param {listener-listener}      listener  - listener to run when the specified event on the source emitter occurs
+	 * @param {listener-checkCallback} check     - checks if a listener should run
+	*/
 	prependListener (eventName, listener, check) {
-		let [lList] = this[sym.events].get(eventName = (typeof eventName === 'symbol')? eventName : String(eventName)) || [];
-
+		let lList, tmp;
 		if (!this[sym.source]) {
 			log.debug('Source not set up yet, queuing up prepend addition for', eventName);
-			this[sym.queue].push(this.on.bind(this, eventName, listener, check));
+			this[sym.queue].push(this.prependListener.bind(this, eventName, listener, check));
 			return this;
 		}
-		if (!lList) {
-			let temp = attachToSource(eventName, lList = new Set(), this);
-
-			this[sym.events].set(eventName, [lList, temp]);
-			lList.add(listener);
-		} else {
-			lList = new Set([listener, ...lList])
-		}
-		if (check) this[sym.checks].set(listener, (typeof check === 'function')? check : () => check);
+		eventName = (typeof eventName === 'symbol')? eventName : String(eventName)
+		this.on(eventName, listener, check);
+		[lList] = this[sym.events].get(eventName);
+		tmp = [...lList];
+		tmp.unshift(tmp.pop());
+		lList.clear();
+		tmp.forEach(val => lList.add(val));
 		return this;
 	}
 
+	/** Attaches a one time listener to the beginning of the listener array in the proxy
+	 * @param {string|symbol}          eventName - the name of the event to attach the listener to
+	 * @param {listener-listener}      listener  - listener to run when the specified event on the source emitter occurs
+	 * @param {listener-checkCallback} check     - checks if a listener should run
+	*/
 	prependOnceListener (eventName, listener, check) {
-		let onceWrapper = (function (eventName, listener) {
+		let onceWrapper = (function (eventName, listener, ...params) {
 			this.removeListener(eventName, listener);
-			listener();
+			listener(...params);
 		}).bind(this, eventName, listener);
 		onceWrapper.listener = listener;
 		return this.prependListener(eventName, onceWrapper, check);
 	}
 
+	/** Removes a listener from the proxy
+	 * @param {string|symbol}          eventName - the name of the event to attach the listener to
+	 * @param {listener-listener}      listener  - the listener to remove
+	*/
 	removeListener (eventName, listener) {
 		let lList, att;
 
 		if (!this[sym.source]) {
-			this[sym.queue].push(this.on.bind(this, eventName, listener));
+			log.debug('Source not set up yet, queuing up removal of listener for', eventName);
+			this[sym.queue].push(this.removeListener.bind(this, eventName, listener));
 			return this;
 		}
 		eventName = (typeof eventName === 'symbol')? eventName : String(eventName);
@@ -157,19 +205,29 @@ module.exports = class listener {
 			}
 		}
 		this[sym.checks].delete(listener);
-		if (lList.size() === 0)  {
-			source.removeListener(eventName, att);
+		if (lList.size === 0)  {
+			this[sym.source].removeListener(eventName, att);
 			this[sym.events].delete(eventName);
 		}
 		return this;
 	}
 
+	/**
+	 * @alias listener.removeListener
+	*/
 	off (eventName, listener) {return this.removeListener(eventName, listener)}
 
+	/** A list of all the event names that currently have listeners attached
+	 * @return {Array<string|symbol>}
+	*/
 	eventNames () {
 		return [...this[sym.events].keys()];
 	}
 
+	/** A count of the number of listeners attached to a given event
+	 * @param {string|symbol} eventName - the name of the event
+	 * @return {number} count of attached listeners
+	*/
 	listenerCount (eventName) {
 		let [lList] = this[sym.events].get(eventName = (typeof eventName === 'symbol')? eventName : String(eventName)) || [];
 
