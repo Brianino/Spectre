@@ -15,6 +15,34 @@ const sym = {
 	confVars: Symbol(),
 }
 
+/** The config object to interact with the configured guild properties
+ * All config objects can be extended with the [config manager]{@link configManager#register}
+ * Setting any of the properties will cause the config properties to get saved
+ * @typedef {Proxy} ConfigObject
+ * @prop {string}  id          - the guild id of the guild the config object applies to
+ * @prop {string}  prefix      - the prefix required to run commands
+ * @prop {getPerm} permissions - can be set with {@link setPerm}
+ * @prop {Set}     disabled    - the set of disabled commands on the guild
+*/
+
+/** Custom method to return the permissions associated to a particular command
+ * @func getPerm
+ * @desc gets the permissions required to run the command on a specific guild
+ * @param {string} cmdName - the name of the command to get the permssions for
+ * @return {Permissions} the permissions required to run a command on a specific guild
+*/
+
+/** Argument for the custom setter, should be provided as an array of arguments
+ * @func setPerm
+ * @param {string} cmd   - the command name
+ * @param {...*}   perms - a list of [permission resolvables]{@link https://discord.js.org/#/docs/main/stable/typedef/PermissionResolvable}
+*/
+
+/** converts a parsed json object back into a map of property keys to property values
+ * @param {string} id  - the id of the guild that this property map applies to
+ * @param {Object} obj - the object that would be returned from JSON.parse on a json string
+ * @returns {Map} property key to property value map
+*/
 function convert (id, obj) {
 	let res = new Map([['id', String(id)]]);
 
@@ -25,6 +53,10 @@ function convert (id, obj) {
 	return res;
 }
 
+/** converts a map of property names to property values into a json string
+ * @param {Map}	map - a map of property names to property values
+ * @returns {string|undefined} the json string if more than the id property is set
+*/
 function stringify (map) {
 	let res = {}, moreThanId = false;
 	for (let [key, val] of map) {
@@ -43,6 +75,9 @@ function stringify (map) {
 		return JSON.stringify(res);
 }
 
+/** Writes the guild config map to file
+ * @param {Map}	guildObj - the map of guild config variable names to config values
+*/
 async function saveConfig (guildObj) {
 	let path = Path.resolve(confDir, guildObj.get('id') + '.json'), data = stringify(guildObj);
 
@@ -63,6 +98,9 @@ async function saveConfig (guildObj) {
 	}
 }
 
+/** Loads the guild config map from file
+ * @return {Map} the map of guild config variable names to config values
+*/
 async function loadConfig () {
 	let dir = await fs.readdir(confDir, {encoding: 'utf8', withFileTypes: true}), res = new Map();
 
@@ -83,6 +121,11 @@ async function loadConfig () {
 	return res;
 }
 
+/** Disguises the config map object as a normal object that only allows the modification of the values
+ * @param {Map} map      - the config map object to disguise
+ * @param {Set} varStore - the set of all available properties that may or may not already be present on the map
+ * @return {Proxy} the map object disgused to act as a standard object, where the properties as the config values
+*/
 function proxifyMap (map, varStore) {
 	return new Proxy(map, {
 		get (target, prop, receiver) {
@@ -174,6 +217,10 @@ function proxifyMap (map, varStore) {
 	});
 }
 
+/** Converts a type, to its string name
+ * @param {*} type - the input to try and pull a type name from
+ * @return {string} type name as a string
+*/
 function getTypeName (type) {
 	if (!type)
 		return;
@@ -193,6 +240,10 @@ function getTypeName (type) {
 	return type.toLowerCase();
 }
 
+/** Returns true if a type is allowed to have getters and setters (so should be false on primative types)
+ * @param {string} typeName - the name of the type
+ * @return {boolean} true if the type can have a getter or setter
+*/
 function canHaveGetters (typeName) {
 	switch (typeName) {
 		case 'symbol':
@@ -208,6 +259,7 @@ function canHaveGetters (typeName) {
 	}
 }
 
+/** Handles the storage and manipulations of config objects for each guild */
 module.exports = class configManager {
 	constructor () {
 		let confVars = new Map();
@@ -245,6 +297,10 @@ module.exports = class configManager {
 		});
 	};
 
+	/** Returns the stored config object for a particular guild
+	 * @param {string} guildId - the id of the guild to get the config object for
+	 * @return {ConfigObject} the config object
+	*/
 	getGuildConfig (guildId) {
 		let result = this[sym.guildStore].get(guildId = String(guildId));
 
@@ -255,6 +311,10 @@ module.exports = class configManager {
 		return proxifyMap(result, this[sym.confVars]);
 	}
 
+	/** Deletes the stored config object and file for a particular guild
+	 * @param {string} guildId - the id of the guild to delete
+	 * @return {boolean} true if there was a config object to delete
+	*/
 	async deleteGuildConfig (guildId) {
 		let deleted = this[sym.guildStore].delete(guildId = String(guildId));
 
@@ -263,6 +323,9 @@ module.exports = class configManager {
 		return deleted;
 	}
 
+	/** Returns a map of all the user configurable variables
+	 * @return {Map} a map of property names, to an array with the property type and desc
+	*/
 	getConfigurable () {
 		let res = new Map();
 
@@ -273,6 +336,22 @@ module.exports = class configManager {
 		return res;
 	}
 
+	/** Extra properties object
+	 * @typedef {Object} extraProperties
+	 * @prop {*}        [default]      - the default value of the config variable if one isn't set
+	 * @prop {boolean}  [configurable] - true if a user should be able to set the value of this property directly
+	 * @prop {string}   [description]  - a description of what the property is used for
+	 * @prop {function} [get]          - a custom getter method for the property
+	 * @prop {function} [set]          - a custom setter method for the property
+	 * @prop {function} [toJson]       - a custom method to convert the property to an object that can be serialized with JSON.stringify
+	 * @prop {function} [from]         - a custom method to convert a json object back into the complext type of the variable
+	*/
+	/** Registers a new config property that can be accessed/set on a [Config object]{@link ConfigObject}
+	 * @param {string}          name  - the name of the property
+	 * @param {*}               type  - the type of object stored on the property (will use a constructor name, or the string value)
+	 * @param {extraProperties} param - extra modifiable properties
+	}
+	*/
 	register (name, type, {default:defaultVal, configurable = true, description, get, set, toJson, from}) {
 		let temp;
 
@@ -299,6 +378,7 @@ module.exports = class configManager {
 		log.file.guildConfig('Finished registering config property', name);
 	}
 
+	/** Parses the guild config from the config files */
 	async loadConfig () {
 		this[sym.guildStore] = await loadConfig();
 		log.info(time(), 'Loaded config directory successfully');
