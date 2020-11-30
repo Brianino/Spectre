@@ -1,6 +1,5 @@
-const log = require('../etc/logger.js')('poll-module');
 const timespan = require('timespan-parser')('msec');
-const {split, time} = require('../etc/utilities.js');
+const {split} = require('../etc/utilities.js');
 
 const hardlimit = timespan.parse('1 month'), emoteDelete = '\uD83D\uDDD1\uFE0F';
 /* Custom emote set, not used for now
@@ -23,46 +22,44 @@ emoteSet = [
 	'\uD83D\uDEFB', //BROWN SQUARE
 ];*/
 
-setupModule(function () {
-	this.command = 'poll';
-	this.description = 'create a poll in the channel';
-	this.extraDesc = 'single - a poll where you can only vote for one option\n' +
-					'multi - a poll where you can specify the max number of votes\n' +
-					'dynamic - a poll where options can be added whilst the poll is running (unlimited number of votes)\n' +
-					'The default poll type is single\n' +
-					'question - the title of the poll (either a single word, or a sentence inside of double quotes, e.g. "this is a question")\n' +
-					'option - same format as the question, these are the options users can vote on\n' +
-					'hidden - if one of the options is `-hidden` then the hidden vote feature for reaction polls is enabled\n' +
-					'add - used to add options to dynamic polls\n' +
-					'delete - used to delete the last option in a dynamic poll\n' +
-					'list - used to see what polls are active on the server, and the time remaining for each\n' +
-					'end - used to end an active poll early\n' +
-					'timespan - the time period the poll should run for (`Important` ensure that if left out that the last option isn\'t valid timespan format)\n' +
-					'valid units for the timespan are: seconds (s, sec, second, seconds), minutes (m, min, minute, minutes), hours (h, hr, hour, hours), days (d, day, days)\n' +
-					'the timespan should be a combination of numbers and units\n' +
-					'image - to add an image upload the image as part of the command\n' +
-					'To vote in polls not using reactions, use the commands `vote [option number]` to vote, and `vote remove [option number]` to remove votes, or `vote list` to view current votes';
+this.description = 'create a poll in the channel';
+this.description = 'single - a poll where you can only vote for one option';
+this.description = 'multi - a poll where you can specify the max number of votes';
+this.description = 'dynamic - a poll where options can be added whilst the poll is running (unlimited number of votes)';
+this.description = 'The default poll type is single';
+this.description = 'question - the title of the poll (either a single word, or a sentence inside of double quotes, e.g. "this is a question")';
+this.description = 'option - same format as the question, these are the options users can vote on';
+this.description = 'hidden - if one of the options is `-hidden` then the hidden vote feature for reaction polls is enabled';
+this.description = 'add - used to add options to dynamic polls';
+this.description = 'delete - used to delete the last option in a dynamic poll';
+this.description = 'list - used to see what polls are active on the server, and the time remaining for each';
+this.description = 'end - used to end an active poll early';
+this.description = 'timespan - the time period the poll should run for (`Important` ensure that if left out that the last option isn\'t valid timespan format)';
+this.description = 'valid units for the timespan are: seconds (s, sec, second, seconds), minutes (m, min, minute, minutes), hours (h, hr, hour, hours), days (d, day, days)';
+this.description = 'the timespan should be a combination of numbers and units';
+this.description = 'image - to add an image upload the image as part of the command';
+this.description = 'To vote in polls not using reactions, use the commands `vote [option number]` to vote, and `vote remove [option number]` to remove votes, or `vote list` to view current votes';
 
-	this.arguments = 'single <question> [...option] [timespan]';
-	this.arguments = 'dynamic <question> [...option] [timespan]';
-	this.arguments = 'multi <limit> <question> [...option] [timespan]';
-	this.arguments = '<question> [...option] [timespan]';
-	this.arguments = 'add [...options]';
-	this.arguments = 'delete_last';
-	this.arguments = 'list';
-	this.arguments = 'end all';
-	this.arguments = 'end';
-	this.guildOnly = true;
+this.arguments = 'single <question> [...option] [timespan]';
+this.arguments = 'dynamic <question> [...option] [timespan]';
+this.arguments = 'multi <limit> <question> [...option] [timespan]';
+this.arguments = '<question> [...option] [timespan]';
+this.arguments = 'add [...options]';
+this.arguments = 'delete_last';
+this.arguments = 'list';
+this.arguments = 'end all';
+this.arguments = 'end';
 
-	this.addConfig('poll_timespan', String, '5m', 'default timespan for polls, after which it posts the results');
-	this.addConfig('poll_reactions', Boolean, true, 'use reactions for voting (only works with 10 or less options)');
-	//this.addConfig('poll_marker', Boolean, false, 'posts a link to the poll message (always updated to be the last message in a channel)');
-	//this.addConfig('poll_active', Map, new Map(), false);
+this.addConfig('poll_timespan', String, '5m', 'default timespan for polls, after which it posts the results');
+this.addConfig('poll_reactions', Boolean, true, 'use reactions for voting (only works with 10 or less options)');
+//this.addConfig('poll_marker', Boolean, false, 'posts a link to the poll message (always updated to be the last message in a channel)');
+//this.addConfig('poll_active', Map, new Map(), false);
 
+function inGuild () {
 	let active = new Map(), dynamicPolls = new Set(), activeWarn = new Set();
 	//CHECK FOR GUILD LEAK, IT SHOULD BE FIXED
 
-	this.exec(async (msg, ...input) => {
+	return async (msg, ...input) => {
 		let tmp = parseInput(input.join(' '), this.config), votes, emMsg, tmpType, list, choice;
 
 
@@ -164,7 +161,7 @@ setupModule(function () {
 			return (await msg.channel.send('Missing parameters, refer to help')).delete({timeout: 10000});
 			break;
 		}
-	});
+	}
 
 	function parseInput (input, config) {
 		let [type, question, ...options] = split(input), res = {type: 1, tvalid: false, incognito: false, question, options};
@@ -550,4 +547,4 @@ setupModule(function () {
 			return acc;
 		}, obj.options.map(val => 0));
 	}
-});
+}

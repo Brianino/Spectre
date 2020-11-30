@@ -1,22 +1,19 @@
-const log = require('../etc/logger.js')('repost-module');
-const {time, getAttachments, getChannelID, checkForUrl, waitFor} = require('../etc/utilities.js');
+const {getAttachments, getChannelID, checkForUrl, waitFor} = require('../etc/utilities.js');
 const {GuildChannel, DiscordAPIError} = require('discord.js');
 
-setupModule(function () {
-	this.command = 'repost';
-	this.description = 'Repost images into an image gallery channel';
-	this.extraDesc = 'At least one source channel needs to be provided, and a gallery channel';
-	this.arguments = '<...source> to <gallery>';
-	this.permissions = 'MANAGE_GUILD';
-	this.guildOnly = true;
+this.description = 'Repost images into an image gallery channel';
+this.description = 'At least one source channel needs to be provided, and a gallery channel';
+this.arguments = '<...source> to <gallery>';
+this.permissions = 'MANAGE_GUILD';
 
-	this.addConfig('repost_galleries', Map, new Map(), false);
-	this.addConfig('repost_prefer_url', Boolean, true, 'Prefer to post image url\'s rather than reuploading the file');
-	this.addConfig('repost_formats', Set, new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']), 'Image formats that should be reposted');
+addConfig('repost_galleries', Map, new Map(), false);
+addConfig('repost_prefer_url', Boolean, true, 'Prefer to post image url\'s rather than reuploading the file');
+addConfig('repost_formats', Set, new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']), 'Image formats that should be reposted');
 
+function inGuild (emitter) {
 	// ATTACH EVENT LISTENER AFTER THE BOT RESTARTS
 
-	this.bot.on('message', async msg => {
+	emitter.on('message', async msg => {
 		try {
 			let gallList = this.config.repost_galleries.get(msg.channel.id) || [], attachments = [], urlCount = checkForUrl(msg.content, true, 'g').length;
 
@@ -58,7 +55,7 @@ setupModule(function () {
 		}
 	});
 
-	this.exec((msg, ...input) => {
+	return (msg, ...input) => {
 		let [type, gallery, source] = parseInput(input, msg.guild), tmap = this.config.repost_galleries;
 
 		log.debug('Type is:', type);
@@ -91,7 +88,7 @@ setupModule(function () {
 			this.config.repost_galleries = tmap;
 			break;
 		}
-	});
+	}
 
 	function parseInput (input, guild) {
 		let source = [], gallery, tSwitch = false, type = 0;
@@ -115,4 +112,4 @@ setupModule(function () {
 		}
 		return [type, gallery, source];
 	}
-});
+}

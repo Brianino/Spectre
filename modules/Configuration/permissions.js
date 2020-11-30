@@ -1,19 +1,14 @@
-const log = require('../etc/logger.js')('perm-module');
-const {modules} = require('../etc/moduleLoader.js');
-const {time} = require('../etc/utilities.js');
 const fs = require('fs').promises;
 
-setupModule(function () {
-	this.command = 'permissions';
-	this.description = 'Modifying required permissions for commands';
-	this.arguments = 'set <command> [...permission]';
-	this.arguments = 'show <command>';
-	this.arguments = 'list';
-	this.permissions = 'ADMINISTRATOR';
-	this.guildOnly = true;
+this.description = 'Modifying required permissions for commands';
+this.arguments = 'set <command> [...permission]';
+this.arguments = 'show <command>';
+this.arguments = 'list';
+this.permissions = 'ADMINISTRATOR';
 
+function inGuild () {
 
-	this.exec((msg, ...args) => {
+	return (msg, ...args) => {
 		switch (args.shift()) {
 			case 'list': // display permissions for all commands
 			return listPermission.call(this, msg);
@@ -30,7 +25,7 @@ setupModule(function () {
 				'`show` (to show the permissions for a single command)\n' +
 				'`set` (to set the permissions for a command)');
 		}
-	});
+	}
 
 	function setPermission (msg, command, perms) {
 		let cmd = modules.get(command = String(command));
@@ -95,4 +90,4 @@ setupModule(function () {
 		}
 		return msg.channel.send({embed});
 	}
-});
+}

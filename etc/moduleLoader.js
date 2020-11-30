@@ -2,16 +2,16 @@
 
 const logger = require('./logger.js');
 const contextHandler = require('./contextHandler.js');
+const configManager = require('./guildConfig.js');
 const modObj = require('./moduleObject.js');
+const {time} = require('./utilities.js');
 const log = logger('module-loader');
-// guild config
 const {promises:fs} = require('fs');
 const Path = require('path');
 const vm = require('vm');
 
-const eventEmitter = require('events');
 // move iniTimeout to config, maybe add an option for timeout running a command?
-const moduleFolder = '../test', iniTimeout = 1000, modules = new Map();
+const moduleFolder = '../modules', iniTimeout = 1000;
 
 const globals = { // TODO: Lock off objects so that they can't be modified from within the module
 	// Value Globals
@@ -45,9 +45,8 @@ const globals = { // TODO: Lock off objects so that they can't be modified from 
 	// Other
 	Promise, Reflect, Proxy, Intl, WebAssembly, require, logger, TextEncoder,
 	setImmediate, setInterval, setTimeout, URL, URLSearchParams, TextDecoder,
+	time,
 }
-
-const context = new contextHandler();
 
 function proxifyModule (mod, main) {
 	return new Proxy (main, {
@@ -66,15 +65,13 @@ function proxifyModule (mod, main) {
 	});
 }
 
-async function loadFile (filePath, group) {
+async function loadFile (filePath) {
 	let name = Path.basename(filePath, '.js');
 
 	if (!filePath.endsWith('.js'))
 		throw new Error('Unknown file type');
 	return {
 		name: name,
-		group: group,
-		filename: filePath,
 		code: await fs.readFile(filePath, {encoding: 'utf8'})
 	};
 }
@@ -103,81 +100,89 @@ async function findModules () {
 	return res;
 }
 
-async function getModules () {
-	let files = await findModules();
-
-	return await Promise.all(files.map(file => {
-		return loadFile(file.filePath, file.group).catch(e => {
-			log.error('Error occured loading module', file.filePath);
-			return undefined;
-		});
-	}));
-}
-
 function setupModule (name, group, filename, code) {
 	let script = new vm.Script(code, {filename}), obj = new modObj(name, group), temp = {}, ctx = Object.create(temp);
 
-	Object.assign(temp, {__filename: filename, __dirname: Path.dirname(filename), setupModule: ctx}, globals);
-	try {
-		script.runInNewContext(proxifyModule(obj, ctx), {contextName: 'Main Context: ' + name, timeout: iniTimeout});
-		log.info('Module instantiated, Creating module context objects');
-		context.create(obj, ctx);
-		modules.set(name, obj);
-	} catch (e) {
-		log.error('Unable to setup module', name);
-		if ('stack' in e) log.error(e.stack);
-		else log.error(e.toString());
-	}
+	Object.assign(temp, {
+		__filename: filename,
+		__dirname: Path.dirname(filename),
+		setupModule: proxifyModule(obj, ctx),
+		addConfig: this.register,
+		modules: this.modules,
+		getBot: () => this.source,
+		log: logger('Module-' + group + '-' + name),
+	}, globals);
+	script.runInNewContext(proxifyModule(obj, ctx), {contextName: 'Main Context: ' + name, timeout: iniTimeout});
+	return this[sym.context].create(obj, ctx);
 }
 
-const evEmitter = new eventEmitter();
+const sym = {
+	modules: Symbol('modules map'),
+	context: Symbol('context handler'),
+	gconfig: Symbol('guild config manager'),
+}
 
-getModules().then(input => {
-	for (let mod of input) {
-		log.info('Processing:', mod.filename);
-		if (mod) setupModule(mod.name, mod.group, mod.filename, mod.code);
+module.exports = class moduleLoader {
+	constructor () {
+		let config;
+		Object.defineProperties(this, {
+			[sym.modules]: {value: new Map()},
+			[sym.gconfig]: {value: config = new configManager()},
+			[sym.context]: {value: new contextHandler(config.getGuildConfig.bind(config))},
+		});
 	}
-	return modules[Symbol.iterator]();
-}).then(att => {
-	context.setEventSource(evEmitter);
-	let [,mod] = att.next().value;
 
-	log.trace('one');
-	if (!mod) throw new Error('Map is empty');
-	log.trace('two');
-	let func = mod[context.getDMSymbol]();
-	log.trace('three', typeof func);
-	// This should hopfully be the function isolated in its own context? verify by running 2 times?
-	log.log('Start:', func());
-	log.trace('four');
-	log.log('Modified:', func('New Value'));
-	log.log('End:', func());
-	return att;
-}).then(att => {
-	let [,mod] = att.next().value;
+	get modules () {
+		// change this to return a bunch of proxies that can be used to indirectly read the properties on the commands
+		return this[sym.modules]
+	}
 
-	if (!mod) return log.log('Nothing in second');
-	let func = mod[context.getDMSymbol]();
+	get register () {
+		return this[sym.gconfig].register.bind(this[sym.gconfig]);
+	}
 
-	log.log('Start:', func());
-	log.log('Modified:', func('Other Value'));
-	log.log('End:', func());
+	async loadModule ({filePath, group}) {
+		log.debug('Attempting to load module:', filePath, group);
+		try {
+			let {name, code} = await loadFile(filePath);
 
-	let guildx = mod[context.getGuildSymbol]('x');
-	let guildy = mod[context.getGuildSymbol]('y');
+			this[sym.modules].set(name, setupModule.call(this, name, group, filePath, code));
+			log.info(name, 'Module instantiated');
+		} catch (e) {
+			log.error('Unable to setup module:', file.filePath);
+			try {
+				log.error(e);
+				log.file['module-loader']('Unable to set up module:', e);
+			} catch (ignore) {
+				log.error(e.toString());
+				log.file['module-loader']('Unable to set up module:', e.toString());
+			}
+		}
+	}
 
-	log.log('Start x:', guildx());
-	log.log('Start y:', guildy());
-	log.log('Modified x:', guildx('Guild X'));
-	log.log('Same y:', guildy());
-	log.log('Modified y:', guildy('Guild Y'));
-	log.log('End x:', guildx());
-	log.log('End y:', guildy());
-	return att;
-}).then(() => {
-	evEmitter.emit('test');
-	evEmitter.emit('test2', {guild: {id: 'x'}, name: 'some guild x'});
-}).catch(e => {
-	console.error('There was an error:', e.toString());
-	console.error(e.stack);
-});
+	async setup () {
+		let files = await findModules();
+
+		await Promise.allSettled(files.map(file => this.loadModule(file)));
+	}
+
+	set source (input) {
+		this[sym.context].setEventSource(input);
+		Object.defineProperty(this, 'source', {get () {return input}});
+	}
+
+	runCommand (msg) {
+		let [cmdStr, ...msgStr] = msg.content.split(' '), config = this[sym.gconfig].getGuildConfig(msg.guild?.id), cmd;
+
+		if (!cmdStr.startsWith(config.prefix))
+			return;
+		cmd = this[sym.modules].get(cmdStr.substr(config.prefix.length));
+
+		if (cmd && modObj.access.call(cmd, msg.author, msg.guild, config)) {
+			if (msg.guild) //this creates instance, it doens't run the fun, return value needs to be run;
+				return cmd[contextHandler.guildSymbol](msg.guild.id).call(config, msg, ...msgStr);
+			else
+				return cmd[contextHandler.DMSymbol]().call(config, msg, ...msgStr);
+		}
+	}
+}

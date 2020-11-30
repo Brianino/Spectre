@@ -1,20 +1,15 @@
-const log = require('../etc/logger.js')('serverinfo-module');
-const {time, checkForUrl, waitFor} = require('../etc/utilities.js');
+this.description = 'repeat a message';
+this.permissions = 'MANAGE_MESSAGES';
 
-setupModule(function () {
-	this.command = 'say';
-	this.description = 'repeat a message';
-	this.permissions = 'MANAGE_MESSAGES';
-	this.guildOnly = true;
-
-	this.bot.on('message', async msg => {
-		if (msg.mentions.users.has(this.bot.user.id)) {
+function inGuild (emitter) {
+	emitter.on('message', async msg => {
+		if (msg.mentions.users.has(getBot().user.id)) {
 			log.debug('Message:', msg.content);
 			await msg.reply('Hewwo');
 		}
-	})
+	});
 
-	this.exec(async (msg, ...input) => {
+	return async (msg, ...input) => {
 		log.debug('Repeating:', input.join(' ').replace(/[\s\S]/g, char => {
 			let n = char.charCodeAt();
 
@@ -38,5 +33,5 @@ setupModule(function () {
 		} else {
 			return msg.channel.send(input.join(' '), {disableMentions: 'all'});
 		}
-	});
-});
+	}
+}

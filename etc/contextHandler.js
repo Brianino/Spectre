@@ -21,7 +21,7 @@ const retrieveObject = objMap => mod => {
 	return res;
 }
 
-const checkGuild = obj => {
+const checkGuild = guildId => obj => {
 	let guild;
 
 	if (obj instanceof Guild) guild = obj;
@@ -80,38 +80,35 @@ function proxifyListener (listener, check) {
 // New method should allow the object itself to act as a global context, and the function to to operate under the new context object (which should allow the config var to be set)
 // Commands sharing context
 
-module.exports = function () {
+module.exports = function (getConfigCallback) {
 	let ctx = {
 		guilds: {
 			// Function that is shared between guilds
 			funcMap: new WeakMap(), // Map command object to function
 			// Object shared between members of the group
 			objMap: new Map(),
-			getObj: retrieveObject(ctx.guilds.objMap),
 		},
 		dms: {
 			// Function that is shared between dms
 			funcMap: new WeakMap(), // Map command object to function
 			// Object shared between members of the group
 			objMap: new Map(),
-			getObj: retrieveObject(ctx.dms.objMap),
 		},
 		all: {
 			// Function that is shared between guild and dms
 			funcMap: new WeakMap(),
 			// Context that is shared between guild, dms and commands
 			objMap: new Map(),
-			getObj: retrieveObject(ctx.all.objMap),
 		}
 	}, modListener = new listener(undefined, true);
 
-	this.getGuildSymbol = sym.guilds;
-	this.getDMSymbol = sym.dms;
-
+	ctx.guilds.getObj = retrieveObject(ctx.guilds.objMap);
+	ctx.dms.getObj = retrieveObject(ctx.dms.objMap);
+	ctx.all.getObj = retrieveObject(ctx.all.objMap);
 	this.setEventSource = source => {
 		// check that the source is an instance of client, otherwise throw error
-		/*if (!source instanceof Client)
-			throw new Error('Emitter source needs to be a discord client');*/
+		if (!source instanceof Client)
+			throw new Error('Emitter source needs to be a discord client');
 		log.debug('Attempting to set proxy listener source');
 		modListener.source = source;
 	}
@@ -133,9 +130,11 @@ module.exports = function () {
 						if (!runFunc) {
 							runFunc = (function () {
 								let newObj = Object.create(cmdObj),
-									proxyListener = proxifyListener(modListener, checkGuild),
+									proxyListener = proxifyListener(modListener, checkGuild(guildId)),
 									globObj = ctx.guilds.getObj(cmdObj);
 								// set config param on new obj here...
+								if (getConfigCallback)
+									Object.defineProperty(newObj, 'config', {value: getConfigCallback(guildId)});
 								return mainCtx[key].call(newObj, proxyListener, globObj);
 							})();
 							log.debug('Wrapped guild function for:', cmdObj.command);
@@ -211,3 +210,6 @@ module.exports = function () {
 
 	return this;
 }
+
+module.exports.guildSymbol = sym.guilds;
+module.exports.DMSymbol = sym.dms;

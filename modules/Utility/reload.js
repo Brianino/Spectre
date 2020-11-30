@@ -1,18 +1,16 @@
-const log = require('../etc/logger.js')('reload-module');
-const {modules, run} = require('../etc/moduleLoader.js');
-const {time} = require('../etc/utilities.js');
+// const {modules, run} = require('../etc/moduleLoader.js');
 const {owner} = require('../config.json');
 
-setupModule(function () {
-	this.command = 'reload';
-	this.description = 'Reload a named module';
-	this.arguments = '<command>';
-	this.limit = ['users', owner];
-	this.guildOnly = false;
+this.command = 'reload';
+this.description = 'Reload a named module';
+this.arguments = '<command>';
+this.limit = ['users', owner];
 
-	this.exec(async (msg, moduleStr) => {
+function inAll () {
+	return async (msg, moduleStr) => {
 		let moduleObj = modules.get(moduleStr);
 
+		return log.warn('NEED ACCESS TO MODLOADER RELOAD FUNC');
 		msg.delete();
 		if (moduleObj) {
 			try {
@@ -33,5 +31,5 @@ setupModule(function () {
 		} else {
 			return (await msg.channel.send('Unknown module `' + moduleStr + '`')).delete({timeout: 100000});
 		}
-	});
-});
+	};
+}

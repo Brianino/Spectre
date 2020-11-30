@@ -1,12 +1,10 @@
-const log = require('../etc/logger.js')('userinfo-module');
-const {time, getUserID} = require('../etc/utilities.js');
+const {getUserID} = require('../etc/utilities.js');
 
-setupModule(function () {
-	this.command = 'userinfo';
-	this.description = 'Displays info on a user';
-	this.guildOnly = true;
+this.command = 'userinfo';
+this.description = 'Displays info on a user';
 
-	this.exec(async (msg, ...input) => {
+function inGuild () {
+	return async (msg, ...input) => {
 		let user = msg.guild.member(getUserID(input.join(' '), msg.guild, {allowText: 'partial'})) || msg.member, embed;
 
 		embed = {
@@ -57,5 +55,5 @@ setupModule(function () {
 			});
 		}
 		return msg.channel.send({embed});
-	});
-});
+	}
+}

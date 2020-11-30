@@ -125,34 +125,25 @@ module.exports = class module {
 	limit (type, ...ids) {
 		if (this[sym.clim].has(type)) this[sym.clim].set(type, new Set(ids));
 	}
-
-	access (user, guild) {
-		return true;
-		let users = this[sym.lcmd].get('users'), guilds = this[sym.lcmd].get('guilds');
-
-		if (guild) {
-			let config = getConfig(guild), gUser = guild.members.cache.get(user.id);
-			if (gUser && !gUser.permissions.has(config.permissions(this.command) || this[sym.perm])) return false;
-			if (guilds.length && guilds.indexOf(guild.id) < 0) return false;
-			if (config.disabled.has(this.command)) return false;
-		} else {
-			if (guilds.length) return false;
-		}
-		if (users.length && users.indexOf(user.id) < 0) return false;
-		return true;
-	}
-
-	/**
-	 * Add a server specific configuration value the persists through restarts
-	 *
-	 * @param {string}  name           - name of the server variable, the module name is appended to the front of the name
-	 * @param {object}  type           - the object wrapper for the type the variable will be
-	 * @param {*}       [defaultVal]   - initial value of the server variable, should be of the type passed to the type parameter
-	 * @param {boolean} [configurable] - true if a user should be allowed to specify the value for this varible
-	 * @param {string}  [desc]         - a description of the variable to present to a user
-	*/
-	addConfig (name, type, defaultVal, configurable, desc) {
-		//register config variable regisert(args)
-		// add to conf
-	};
 }
+
+module.exports.access = function (user, guild, config) {
+	let users = this[sym.clim].get('users'), guilds = this[sym.clim].get('guilds');
+
+	if (guild) {
+		let gUser = guild.members.cache.get(user.id);
+
+		if (gUser && !gUser.permissions.has(config.permissions(this.command) || this[sym.perm]))
+			return false;
+		if (guilds.length && guilds.indexOf(guild.id) < 0)
+			return false;
+		if (config.disabled.has(this.command))
+			return false;
+	} else {
+		if (guilds.length)
+			return false;
+	}
+	if (users.length && users.indexOf(user.id) < 0)
+		return false;
+	return true;
+};

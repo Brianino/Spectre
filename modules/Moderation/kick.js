@@ -1,16 +1,13 @@
-const log = require('../etc/logger.js')('kick-module');
-const {time, getUserID} = require('../etc/utilities.js');
+const {getUserID} = require('../etc/utilities.js');
 const {DiscordAPIError} = require('discord.js');
 
-setupModule(function () {
-	this.command = 'kick';
-	this.description = 'Kick a user';
-	this.arguments = '<@user> [reason]';
-	this.arguments = '<user id> [reason]';
-	this.permissions = 'KICK_MEMBERS'
-	this.guildOnly = true;
+this.description = 'Kick a user';
+this.arguments = '<@user> [reason]';
+this.arguments = '<user id> [reason]';
+this.permissions = 'KICK_MEMBERS'
 
-	this.exec((msg, input, message) => {
+function inGuild () {
+	return (msg, input, message) => {
 		let user = msg.guild.member(getUserID(input.join(' '), msg.guild));
 
 		if (user && user.manageable) {
@@ -38,5 +35,5 @@ setupModule(function () {
 			log.debug(time(), 'Search for:', mention[0], 'or', input);
 			msg.channel.send('Unable to find user');
 		}
-	});
-});
+	}
+}

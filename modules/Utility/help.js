@@ -1,22 +1,17 @@
-const log = require('../etc/logger.js')('help-module');
-const {modules} = require('../etc/moduleLoader.js');
-const {time} = require('../etc/utilities.js');
+this.description = 'Display command help';
+this.description = 'Command arguments in the help will display a quick summary of the different format a command can take';
+this.description = 'Arguments surrounded with `[]` are optional, meaning that you can choose to leave it out (do not include the brackets when typing out the command)';
+this.description = 'Arguments surrounded with `<>` are required, meaning that you have to enter something for it (do not include the brackets when typing out the command)';
+this.description = 'Arguments not surrounded with brackets are fixed, meaning that exactly that input needs to be provided';
+this.description = 'Arguments with `...` infront of them means that one or more of it can be provided';
 
-setupModule(function () {
-	this.command = 'help';
-	this.description = 'Display command help';
-	this.extraDesc = 'Command arguments in the help will display a quick summary of the different format a command can take\n' +
-					'Arguments surrounded with `[]` are optional, meaning that you can choose to leave it out (do not include the brackets when typing out the command)\n' +
-					'Arguments surrounded with `<>` are required, meaning that you have to enter something for it (do not include the brackets when typing out the command)\n' +
-					'Arguments not surrounded with brackets are fixed, meaning that exactly that input needs to be provided\n' +
-					'Arguments with `...` infront of them means that one or more of it can be provided';
-	this.arguments = '[command]';
-	this.guildOnly = false;
+this.arguments = '[command]';
 
+function inAll () {
 	/* TO DO:
 	 * Implement paging based on categories
 	*/
-	this.exec((msg, arg) => {
+	return (msg, arg) => {
 		if (!arg) {
 			let embed = {
 				title: 'Options',
@@ -68,5 +63,5 @@ setupModule(function () {
 				return msg.channel.send(`Could not find command \`${arg}\``);
 			}
 		}
-	});
-});
+	}
+}

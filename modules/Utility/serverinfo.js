@@ -1,12 +1,8 @@
-const log = require('../etc/logger.js')('serverinfo-module');
-const {time} = require('../etc/utilities.js');
+this.command = 'serverinfo';
+this.description = 'Displays info on the server';
 
-setupModule(function () {
-	this.command = 'serverinfo';
-	this.description = 'Displays info on the server';
-	this.guildOnly = true;
-
-	this.exec((msg) => {
+function inGuild () {
+	return msg => {
 		let server = msg.guild, channels = server.channels.cache, users = server.members.cache, roles = server.roles.cache,
 			text = channels.filter(tmp => tmp.type === 'text'),
 			voice = channels.filter(tmp => tmp.type === 'voice'),
@@ -74,5 +70,5 @@ setupModule(function () {
 				}
 			}
 		});
-	});
-});
+	}
+}

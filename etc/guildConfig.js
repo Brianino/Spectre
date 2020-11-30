@@ -306,7 +306,10 @@ module.exports = class configManager {
 
 		if (!result) {
 			log.debug('Creating new config store for guild', guildId);
-			this[sym.guildStore].set(guildId, result = new Map([['id', guildId]]));
+			if (guildId !== 'undefined')
+				this[sym.guildStore].set(guildId, result = new Map([['id', guildId]]));
+			else
+				result = new Map([['id', guildId]]);
 		}
 		return proxifyMap(result, this[sym.confVars]);
 	}

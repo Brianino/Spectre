@@ -1,19 +1,17 @@
-const log = require('../etc/logger.js')('configure-module');
-const {time} = require('../etc/utilities.js');
 const {Permissions} = require('discord.js');
 const {inspect} = require('util');
 
-setupModule(function () {
-	this.command = 'config';
-	this.description = 'set server configuration';
-	this.extraDesc = 'Adding no arguments will display the available settings to configure\n' +
-	'using the setting with no value will display more info on the setting.'
-	this.arguments = '<setting> [value]';
-	this.arguments = '';
-	this.permissions = 'MANAGE_GUILD';
-	this.guildOnly = true;
+this.description = 'set server configuration';
+this.description = 'Adding no arguments will display the available settings to configure';
+this.description = 'using the setting with no value will display more info on the setting.';
 
-	this.exec((msg, setting, ...input) => {
+this.arguments = '<setting> [value]';
+this.arguments = '';
+
+this.permissions = 'MANAGE_GUILD';
+
+function inGuild () {
+	return (msg, setting, ...input) => {
 		let options = this.config.getConfigurable(), type, desc;
 
 		if (options.has(setting)) {
@@ -75,5 +73,5 @@ setupModule(function () {
 
 			return msg.channel.send({embed});
 		}
-	});
-});
+	}
+}

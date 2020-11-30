@@ -1,21 +1,17 @@
-const log = require('../etc/logger.js')('erase-module');
 const {DiscordAPIError, Collection} = require('discord.js');
-const {time} = require('../etc/utilities.js');
 
 class lessThan extends Error {};
 
-setupModule(function () {
-	this.command = 'erase';
-	this.description = 'erase a number of messages from a user or from all users';
-	this.arguments = '[count] [...#channel] [...@user]';
-	this.permissions = 'MANAGE_MESSAGES'
-	this.guildOnly = true;
+this.description = 'erase a number of messages from a user or from all users';
+this.arguments = '[count] [...#channel] [...@user]';
+this.permissions = 'MANAGE_MESSAGES'
 
-	this.addConfig('default_clear', Number, 50, 'default number of messages to clear');
-	this.addConfig('message_limit', Number, 1000, 'max number of messages to check through to delete');
-	this.addConfig('clear_old', Boolean, true, 'allow the clearing for messages older than two weeks (clearing these messages is much slower)');
+addConfig('default_clear', Number, 50, 'default number of messages to clear');
+addConfig('message_limit', Number, 1000, 'max number of messages to check through to delete');
+addConfig('clear_old', Boolean, true, 'allow the clearing for messages older than two weeks (clearing these messages is much slower)');
 
-	this.exec(async (msg, number) => {
+function inGuild () {
+	return async (msg, number) => {
 		let channels = msg.mentions.channels.filter(tmp => tmp.type === 'text');
 			users = msg.mentions.members, roles = msg.mentions.roles, failed = [];
 
@@ -93,5 +89,5 @@ setupModule(function () {
 		} else {
 			return (await msg.channel.send('Failed to delete messages in <#' + failed[0].channel.id + '>: ' + failed[0].message)).delete({timeout: 10000});
 		}
-	});
-});
+	}
+}

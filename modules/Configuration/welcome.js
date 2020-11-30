@@ -1,26 +1,23 @@
-const log = require('../etc/logger.js')('welcome-module');
-const {time, checkForUrl, getChannelID} = require('../etc/utilities.js');
+const {checkForUrl, getChannelID} = require('../etc/utilities.js');
 
-setupModule(function () {
-	this.command = 'welcome';
-	this.description = 'set the server welcome message';
-	this.extraDesc = 'user mention: {user}\nserver name: {server}\nuser name: {name}'
-	this.arguments = '<message>';
-	this.permissions = 'MANAGE_GUILD';
-	this.guildOnly = true;
+this.description = 'set the server welcome message';
+this.description = 'user mention: {user}\nserver name: {server}\nuser name: {name}';
+this.arguments = '<message>';
+this.permissions = 'MANAGE_GUILD';
 
-	this.addConfig('welcome_message', String, 'Welcome {user} to {server}', 'welcome message for users');
-	this.addConfig('welcome_bot_message', String, undefined, 'message to display when bots join');
-	this.addConfig('welcome_channel', String, undefined, 'where to display welcome message\n if it fails to display a message the value is changed back to undefined');
+addConfig('welcome_message', String, 'Welcome {user} to {server}', 'welcome message for users');
+addConfig('welcome_bot_message', String, undefined, 'message to display when bots join');
+addConfig('welcome_channel', String, undefined, 'where to display welcome message\n if it fails to display a message the value is changed back to undefined');
 
-	// Config options specifically for embed welcome messages
-	this.addConfig('welcome_embed', Boolean, false, 'If true then the welcome message for this server will be an embed');
-	this.addConfig('welcome_title', String, undefined, 'The title to use in the embeded welcome message (optional)');
-	this.addConfig('welcome_footer', String, undefined, 'The footer message to use in the embeded welcome message (optional)');
-	this.addConfig('welcome_thumbnail', String, undefined, 'The image link to use as a thumbnail in the embeded welcome message (small image top right)');
-	this.addConfig('welcome_image', String, undefined, 'The image link to attach to an embeded welcome (image below the main text)');
+// Config options specifically for embed welcome messages
+addConfig('welcome_embed', Boolean, false, 'If true then the welcome message for this server will be an embed');
+addConfig('welcome_title', String, undefined, 'The title to use in the embeded welcome message (optional)');
+addConfig('welcome_footer', String, undefined, 'The footer message to use in the embeded welcome message (optional)');
+addConfig('welcome_thumbnail', String, undefined, 'The image link to use as a thumbnail in the embeded welcome message (small image top right)');
+addConfig('welcome_image', String, undefined, 'The image link to attach to an embeded welcome (image below the main text)');
 
-	this.bot.on('guildMemberAdd', member => {
+function inGuild (emitter) {
+	emitter.on('guildMemberAdd', member => {
 		let guild = member.guild, replaceText = (input) => {
 			if (typeof input === 'string')
 				return input.replace(/\{server\}/g, guild.name).replace(/\{user\}/g, '<@' + member.id + '>').replace(/\{name\}/g, member.displayName);
@@ -73,7 +70,7 @@ setupModule(function () {
 		}
 	});
 
-	this.exec((msg, ...input) => {
+	return (msg, ...input) => {
 		let message = input.join(' ');
 
 		log.info(time(), 'Updating welcome message for', msg.guild.name, 'to:', message);
@@ -82,5 +79,5 @@ setupModule(function () {
 		else this.config.welcome_message = message;
 
 		return msg.channel.send('Welcome message updated');
-	});
-});
+	}
+}
