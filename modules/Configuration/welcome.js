@@ -1,20 +1,23 @@
 const {checkForUrl, getChannelID} = require('../etc/utilities.js');
 
 this.description = 'set the server welcome message';
-this.description = 'user mention: {user}\nserver name: {server}\nuser name: {name}';
+this.description = 'user mention: {user}';
+this.description = 'server name: {server}';
+this.description = 'user name: {name}';
+
 this.arguments = '<message>';
 this.permissions = 'MANAGE_GUILD';
 
-addConfig('welcome_message', String, 'Welcome {user} to {server}', 'welcome message for users');
-addConfig('welcome_bot_message', String, undefined, 'message to display when bots join');
-addConfig('welcome_channel', String, undefined, 'where to display welcome message\n if it fails to display a message the value is changed back to undefined');
+addConfig('welcome_message', String, {default:'Welcome {user} to {server}', description: 'welcome message for users', configurable: true});
+addConfig('welcome_bot_message', String, {description: 'message to display when bots join', configurable: true});
+addConfig('welcome_channel', String, {description: 'where to display welcome message\n if it fails to display a message the value is changed back to undefined', configurable: true});
 
 // Config options specifically for embed welcome messages
-addConfig('welcome_embed', Boolean, false, 'If true then the welcome message for this server will be an embed');
-addConfig('welcome_title', String, undefined, 'The title to use in the embeded welcome message (optional)');
-addConfig('welcome_footer', String, undefined, 'The footer message to use in the embeded welcome message (optional)');
-addConfig('welcome_thumbnail', String, undefined, 'The image link to use as a thumbnail in the embeded welcome message (small image top right)');
-addConfig('welcome_image', String, undefined, 'The image link to attach to an embeded welcome (image below the main text)');
+addConfig('welcome_embed', Boolean, {default: false, description: 'If true then the welcome message for this server will be an embed', configurable: true});
+addConfig('welcome_title', String, {description: 'The title to use in the embeded welcome message (optional)', configurable: true});
+addConfig('welcome_footer', String, {description: 'The footer message to use in the embeded welcome message (optional)', configurable: true});
+addConfig('welcome_thumbnail', String, {description: 'The image link to use as a thumbnail in the embeded welcome message (small image top right)', configurable: true});
+addConfig('welcome_image', String, {description: 'The image link to attach to an embeded welcome (image below the main text)', configurable: true});
 
 function inGuild (emitter) {
 	emitter.on('guildMemberAdd', member => {
@@ -32,7 +35,7 @@ function inGuild (emitter) {
 			else msg = replaceText(this.config.welcome_bot_message);
 
 			if (msg) {
-				let channel getChannelID(this.config.welcome_channel, guild, {allowText = 'partial'});
+				let channel = getChannelID(this.config.welcome_channel, guild, {allowText: 'partial'});
 
 				if (channel && channel.type === 'text') {
 					if (this.config.welcome_embed) {

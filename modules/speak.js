@@ -5,7 +5,7 @@ function inGuild (emitter) {
 	emitter.on('message', async msg => {
 		if (msg.mentions.users.has(getBot().user.id)) {
 			log.debug('Message:', msg.content);
-			await msg.reply('Hewwo');
+			await msg.reply(`Hewwo, to use my commands use the prefix \`${this.config.prefix}\``);
 		}
 	});
 

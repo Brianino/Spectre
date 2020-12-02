@@ -360,6 +360,7 @@ module.exports = class configManager {
 
 		name = String(name);
 		type = getTypeName(type);
+		log.debug('Type for', name, 'is', type);
 		if (!type) return;
 		if (this[sym.confVars].has(name)) return;
 		this[sym.confVars].set(name, temp = {
@@ -369,6 +370,7 @@ module.exports = class configManager {
 			configurable: configurable,
 		});
 		if (canHaveGetters(type)) {
+			log.debug('Setting getters/setters for', name);
 			temp.get = get;
 			temp.set = set;
 		}

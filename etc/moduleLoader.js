@@ -88,9 +88,9 @@ async function findModules () {
 			let group = item.name, newPath = Path.resolve(path, item.name);
 
 			for await (let modItem of await fs.opendir(newPath)) {
-				if (item.isFile()) {
+				if (modItem.isFile()) {
 					res.push({
-						filePath: Path.resolve(newPath, item.name),
+						filePath: Path.resolve(newPath, modItem.name),
 						group: group
 					});
 				}
@@ -103,23 +103,53 @@ async function findModules () {
 function setupModule (name, group, filename, code) {
 	let script = new vm.Script(code, {filename}), obj = new modObj(name, group), temp = {}, ctx = Object.create(temp);
 
+	Object.defineProperties(obj, {
+		[sym.vars]: {value: []},
+		'vars': {get () {return this[sym.vars]}}
+	});
 	Object.assign(temp, {
 		__filename: filename,
 		__dirname: Path.dirname(filename),
 		setupModule: proxifyModule(obj, ctx),
-		addConfig: this.register,
 		modules: this.modules,
+		access: modObj.access,
 		getBot: () => this.source,
 		log: logger('Module-' + group + '-' + name),
+		addConfig: (varName, type, {description, configurable, ...props}) => {
+			log.debug('Adding config for', name, varName);
+			this[sym.gconfig].register(varName, type, {description, configurable, ...props});
+			if (configurable) {
+				obj[sym.vars].push(varName);
+			}
+			log.debug('Config added for', name, varName);
+		},
 	}, globals);
 	script.runInNewContext(proxifyModule(obj, ctx), {contextName: 'Main Context: ' + name, timeout: iniTimeout});
 	return this[sym.context].create(obj, ctx);
+}
+
+function instGuildCtx (source, mod) {
+	for (let {id} of source.guilds.cache.values()) {
+		try {
+			mod[contextHandler.guildSymbol](id);
+		} catch (e) {
+			log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id);
+			log.warn(e);
+		}
+	}
+	try {
+		mod[contextHandler.DMSymbol]();
+	} catch (e) {
+		log.warn('Failed to instantiate command', mod.command, 'dm context');
+		log.warn(e);
+	}
 }
 
 const sym = {
 	modules: Symbol('modules map'),
 	context: Symbol('context handler'),
 	gconfig: Symbol('guild config manager'),
+	vars: Symbol('module vars'),
 }
 
 module.exports = class moduleLoader {
@@ -142,32 +172,50 @@ module.exports = class moduleLoader {
 	}
 
 	async loadModule ({filePath, group}) {
+		let mod;
 		log.debug('Attempting to load module:', filePath, group);
 		try {
 			let {name, code} = await loadFile(filePath);
 
-			this[sym.modules].set(name, setupModule.call(this, name, group, filePath, code));
+			this[sym.modules].set(name, mod = setupModule.call(this, name, group, filePath, code));
+			if (this.source)
+				instGuildCtx(this.source, mod);
 			log.info(name, 'Module instantiated');
 		} catch (e) {
-			log.error('Unable to setup module:', file.filePath);
+			log.error('Unable to setup module:', filePath);
 			try {
 				log.error(e);
-				log.file['module-loader']('Unable to set up module:', e);
+				log.file['module-loader']('ERROR - Unable to set up module:', e);
 			} catch (ignore) {
 				log.error(e.toString());
-				log.file['module-loader']('Unable to set up module:', e.toString());
+				log.file['module-loader']('ERROR - Unable to set up module:', e.toString());
 			}
 		}
 	}
 
 	async setup () {
-		let files = await findModules();
-
-		await Promise.allSettled(files.map(file => this.loadModule(file)));
+		let files = await findModules(), res;
+		res = await Promise.allSettled(files.map(file => this.loadModule(file)));
+		res = res.filter(val => val.status === 'rejected');
+		if (res.length)
+			log.warn(res);
 	}
 
 	set source (input) {
 		this[sym.context].setEventSource(input);
+		if (this[sym.modules].size)
+			this[sym.modules].forEeach(mod => instGuildCtx(input, mod));
+		input.on('guildCreate', guild => {
+			for (let mod of this[sym.modules].values()) {
+				try {
+					mod[contextHandler.guildSymbol](guild.id);
+				} catch (e) {
+					log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id);
+					log.file['module-loader']('WARN - Failed to instantiate command', mod.command, 'on guild', guild.id);
+					log.file['module-loader']('WARN - ', e);
+				}
+			}
+		})
 		Object.defineProperty(this, 'source', {get () {return input}});
 	}
 

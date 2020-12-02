@@ -11,7 +11,7 @@ function inAll () {
 	/* TO DO:
 	 * Implement paging based on categories
 	*/
-	return (msg, arg) => {
+	return function (msg, arg) {
 		if (!arg) {
 			let embed = {
 				title: 'Options',
@@ -21,10 +21,10 @@ function inAll () {
 			};
 
 			for (let [cmd, moduleObj] of modules) {
-				if (moduleObj.access(msg.author, msg.guild)) {
+				if (access.call(moduleObj, msg.author, msg.guild, this)) {
 					embed.fields.push({
-						name: this.config.prefix + cmd,
-						value: moduleObj.description,
+						name: this.prefix + cmd,
+						value: moduleObj.description[0],
 						inline: false
 					});
 				}
@@ -36,15 +36,14 @@ function inAll () {
 
 			arg = arg.replace(/`/g, '');
 			if (arg === '') arg = ' ';
-			if (cmd && cmd.access(msg.author, msg.guild)) {
-				let comStr = this.config.prefix + cmd.command + ' ', embed = {
+			if (cmd && access.call(cmd, msg.author, msg.guild, this)) {
+				let comStr = this.prefix + cmd.command + ' ', embed = {
 					title: arg,
-					description: cmd.description,
+					description: cmd.description.join('\n'),
 					color: 0xBB0000,
 					fields: [],
 				};
 
-				if (cmd.extraDesc) embed.description += '\n' + cmd.extraDesc;
 				if (cmd.hasExec) {
 					embed.fields.push({
 						name: 'Command Usage:',
