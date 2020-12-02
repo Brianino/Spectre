@@ -1,4 +1,4 @@
-const {owner} = require('../../config.json');
+const {owner} = require('../config.json');
 
 this.description = 'leaves a specified server';
 this.extraDesc = 'use the list servers command to get the server id';

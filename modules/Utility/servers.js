@@ -3,6 +3,8 @@ const {owner} = require('../config.json');
 this.description = 'lists all the servers the bot is in';
 this.limit = ['users', owner];
 
+this.arguments = '';
+
 function inGuild () {
 	return msg => {
 		let guilds = this.bot.guilds.cache, embed = {

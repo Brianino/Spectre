@@ -1,6 +1,8 @@
 this.description = 'repeat a message';
 this.permissions = 'MANAGE_MESSAGES';
 
+this.arguments = '[message to repeat]'
+
 function inGuild (emitter) {
 	emitter.on('message', async msg => {
 		if (msg.mentions.users.has(getBot().user.id)) {

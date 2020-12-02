@@ -50,10 +50,10 @@ this.arguments = 'list';
 this.arguments = 'end all';
 this.arguments = 'end';
 
-this.addConfig('poll_timespan', String, '5m', 'default timespan for polls, after which it posts the results');
-this.addConfig('poll_reactions', Boolean, true, 'use reactions for voting (only works with 10 or less options)');
-//this.addConfig('poll_marker', Boolean, false, 'posts a link to the poll message (always updated to be the last message in a channel)');
-//this.addConfig('poll_active', Map, new Map(), false);
+this.addConfig('poll_timespan', String, {default: '5m', description: 'default timespan for polls, after which it posts the results', configurable: true});
+this.addConfig('poll_reactions', Boolean, {default: true, description: 'use reactions for voting (only works with 10 or less options)', configurable: true});
+//this.addConfig('poll_marker', Boolean, {default: false, description: 'posts a link to the poll message (always updated to be the last message in a channel)', configurable: true});
+//this.addConfig('poll_active', Map, {default: new Map(), configurable: false});
 
 function inGuild () {
 	let active = new Map(), dynamicPolls = new Set(), activeWarn = new Set();

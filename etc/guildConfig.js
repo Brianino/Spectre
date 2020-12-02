@@ -342,7 +342,7 @@ module.exports = class configManager {
 	/** Extra properties object
 	 * @typedef {Object} extraProperties
 	 * @prop {*}        [default]      - the default value of the config variable if one isn't set
-	 * @prop {boolean}  [configurable] - true if a user should be able to set the value of this property directly
+	 * @prop {boolean}  [configurable] - true if a user should be able to set the value of this property directly (will assume true if left undefined and a description is provided)
 	 * @prop {string}   [description]  - a description of what the property is used for
 	 * @prop {function} [get]          - a custom getter method for the property
 	 * @prop {function} [set]          - a custom setter method for the property
@@ -355,7 +355,7 @@ module.exports = class configManager {
 	 * @param {extraProperties} param - extra modifiable properties
 	}
 	*/
-	register (name, type, {default:defaultVal, configurable = true, description, get, set, toJson, from}) {
+	register (name, type, {default:defaultVal, configurable, description, get, set, toJson, from}) {
 		let temp;
 
 		name = String(name);
@@ -367,7 +367,7 @@ module.exports = class configManager {
 			type: type,
 			default: defaultVal,
 			desc: description,
-			configurable: configurable,
+			configurable: (typeof configurable === 'boolean')? configurable : !!description,
 		});
 		if (canHaveGetters(type)) {
 			log.debug('Setting getters/setters for', name);

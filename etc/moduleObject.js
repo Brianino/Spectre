@@ -106,7 +106,7 @@ module.exports = class module {
 	 *
 	 * @return {string[]} input - the description of what the module does
 	*/
-	get arguments () {this[sym.args].push(String(input))}
+	get arguments () {return this[sym.args]}
 
 	/**
 	 * Sets the default required permission level to run the command

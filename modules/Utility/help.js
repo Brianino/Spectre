@@ -6,6 +6,7 @@ this.description = 'Arguments not surrounded with brackets are fixed, meaning th
 this.description = 'Arguments with `...` infront of them means that one or more of it can be provided';
 
 this.arguments = '[command]';
+this.arguments = '';
 
 function inAll () {
 	/* TO DO:
@@ -44,10 +45,10 @@ function inAll () {
 					fields: [],
 				};
 
-				if (cmd.hasExec) {
+				if (cmd.arguments.length) {
 					embed.fields.push({
 						name: 'Command Usage:',
-						value: cmd.arguments.map(val => comStr + val).join('\n') || comStr,
+						value: cmd.arguments.map(val => comStr + val).join('\n'),
 					});
 				}
 				if (cmd.vars.length) {

@@ -6,9 +6,9 @@ this.description = 'erase a number of messages from a user or from all users';
 this.arguments = '[count] [...#channel] [...@user]';
 this.permissions = 'MANAGE_MESSAGES'
 
-addConfig('default_clear', Number, 50, 'default number of messages to clear');
-addConfig('message_limit', Number, 1000, 'max number of messages to check through to delete');
-addConfig('clear_old', Boolean, true, 'allow the clearing for messages older than two weeks (clearing these messages is much slower)');
+addConfig('default_clear', Number, {default:50, description: 'default number of messages to clear', configurable: true});
+addConfig('message_limit', Number, {default: 1000, description: 'max number of messages to check through to delete', configurable: true});
+addConfig('clear_old', Boolean, {default: true, description: 'allow the clearing for messages older than two weeks (clearing these messages is much slower)', configurable: true});
 
 function inGuild () {
 	return async (msg, number) => {

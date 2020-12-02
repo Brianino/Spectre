@@ -6,9 +6,9 @@ this.description = 'At least one source channel needs to be provided, and a gall
 this.arguments = '<...source> to <gallery>';
 this.permissions = 'MANAGE_GUILD';
 
-addConfig('repost_galleries', Map, new Map(), false);
-addConfig('repost_prefer_url', Boolean, true, 'Prefer to post image url\'s rather than reuploading the file');
-addConfig('repost_formats', Set, new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']), 'Image formats that should be reposted');
+addConfig('repost_galleries', Map, {default: new Map(), configurable: false});
+addConfig('repost_prefer_url', Boolean, {default: true, description: 'Prefer to post image url\'s rather than reuploading the file', configurable: true});
+addConfig('repost_formats', Set, {default: new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']), description: 'Image formats that should be reposted', configurable: true});
 
 function inGuild (emitter) {
 	// ATTACH EVENT LISTENER AFTER THE BOT RESTARTS
@@ -17,7 +17,7 @@ function inGuild (emitter) {
 		try {
 			let gallList = this.config.repost_galleries.get(msg.channel.id) || [], attachments = [], urlCount = checkForUrl(msg.content, true, 'g').length;
 
-			if (msg.author.id === this.bot.user.id) return;
+			if (msg.author.id === getBot().user.id) return;
 			if (urlCount > 0) {
 				await waitFor(10000, 50, async () => {
 					try {await msg.fetch()} catch (ignore) {return false};

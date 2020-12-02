@@ -1,6 +1,8 @@
 this.command = 'serverinfo';
 this.description = 'Displays info on the server';
 
+this.arguments = '';
+
 function inGuild () {
 	return msg => {
 		let server = msg.guild, channels = server.channels.cache, users = server.members.cache, roles = server.roles.cache,

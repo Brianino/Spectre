@@ -1,7 +1,10 @@
-const {getUserID} = require('../etc/utilities.js');
+const {getUserID} = require('./utilities.js');
 
 this.command = 'userinfo';
 this.description = 'Displays info on a user';
+this.description = 'A user user can be picked with thier id, by mention, or by name';
+
+this.arguments = '[user]';
 
 function inGuild () {
 	return async (msg, ...input) => {
