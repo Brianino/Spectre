@@ -7,8 +7,8 @@ this.arguments = '<user id> [reason]';
 this.permissions = 'BAN_MEMBERS'
 
 function inGuild () {
-	return (msg, input, message) => {
-		let user = msg.guild.member(getUserID(input.join(' '), msg.guild));
+	return async (msg, input, message) => {
+		let user = msg.guild.member(await getUserID(input, msg.guild, {resolve: true}));
 
 		if (user && user.manageable) {
 			let r1 = msg.member.roles.highest, r2 = user.roles.highest, otemp = msg.guild.owner.id;
@@ -17,12 +17,13 @@ function inGuild () {
 				return msg.channel.send('You can\'t ban yourself');
 			else if (msg.author.id !== otemp && r1.comparePositionTo(r2) <=0)
 				return msg.channel.send('Target user has a higher role');
-			return user.ban({
-				reason: String(message || 'No reason given')
-			}).then(() => {
+
+			try {
+				await user.ban({reason: String(message || 'No reason given')});
 				log.warn(time(), msg.author.username, 'banned', user.user.username);
+				log.file.moderation('WARN', msg.author.username, 'banned', user.user.username, 'ids:', msg.author.id, user.id);
 				return msg.channel.send('User `' + user.user.username + '` was banned');
-			}).catch(e => {
+			} catch (e) {
 				log.warn(time(), msg.author.username, 'tried to ban', user.user.username);
 				if (e instanceof DiscordAPIError)
 					return msg.channel.send('Unable to ban user: ' + e.message);
@@ -30,11 +31,11 @@ function inGuild () {
 					log.error(time(), e);
 					return msg.channel.send('Internal error, check server logs');
 				}
-			});
+			}
 		} else if (user && !user.manageable) {
 			msg.channel.send('I lack the permissions to do so');
 		} else {
-			log.debug(time(), 'Search for:', mention[0], 'or', input);
+			log.debug(time(), 'Search for:', user?.toString(), 'or', input);
 			msg.channel.send('Unable to find user');
 		}
 	}

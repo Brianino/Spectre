@@ -124,9 +124,10 @@ function textSearch (sourceCollection, value, type, prop) {
  * @prop   {boolean}           resolve         - if true will the function will return objects rather than the id string
  * @prop   {string}            allowText       - the type of string matching to use in the textSearch function
  * @prop   {boolean}           [allowID=false] - allow the searching of id strings
+ * @prop   {boolean}           [fetch=true]    - for now this only applies to searching for users
  * @return {(string[]|object[])} list of id strings, or list of objects contained in the manager collection
 */
-function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText = '', allowID = true}) {
+async function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText = '', allowID = true, fetch = true}) {
 	let temp, res = [], tempReg = new RegExp(reg, 'g');
 
 	if (maxCount < 1) maxCount = 1;
@@ -135,30 +136,47 @@ function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText = '', 
 
 	log.debug('Searching for mentions:', input);
 	while ((temp = tempReg.exec(input)) && res.length < maxCount) {
-		log.debug('Found a match:', temp[1], 'is in guild:', manager.has(temp[1]));
+		log.debug('Found a match:', temp[1], 'is in guild cache:', manager.cache.has(temp[1]));
 		log.debug(temp);
-		if (manager.has(temp[1]))
-			res.push(resolve? manager.get(temp[1]) : temp[1]);
+		if (manager.cache.has(temp[1]))
+			res.push(resolve? manager.cache.get(temp[1]) : temp[1]);
 	}
 	if (res.length) return res;
 
 	log.debug(allowID? 'Searching for id\'s' : 'ID searching disabled');
 	while ((temp = /\d{17,19}/g.exec(input)) && res.length < maxCount && allowID) {
-		log.debug('Found a match:', temp[0], 'is in guild:', manager.has(temp[0]));
+		log.debug('Found a match:', temp[0], 'is in guild cache:', manager.cache.has(temp[0]));
 		log.debug(temp);
-		if (manager.has(temp[0]))
-			res.push(resolve? manager.get(temp[0]) : temp[0]);
+		if (manager.cache.has(temp[0]))
+			res.push(resolve? manager.cache.get(temp[0]) : temp[0]);
+		else if (fetch && Object.hasOwnProperty('fetch')) {
+			// Currently only the guild user manager has a fetch method
+			try {
+				let usr = await manager.fetch({user: temp, limit: maxCount});
+				res.push(resolve? usr : usr.id)
+			} catch (e) {
+				log.error('Failed to fetch from', manager.constructor.name)
+			}
+		}
 	}
 	if (res.length) return res;
 
 	log.debug(allowText? 'Searching for text' : 'Text searching disabled');
 	for (let text of exports.split(input)) {
-		let found = textSearch(manager, text, allowText, prop);
+		let found = textSearch(manager.cache, text, allowText, prop);
 
 		if (found) {
-			log.debug('Found a match:', found.id, 'is in guild:', manager.has(found.id));
+			log.debug('Found a match:', found.id, 'is in guild cache:', manager.cache.has(found.id));
 			res.push(resolve? found : found.id);
 			if (res.length >= maxCount) break;
+		} else if (fetch && Object.hasOwnProperty('fetch')) {
+			// Currently only the guild user manager has a fetch method
+			try {
+				let usr = await manager.fetch({query: text, limit: maxCount});
+				res.push(resolve? usr : usr.id)
+			} catch (e) {
+				log.error('Failed to fetch from', manager.constructor.name)
+			}
 		}
 	}
 	return res;
@@ -177,19 +195,19 @@ const channelReg = /<#(\d{17,19})>/;
  * @prop   {string}                [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
  * @return {(string|string[]|GuildChannel|GuildChannel[])} either a list of channels, or the channel itself
 */
-exports.getChannelID = function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
-	let reg = channelReg, manager = guild.channels.cache, prop = 'name', res;
+exports.getChannelID = async function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
+	let reg = channelReg, manager = guild.channels, prop = 'name', res;
 
 	log.debug('Looking for channel, input:', input, 'max', maxCount, 'options', options);
 	if (typeof input === 'object' && input instanceof GuildChannel) {
 		let temp = resolve? input : input.id;
-		if (manager.has(input.id))
+		if (manager.cache.has(input.id))
 			return maxCount <= 1 ? temp : [temp];
 		else
 			return maxCount <= 1 ? undefined : [];
 	}
-	res = getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount, resolve}));
-	log.debug('Found channel(s):', res);
+	res = await getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount, resolve}));
+	log.debug('Found channel(s):', res.map(val => val.toString()));
 	return maxCount > 1? res : res[0];
 }
 
@@ -205,21 +223,22 @@ const userReg = /<@!?(\d{17,19})>/;
  * @prop   {boolean}              [resolve=false] - whether to return the id, or the member object
  * @prop   {boolean}              [allowID=true]  - toggle to allow searching for id strings
  * @prop   {string}               [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
+ * @prop   {boolean}              [fetch=true]    - when true will fetch from discord if the user isn't in cache
  * @return {(string|string[]|GuildMember)} either a list of guild members, or the member itself
 */
-exports.getUserID = function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
-	let reg = channelReg, manager = guild.members.cache, prop = 'displayName', res;
+exports.getUserID = async function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
+	let reg = channelReg, prop = 'displayName', res, manager = guild.members;
 
 	log.debug('Looking for user, input:', input, 'max', maxCount, 'options', options);
 	if (typeof input === 'object' && input instanceof GuildMember) {
-		let temp = options.resolve? input : input.id;
-		if (manager.has(input.id))
+		let temp = resolve? input : input.id;
+		if (manager.cache.has(input.id))
 			return maxCount <= 1 ? temp : [temp];
 		else
 			return maxCount <= 1 ? undefined : [];
 	}
-	res = getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount, resolve}));
-	log.debug('Found user(s):', res);
+	res = await getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount, resolve}));
+	log.debug('Found user(s):', res.map(val => val.toString()));
 	return maxCount > 1? res : res[0];
 }
 

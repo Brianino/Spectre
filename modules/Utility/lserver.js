@@ -8,7 +8,7 @@ this.limit = ['users', owner];
 function inAll () {
 	return async (msg, id) => {
 		try {
-			await this.bot.guilds.resolve(id).leave();
+			await getBot().guilds.resolve(id).leave();
 			return msg.channel.send('Left server');
 		} catch (e) {
 			log.error(time(), 'unable to leave server:', e.toString());

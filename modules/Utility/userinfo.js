@@ -8,7 +8,7 @@ this.arguments = '[user]';
 
 function inGuild () {
 	return async (msg, ...input) => {
-		let user = msg.guild.member(getUserID(input.join(' '), msg.guild, {allowText: 'partial'})) || msg.member, embed;
+		let user = await getUserID(input.join(' '), msg.guild, {allowText: 'partial', resolve: true}) || msg.member, embed;
 
 		embed = {
 			title: user.displayName,

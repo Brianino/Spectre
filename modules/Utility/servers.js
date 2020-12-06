@@ -5,9 +5,9 @@ this.limit = ['users', owner];
 
 this.arguments = '';
 
-function inGuild () {
+function inAll () {
 	return msg => {
-		let guilds = this.bot.guilds.cache, embed = {
+		let guilds = getBot().guilds.cache, embed = {
 			title: 'Guilds',
 			color: 0xBB0000,
 			fields: []
