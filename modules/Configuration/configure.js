@@ -1,4 +1,3 @@
-const {Permissions} = require('discord.js');
 const {inspect} = require('util');
 
 this.description = 'set server configuration';
@@ -12,7 +11,7 @@ this.permissions = 'MANAGE_GUILD';
 
 function inGuild () {
 	return (msg, setting, ...input) => {
-		let options = this.config.getConfigurable(), type, desc;
+		let options = getConfigurable(), type, desc;
 
 		if (options.has(setting)) {
 			[type, desc] = options.get(setting)
@@ -28,7 +27,7 @@ function inGuild () {
 			for (let [setting, [type, desc]] of options) {
 				let val = {
 					name: setting,
-					value: type.name,
+					value: type,
 					inline: false
 				}
 				if (desc) val.value += ': ' + desc;
@@ -46,13 +45,13 @@ function inGuild () {
 				return msg.channel.send('Setting reverted to default');
 			}
 			switch (type) {
-				case String: this.config[setting] = input.join(' '); break;
-				case Boolean: this.config[setting] = input.shift(); break;
-				case Number: this.config[setting] = input.shift(); break;
+				case 'string': this.config[setting] = input.join(' '); break;
+				case 'boolean': this.config[setting] = input.shift(); break;
+				case 'number': this.config[setting] = input.shift(); break;
 
-				case Set:
-				case Array: this.config[setting] = input; break;
-				case Permissions: let temp = Number(input[0]);
+				case 'set':
+				case 'array': this.config[setting] = input; break;
+				case 'permissions': let temp = Number(input[0]);
 				if (isNaN(temp)) temp = input;
 				this.config[setting] = temp; break;
 			}
@@ -68,7 +67,7 @@ function inGuild () {
 
 			if (desc) embed.description = desc + '\n';
 			log.debug('Option', String(this.config[setting]));
-			embed.description += 'Type: ' + type.name + '\n';
+			embed.description += 'Type: ' + type + '\n';
 			embed.description += 'Current: ' + inspect(this.config[setting]);
 
 			return msg.channel.send({embed});

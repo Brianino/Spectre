@@ -7,7 +7,7 @@ function inGuild () {
 		let disabled = this.config.disabled, res = [];
 
 		for (let command of commands) {
-			if (modules.has(command)) {
+			if (modules.has(command) && command !== 'enable') {
 				if (!disabled.has(command)) res.push(command);
 			}
 		}

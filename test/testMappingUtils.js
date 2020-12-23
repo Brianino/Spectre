@@ -57,11 +57,11 @@ describe('Mapping Utils', function () {
 			});
 
 			it('should stringify the value properly', function () {
-				assert.equal(map.asString(type, value), JSON.stringify(converted));
+				assert.equal(JSON.stringify(map.asJson(type, value)), JSON.stringify(converted));
 			});
 
 			it('should parse a string value properly', function () {
-				let asObj = map.asObject(type, JSON.stringify(converted));
+				let asObj = map.asObject(type, type === 'string'? converted : JSON.stringify(converted));
 
 				assert.equal(asObj.constructor.name, value.constructor.name);
 				assert.deepEqual(map[type].toJson(asObj), converted);

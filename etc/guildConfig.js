@@ -39,36 +39,53 @@ const sym = {
 */
 
 /** converts a parsed json object back into a map of property keys to property values
+ * @private
  * @param {string} id  - the id of the guild that this property map applies to
  * @param {Object} obj - the object that would be returned from JSON.parse on a json string
+ * @param {Set} varStore - the set of all available config properties that may or may not be already configured
  * @returns {Map} property key to property value map
 */
-function convert (id, obj) {
+function convert (id, obj, varStore) {
 	let res = new Map([['id', String(id)]]);
 
 	for (let key in obj) {
-		let {type, val} = obj[key];
-		res.set(key, mappingUtils.asObject(type, val));
+		try {
+			if (key !== 'id') {
+				let {type} = varStore.get(key);
+				res.set(key, mappingUtils.asObject(type, obj[key]));
+			}
+		} catch (e) {
+			log.error('Unable to parse', key, 'for', obj.id, 'because', e.toString());
+			log.debug('in store:', [...varStore.keys()].toString());
+			log.file.guildConfig('ERROR Unable to parse', key, 'for', obj.id, 'because', e);
+		}
 	}
 	return res;
 }
 
 /** converts a map of property names to property values into a json string
+ * @private
  * @param {Map}	map - a map of property names to property values
+ * @param {Set} varStore - the set of all available config properties that may or may not be already configured
  * @returns {string|undefined} the json string if more than the id property is set
 */
-function stringify (map) {
+function stringify (map, varStore) {
 	let res = {}, moreThanId = false;
 	for (let [key, val] of map) {
-		let str = JSON.stringify(val);
-
-		if (str) {
-			res[key] = {
-				type: val.constructor.name,
-				val: mappingUtils.asString(val.constructor.name, val),
+		try {
+			if (key !== 'id') {
+				let {type} = varStore.get(key);
+				res[key] = mappingUtils.asJson(type, val);
+				if (res[key] instanceof Array && !res[key].length)
+					delete res[key];
+				else if (res[key] instanceof Object && !Object.getOwnPropertyNames(res[key]).length)
+					delete res[key];
+				else
+					moreThanId = true;
 			}
-			if (key !== 'id')
-				moreThanId = true;
+		} catch (e) {
+			log.error('Unable to stringify', key, 'for', map.get('id'), 'because', e.toString());
+			log.file.guildConfig('ERROR Unable to stringify', key, 'for', map.get('id'), 'because', e);
 		}
 	}
 	if (moreThanId)
@@ -76,10 +93,12 @@ function stringify (map) {
 }
 
 /** Writes the guild config map to file
+ * @private
  * @param {Map}	guildObj - the map of guild config variable names to config values
+ * @param {Set} varStore - the set of all available config properties that may or may not be already configured
 */
-async function saveConfig (guildObj) {
-	let path = Path.resolve(confDir, guildObj.get('id') + '.json'), data = stringify(guildObj);
+async function saveConfig (guildObj, varStore) {
+	let path = Path.resolve(confDir, guildObj.get('id') + '.json'), data = stringify(guildObj, varStore);
 
 	if (data) {
 		log.debug(time(), 'Attempting to save config:', path);
@@ -99,22 +118,23 @@ async function saveConfig (guildObj) {
 }
 
 /** Loads the guild config map from file
+ * @private
+ * @param {Set} varStore - the set of all available config properties
  * @return {Map} the map of guild config variable names to config values
 */
-async function loadConfig () {
+async function loadConfig (varStore) {
 	let dir = await fs.readdir(confDir, {encoding: 'utf8', withFileTypes: true}), res = new Map();
 
 	for (let file of dir) {
 		if (file.isFile()) {
 			try {
-				let {id, ...conf} = require(path.join('../', dirPath, file.name));
+				let conf = require(Path.join(confDir, file.name)), id = Path.basename(file.name, '.json');
 
-				if (!id) id = file.name.substr(0, file.name.length - '.json'.length);
-
-				res.set(String(id), convert(id, conf));
+				res.set(String(id), convert(id, conf, varStore));
 			} catch (e) {
 				log.warn(time(), 'Unable to load config for', file.name);
-				log.file('WARN Unable to lead config for', file.name, e);
+				log.debug(e);
+				log.file.guildConfig('WARN Unable to load config for', file.name, e);
 			}
 		}
 	}
@@ -122,6 +142,7 @@ async function loadConfig () {
 }
 
 /** Disguises the config map object as a normal object that only allows the modification of the values
+ * @private
  * @param {Map} map      - the config map object to disguise
  * @param {Set} varStore - the set of all available properties that may or may not already be present on the map
  * @return {Proxy} the map object disgused to act as a standard object, where the properties as the config values
@@ -135,7 +156,7 @@ function proxifyMap (map, varStore) {
 				log.file.guildConfig('Returning config iterator on', target.get('id'));
 				return target[Symbol.iterator].bind(target);
 			}
-			if (descriptor.get && value) {
+			if (descriptor?.get && value) {
 				log.debug('Using custom getter for', prop, 'on', target.get('id'));
 				log.file.guildConfig('Using custom getter for', prop, 'on', target.get('id'));
 				return descriptor.get.call(value);
@@ -178,14 +199,14 @@ function proxifyMap (map, varStore) {
 						}
 					}
 					if (value.constructor.name.toLowerCase() !== descriptor.type) {
-						log.debug('Unable to set value due to type mismatch', value.constructor.name, descriptor.type);
+						log.debug('Unable to set value due to type mismatch:', value.constructor.name, 'instead of', descriptor.type);
 						return false;
 					}
 					log.debug('Updating value of', prop, 'to', value);
 					target.set(prop, value);
-					saveConfig(target).catch(e => {
+					saveConfig(target, varStore).catch(e => {
 						log.error(time(), 'Unable to save config for', target.get('id'));
-						log.file('ERROR Unable to save config for', target.get('id'), e);
+						log.file.guildConfig('ERROR Unable to save config for', target.get('id'), e);
 					});
 					return true;
 					break;
@@ -218,6 +239,7 @@ function proxifyMap (map, varStore) {
 }
 
 /** Converts a type, to its string name
+ * @private
  * @param {*} type - the input to try and pull a type name from
  * @return {string} type name as a string
 */
@@ -241,6 +263,7 @@ function getTypeName (type) {
 }
 
 /** Returns true if a type is allowed to have getters and setters (so should be false on primative types)
+ * @private
  * @param {string} typeName - the name of the type
  * @return {boolean} true if the type can have a getter or setter
 */
@@ -285,15 +308,15 @@ module.exports = class configManager {
 			type: 'set',
 			default: new Set(),
 			configurable: false,
-			set (val) {
-				if (!val instanceof Set)
-					val = new Set(val);
-				return val;
+			set (input) {
+				for (let val of input) {
+					this.add(val);
+				}
 			},
 		});
 		Object.defineProperties(this, {
 			[sym.confVars]: {value: confVars},
-			[sym.guildStore]: {value: new Map()},
+			[sym.guildStore]: {value: new Map(), writable: true},
 		});
 	};
 
@@ -381,11 +404,12 @@ module.exports = class configManager {
 		}
 		log.info('Finished registering config property', name);
 		log.file.guildConfig('Finished registering config property', name);
+		// iterate through store and convert any non converted objects
 	}
 
 	/** Parses the guild config from the config files */
 	async loadConfig () {
-		this[sym.guildStore] = await loadConfig();
+		this[sym.guildStore] = await loadConfig(this[sym.confVars]);
 		log.info(time(), 'Loaded config directory successfully');
 		log.file.guildConfig('Loaded config directory successfully');
 	}

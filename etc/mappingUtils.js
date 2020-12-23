@@ -11,20 +11,20 @@ module.exports = class mappingUtilties {
 			throw new TypeError('no mapping function for type ' + typeName);
 	}
 
-	static asString (type, input) {
-		let typeName = String(type.toLowerCase());
+	static asJson (type, input) {
+		let typeName = String(type).toLowerCase();
 
 		if (typeName in this) {
-			return JSON.stringify(this[typeName].toJson(input));
+			return this[typeName].toJson(input);
 		} else
 			throw new TypeError('no mapping function for type ' + typeName);
 	}
 
 	static asObject (type, input) {
-		let typeName = String(type.toLowerCase());
+		let typeName = String(type).toLowerCase();
 
 		if (typeName in this) {
-			if (typeof input === 'string')
+			if (typeof input === 'string' && type !== 'string')
 				return this[typeName].from(JSON.parse(input));
 			else
 				return this[typeName].from(input);

@@ -114,6 +114,7 @@ function setupModule (name, group, filename, code) {
 		modules: this.modules,
 		access: modObj.access,
 		getBot: () => this.source,
+		getConfigurable: () => this[sym.gconfig].getConfigurable(),
 		log: logger('Module-' + group + '-' + name),
 		addConfig: (varName, type, {description, configurable, ...props}) => {
 			log.debug('Adding config for', name, varName);
@@ -171,14 +172,14 @@ module.exports = class moduleLoader {
 		return this[sym.gconfig].register.bind(this[sym.gconfig]);
 	}
 
-	async loadModule ({filePath, group}) {
+	async loadModule ({filePath, group}, inst = true) {
 		let mod;
 		log.debug('Attempting to load module:', filePath, group);
 		try {
 			let {name, code} = await loadFile(filePath);
 
 			this[sym.modules].set(name, mod = setupModule.call(this, name, group, filePath, code));
-			if (this.source)
+			if (this.source && inst)
 				instGuildCtx(this.source, mod);
 			log.info(name, 'Module instantiated');
 		} catch (e) {
@@ -195,7 +196,11 @@ module.exports = class moduleLoader {
 
 	async setup () {
 		let files = await findModules(), res;
-		res = await Promise.allSettled(files.map(file => this.loadModule(file)));
+
+		res = await Promise.allSettled(files.map(file => this.loadModule(file, false)));
+		await this[sym.gconfig].loadConfig();
+		if (this.source)
+			this[sym.modules].forEach(mod => instGuildCtx(this.source, mod));
 		res = res.filter(val => val.status === 'rejected');
 		if (res.length)
 			log.warn(res);
@@ -204,7 +209,7 @@ module.exports = class moduleLoader {
 	set source (input) {
 		this[sym.context].setEventSource(input);
 		if (this[sym.modules].size)
-			this[sym.modules].forEeach(mod => instGuildCtx(input, mod));
+			this[sym.modules].forEach(mod => instGuildCtx(input, mod));
 		input.on('guildCreate', guild => {
 			for (let mod of this[sym.modules].values()) {
 				try {

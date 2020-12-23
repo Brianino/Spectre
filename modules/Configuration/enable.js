@@ -16,7 +16,7 @@ function inGuild () {
 			this.config.disabled = disabled;
 			return msg.channel.send('Enabled commands: `' + res.join('` `') + '`');
 		} else {
-			return msg.channel.send('No new commmands to enable');
+			return msg.channel.send('Can enable: ' + [...disabled].toString());
 		}
 	}
 }
