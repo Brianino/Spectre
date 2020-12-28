@@ -1,3 +1,5 @@
+'use strict';
+
 const log = require('../utils/logger.js')('guild-config');
 const parseBool = require('../utils/parseBool.js');
 const mappingUtils = require('./mappingUtils.js');

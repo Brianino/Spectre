@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Gets the current time nicely formatted
  * @function

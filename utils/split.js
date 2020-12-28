@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Split a string up whilst keeping anything within double quotes grouped
  *

@@ -1,3 +1,5 @@
+'use strict';
+
 const parseBool = require('../utils/parseBool.js');
 const {Permissions} = require('discord.js');
 

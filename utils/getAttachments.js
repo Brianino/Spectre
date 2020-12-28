@@ -1,3 +1,5 @@
+'use strict';
+
 const log = require('./logger.js')('utilities');
 
 /**

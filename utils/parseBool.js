@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Converts an input into a boolean value
  *

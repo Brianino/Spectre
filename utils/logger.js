@@ -1,7 +1,11 @@
+'use strict';
+
 const {createWriteStream, mkdirSync, promises:fs, constants} = require('fs');
 const supportsColor = require('supports-color');
 const debug_logger = require('debug');
 const Path = require('path');
+
+if (!process.env.DEBUG) process.env.DEBUG = '*:log,*:info,*:warn,*:error';
 
 module.exports = (function () {
 	const conMap = new Map(), logDir = Path.resolve(__dirname, '../log'), wMap = new WeakMap();
