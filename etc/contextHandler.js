@@ -1,6 +1,6 @@
 'use strict';
 
-const log = require('./logger.js')('context-handler');
+const log = require('../utils/logger.js')('context-handler');
 const {Client, Guild, Collection} = require('discord.js');
 const listener = require('./proxyListener.js');
 

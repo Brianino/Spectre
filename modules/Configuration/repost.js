@@ -1,5 +1,8 @@
-const {getAttachments, getChannelID, checkForUrl, waitFor} = require('../etc/utilities.js');
 const {GuildChannel, DiscordAPIError} = require('discord.js');
+const {getChannelID} = require('../utils/getDiscordObject.js');
+const getAttachments = require('../utils/getAttachments.js');
+const checkForUrl = require('../utils/checkForUrl.js');
+const waitFor = require('../utils/waitFor.js');
 
 this.description = 'Repost images into an image gallery channel';
 this.description = 'At least one source channel needs to be provided, and a gallery channel';

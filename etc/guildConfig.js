@@ -1,9 +1,10 @@
-const log = require('./logger.js')('guild-config');
-const {parseBool, time} = require('./utilities.js');
+const log = require('../utils/logger.js')('guild-config');
+const parseBool = require('../utils/parseBool.js');
 const mappingUtils = require('./mappingUtils.js');
 const {promises:fs, constants} = require('fs');
 const {Permissions} = require('discord.js');
 const {prefix} = require('../config.json');
+const time = require('../utils/time.js');
 const Path = require('path');
 
 const guilds = new Map(), confProp = new Set(), configurable = new Map();
@@ -102,7 +103,7 @@ async function saveConfig (guildObj, varStore) {
 
 	if (data) {
 		log.debug(time(), 'Attempting to save config:', path);
-		log.file.guildConfig('Attempting to save config:', path);
+		log.file.guildConfig('INFO Attempting to save config:', path);
 		return fs.writeFile(path, data, {flag: 'w'});
 	} else {
 		let exists = true;
@@ -111,7 +112,7 @@ async function saveConfig (guildObj, varStore) {
 
 		if (exists) {
 			log.debug(time(), 'Deleting config:', path);
-			log.file.guildConfig('Deleting config:', path);
+			log.file.guildConfig('INFO Deleting config:', path);
 			return fs.unlink(path);
 		}
 	}
@@ -150,15 +151,24 @@ async function loadConfig (varStore) {
 function proxifyMap (map, varStore) {
 	return new Proxy(map, {
 		get (target, prop, receiver) {
-			let descriptor = varStore.get(prop), value = target.get(prop) || descriptor?.default;
+			let descriptor = varStore.get(prop), value = target.get(prop);
+
+			if (value === undefined)
+				value = descriptor?.default;
 			if (prop === Symbol.iterator) {
 				log.debug('Returning config iterator on', target.get('id'));
-				log.file.guildConfig('Returning config iterator on', target.get('id'));
+				log.file.guildConfig('INFO Returning config iterator on', target.get('id'));
 				return target[Symbol.iterator].bind(target);
+			} else if (prop === Symbol.toPrimitive) {
+				log.debug('Returning config string value (id) on', target.get('id'));
+				log.file.guildConfig('INFO Returning config string value (id) on', target.get('id'));
+				return () => {
+					return map.get('id');
+				}
 			}
 			if (descriptor?.get && value) {
 				log.debug('Using custom getter for', prop, 'on', target.get('id'));
-				log.file.guildConfig('Using custom getter for', prop, 'on', target.get('id'));
+				log.file.guildConfig('INFO Using custom getter for', prop, 'on', target.get('id'));
 				return descriptor.get.call(value);
 			}
 			log.debug('Returning the value of', prop, 'which is', value);
@@ -169,16 +179,16 @@ function proxifyMap (map, varStore) {
 			switch (typeof prop) {
 				case 'string':
 				case 'number':
-				case 'bigint':
+				case 'bigint': {
 					if ((prop = String(prop)) === 'id') {
 						log.debug('Blocking set to id on', target.get('id'));
-						log.file.guildConfig('Blocking set to id on', target.get('id'));
-						return false;
+						log.file.guildConfig('WARN Blocking set to id on', target.get('id'));
+						throw new Error('Cannot set id');
 					}
 					if (!varStore.has(prop)) {
 						log.debug('Blocking set to unknown variable:', prop, 'on', target.get('id'));
-						log.file.guildConfig('Blocking set to unknown variable:', prop, 'on', target.get('id'));
-						return false;
+						log.file.guildConfig('WARN Blocking set to unknown variable:', prop, 'on', target.get('id'));
+						throw new Error('Property ' + prop + ' does not exist');
 					}
 
 					if (descriptor.set) {
@@ -190,30 +200,38 @@ function proxifyMap (map, varStore) {
 							value = retVal? retVal : propVal;
 						} else {
 							retVal = descriptor.set(value);
-							if (!retVal) {
+							if (retVal === undefined) {
 								log.debug('Unable to use custom setter for', prop, 'due to missing value on', target.get('id'));
-								log.file.guildConfig('Unable to use custom setter for', prop, 'due to missing value on', target.get('id'));
-								return false;
+								log.file.guildConfig('WARN Unable to use custom setter for', prop, 'due to missing value on', target.get('id'));
+								throw new Error('Unable to set value for ' + prop);
 							}
 							value = retVal;
 						}
 					}
-					if (value.constructor.name.toLowerCase() !== descriptor.type) {
+					if (value === undefined) {
+						log.debug('Removing value of', prop);
+						log.file.guildConfig('INFO Removing value of', prop, 'on', target.get('id'));
+						target.delete(prop);
+						return true;
+					} else if (value.constructor.name.toLowerCase() !== descriptor.type) {
 						log.debug('Unable to set value due to type mismatch:', value.constructor.name, 'instead of', descriptor.type);
-						return false;
+						throw new Error('Value does not match expected type of ' + descriptor.type);
 					}
 					log.debug('Updating value of', prop, 'to', value);
+					log.file.guildConfig('INFO Updating value of', prop, 'to', value, 'on', target.get('id'));
 					target.set(prop, value);
 					saveConfig(target, varStore).catch(e => {
 						log.error(time(), 'Unable to save config for', target.get('id'));
 						log.file.guildConfig('ERROR Unable to save config for', target.get('id'), e);
 					});
 					return true;
-					break;
+				}
+				break;
 
-				default:
+				default: {
 					log.debug('Unable to set value due to prop type:', typeof prop, prop);
-					return false;
+					throw new Error('Property needs to be a symbol or a string');
+				}
 			}
 		},
 		has (target, prop) {
@@ -298,10 +316,19 @@ module.exports = class configManager {
 			default: new Map(),
 			configurable: false,
 			get () {
-				return (cmd) => this.get(cmd);
+				return (cmd) => {
+					if (typeof cmd === 'object')
+						cmd = cmd.command;
+					return this.get(cmd);
+				};
 			},
 			set ([cmd, ...permissions]) {
-				this.set(cmd, new Permissions(permissions));
+				if (typeof cmd === 'object')
+					cmd = cmd.command;
+				if (permissions.length)
+					this.set(cmd, new Permissions(permissions));
+				else
+					this.delete(cmd);
 			}
 		});
 		confVars.set('disabled', {
@@ -400,10 +427,10 @@ module.exports = class configManager {
 		if (toJson && from) {
 			Object.defineProperty(mappingUtils, type, {value: {toJson, from}});
 			log.debug('Set up json conversion functions for property', name);
-			log.file.guildConfig('Set up json conversion functions for property', name);
+			log.file.guildConfig('INFO Set up json conversion functions for property', name);
 		}
 		log.info('Finished registering config property', name);
-		log.file.guildConfig('Finished registering config property', name);
+		log.file.guildConfig('INFO Finished registering config property', name);
 		// iterate through store and convert any non converted objects
 	}
 
@@ -411,6 +438,6 @@ module.exports = class configManager {
 	async loadConfig () {
 		this[sym.guildStore] = await loadConfig(this[sym.confVars]);
 		log.info(time(), 'Loaded config directory successfully');
-		log.file.guildConfig('Loaded config directory successfully');
+		log.file.guildConfig('INFO Loaded config directory successfully');
 	}
 }

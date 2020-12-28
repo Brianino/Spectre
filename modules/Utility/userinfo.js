@@ -1,4 +1,4 @@
-const {getUserID} = require('./utilities.js');
+const {getUserID} = require('../utils/getDiscordObject.js');
 
 this.command = 'userinfo';
 this.description = 'Displays info on a user';

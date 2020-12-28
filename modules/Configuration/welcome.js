@@ -1,4 +1,5 @@
-const {checkForUrl, getChannelID} = require('../etc/utilities.js');
+const {getChannelID} = require('../utils/getDiscordObject.js');
+const checkForUrl = require('../utils/checkForUrl.js');
 
 this.description = 'set the server welcome message';
 this.description = 'user mention: {user}';
@@ -20,7 +21,7 @@ addConfig('welcome_thumbnail', String, {description: 'The image link to use as a
 addConfig('welcome_image', String, {description: 'The image link to attach to an embeded welcome (image below the main text)', configurable: true});
 
 function inGuild (emitter) {
-	emitter.on('guildMemberAdd', member => {
+	emitter.on('guildMemberAdd', async member => {
 		let guild = member.guild, replaceText = (input) => {
 			if (typeof input === 'string')
 				return input.replace(/\{server\}/g, guild.name).replace(/\{user\}/g, '<@' + member.id + '>').replace(/\{name\}/g, member.displayName);
@@ -28,14 +29,14 @@ function inGuild (emitter) {
 				return undefined;
 		};
 
-		log.file.module('member joined:', guild.name, member.user.username, ':: welcome channel set?', this.config.welcome_channel? true : false);
+		log.file.configuration('member joined:', guild.name, member.user.username, ':: welcome channel set?', this.config.welcome_channel? true : false);
 		if (this.config.welcome_channel) {
 			let msg;
 			if (!member.user.bot) msg = replaceText(this.config.welcome_message);
 			else msg = replaceText(this.config.welcome_bot_message);
 
 			if (msg) {
-				let channel = getChannelID(this.config.welcome_channel, guild, {allowText: 'partial'});
+				let channel = await getChannelID(this.config.welcome_channel, guild, {allowText: 'partial'});
 
 				if (channel && channel.type === 'text') {
 					if (this.config.welcome_embed) {
@@ -66,7 +67,7 @@ function inGuild (emitter) {
 					}
 				} else {
 					log.error(time(), 'Unable to find welcome text channel');
-					log.file.module('ERROR: unable to find welcome channel for server', guild.name, '<->', guild.id);
+					log.file.configuration('ERROR: unable to find welcome channel for server', guild.name, '<->', guild.id);
 					this.config.welcome_channel = undefined;
 				}
 			} else return;
@@ -77,7 +78,7 @@ function inGuild (emitter) {
 		let message = input.join(' ');
 
 		log.info(time(), 'Updating welcome message for', msg.guild.name, 'to:', message);
-		log.file.module('INFO: updated welcome message for', msg.guild.name, 'to:', message);
+		log.file.configuration('INFO: updated welcome message for', msg.guild.name, 'to:', message);
 		if (message === '') this.config.welcome_message = undefined;
 		else this.config.welcome_message = message;
 

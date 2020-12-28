@@ -1,5 +1,5 @@
 const timespan = require('timespan-parser')('msec');
-const {split} = require('../etc/utilities.js');
+const split = require('../utils/split.js');
 
 const hardlimit = timespan.parse('1 month'), emoteDelete = '\uD83D\uDDD1\uFE0F';
 /* Custom emote set, not used for now

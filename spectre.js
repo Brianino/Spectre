@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 "use strict";
 if (!process.env.DEBUG) process.env.DEBUG = '*:log,*:info,*:warn,*:error';
-const {time} = require('./etc/utilities.js');
-const log = require('./etc/logger.js')('main');
+const log = require('./utils/logger.js')('main');
 const moduleLoader = require('./etc/moduleLoader.js');
 const {token, prefix} = require('./config.json');
 const {saved} = require('./etc/guildConfig.js');
+const time = require('./utils/time.js');
 const Discord = require('discord.js');
 //const log2 = logFile('main');
 

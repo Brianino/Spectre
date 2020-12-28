@@ -1,6 +1,6 @@
 'use strict';
 
-const log = require('./logger.js')('proxy-listener');
+const log = require('../utils/logger.js')('proxy-listener');
 const eventEmitter = require('events');
 const sym = {
 	source: Symbol('source listener'),

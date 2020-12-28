@@ -1,15 +1,15 @@
 'use strict';
 
-const logger = require('./logger.js');
+const logger = require('../utils/logger.js');
 const contextHandler = require('./contextHandler.js');
 const configManager = require('./guildConfig.js');
 const modObj = require('./moduleObject.js');
-const {time} = require('./utilities.js');
-const log = logger('module-loader');
+const time = require('../utils/time.js');
 const {promises:fs} = require('fs');
 const Path = require('path');
 const vm = require('vm');
 
+const log = logger('module-loader');
 // move iniTimeout to config, maybe add an option for timeout running a command?
 const moduleFolder = '../modules', iniTimeout = 1000;
 

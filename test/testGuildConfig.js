@@ -2,11 +2,15 @@ const mod = require('../etc/guildConfig.js');
 const {Permissions} = require('discord.js');
 const assert = require('assert').strict;
 const config = require('../config.json');
+const {promises:fs} = require('fs');
+const Path = require('path');
 
 describe('Guild Config', function () {
 	let guildConfig, testGuild;
 
 	describe('Generic', function () {
+		let savedValue = 'new';
+
 		it('should create a new guild config manager object', function () {
 			guildConfig = new mod();
 			return assert.ok(guildConfig, 'no guild manager object');
@@ -36,7 +40,28 @@ describe('Guild Config', function () {
 			}
 		});
 
-		it('can delete the guild config and the related file');
+		it('can save properties', async function () {
+			let guild = guildConfig.getGuildConfig('savetest'), file;
+
+			guild.prefix = savedValue;
+			file = await fs.readFile(Path.resolve(__dirname, '../data/savetest.json'), 'utf8');
+
+			assert.equal(JSON.parse(file).prefix, savedValue);
+		});
+
+		it('can load properties', async function () {
+			let tempConfig = new mod(), guild;
+
+			await tempConfig.loadConfig();
+			guild = tempConfig.getGuildConfig('savetest');
+
+			assert.equal(guild.prefix, savedValue);
+		});
+
+		it('can delete the guild config and the related file', async function () {
+			await guildConfig.deleteGuildConfig('savetest');
+			await assert.rejects(fs.access(Path.resolve(__dirname, '../data/savetest.json')));
+		});
 
 		after(function () {
 			assert.ok(testGuild = guildConfig.getGuildConfig('test'));
@@ -114,54 +139,56 @@ describe('Guild Config', function () {
 		});
 	});
 
-	let baseTypes = [];
+	let baseTypes = [], count = 0;
 
 	baseTypes.push([String, 'some default', 'test val']);
 	baseTypes.push([Number, 100, 20]);
 	baseTypes.push([Boolean, false, true]);
+	baseTypes.push([Boolean, true, false]);
 	baseTypes.push([Map, new Map([['default', 'test']]), new Map([['test', 'new']])]);
 	baseTypes.push([Set, new Set(['default', 'test']), new Set(['test', 'new'])]);
 	baseTypes.push([Array, ['default', 'test'], ['test', 'new']]);
 	baseTypes.push([Object, {default: 'test'}, {test: 'new'}]);
 
 	for (let [type, defVal, newVal] of baseTypes) {
-		let typeName = type.name;
+		let typeName = type.name, prop = count++ + 'test' + typeName, prop2 = prop + '2';
+
 		describe('Custom ' + typeName + ' Property', function () {
 			it('can register a new property of type ' + typeName, function () {
-				guildConfig.register('test' + typeName, type, {
+				guildConfig.register(prop, type, {
 					default: defVal,
 					userEditable: false,
 					description: 'A test variable of type ' + typeName,
 				});
 
-				return assert.ok(('test' + typeName) in testGuild, 'missing new property in config object');
+				return assert.ok(prop in testGuild, 'missing new property in config object');
 			});
 
 			it('can register a new property of type ' + typeName + ' without a default', function () {
-				guildConfig.register('test2' + typeName, type, {
+				guildConfig.register(prop2, type, {
 					userEditable: false,
 					description: 'A test variable of type ' + typeName,
 				});
 
-				return assert.ok(('test2' + typeName) in testGuild, 'missing new property in config object');
+				return assert.ok(prop2 in testGuild, 'missing new property in config object');
 			});
 
 			it('can display the default of type ' + typeName, function () {
-				return assert.equal(testGuild['test' + typeName], defVal, 'default value was not returned');
+				return assert.equal(testGuild[prop], defVal, 'default value was not returned');
 			});
 
 			it('should return undefined for a property with no set default ' + typeName, function () {
-				return assert.equal(testGuild['test2' + typeName], undefined, 'received a value instead of undefined');
+				return assert.equal(testGuild[prop2], undefined, 'received a value instead of undefined');
 			});
 
 			it('can modify the new property of type ' + typeName, function () {
-				testGuild['test' + typeName] = newVal;
-				return assert.equal(testGuild['test' + typeName], newVal, 'property value was not updated');
+				testGuild[prop] = newVal;
+				return assert.equal(testGuild[prop], newVal, 'property value was not updated');
 			});
 
 			it('can modify the new defaultless property of type ' + typeName, function () {
-				testGuild['test2' + typeName] = newVal;
-				return assert.equal(testGuild['test2' + typeName], newVal, 'property value was not updated');
+				testGuild[prop2] = newVal;
+				return assert.equal(testGuild[prop2], newVal, 'property value was not updated');
 			});
 		});
 	}
@@ -256,6 +283,6 @@ describe('Guild Config', function () {
 	});
 
 	after(async function () {
-		await guildConfig.deleteGuildConfig('test');
+		await guildConfig.deleteGuildConfig(testGuild.id);
 	});
 });

@@ -1,3 +1,4 @@
+const parseBool = require('../utils/parseBool.js');
 const {inspect} = require('util');
 
 this.description = 'set server configuration';
@@ -44,9 +45,10 @@ function inGuild () {
 				log.info(time(), 'Setting', setting, 'for guild', msg.guild.name, 'reverted to default');
 				return msg.channel.send('Setting reverted to default');
 			}
+			log.debug('Inputs:', input.toString());
 			switch (type) {
 				case 'string': this.config[setting] = input.join(' '); break;
-				case 'boolean': this.config[setting] = input.shift(); break;
+				case 'boolean': this.config[setting] = parseBool(input.shift()); break;
 				case 'number': this.config[setting] = input.shift(); break;
 
 				case 'set':

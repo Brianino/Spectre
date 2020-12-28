@@ -1,6 +1,6 @@
 'use strict';
 
-const log = require('./logger.js')('module-object');
+const log = require('../utils/logger.js')('module-object');
 const {Permissions} = require('discord.js');
 const sym = {
 	name: Symbol('command name'),
@@ -114,6 +114,13 @@ module.exports = class module {
 	 * @param {Permissions} input - what the default required permissions should be
 	*/
 	set permissions (input) {this[sym.perm] = new Permissions(input)}
+
+	/**
+	 * Gets the default required permission level to run the command
+	 *
+	 * @return {Permissions} input - the default required permissions
+	*/
+	get permissions () {return this[sym.perm]}
 
 	/**
 	 * Use to limit the access of the command

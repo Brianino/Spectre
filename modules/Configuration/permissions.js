@@ -1,4 +1,4 @@
-const fs = require('fs').promises;
+const {Permissions} = require('discord.js');
 
 this.description = 'Modifying required permissions for commands';
 this.arguments = 'set <command> [...permission]';
@@ -32,7 +32,7 @@ function inGuild () {
 
 		command = command.replace(/`/g, '');
 		if (command === '') command = ' ';
-		if (cmd && cmd.access(msg.author, msg.guild)) {
+		if (cmd && access.call(cmd, msg.author, msg.guild, this.config)) {
 			perms.forEach((val, index) => {
 				let tmp = Number(val);
 				if (!isNaN(tmp)) perms[index] = tmp;
@@ -56,13 +56,14 @@ function inGuild () {
 
 		command = command.replace(/`/g, '');
 		if (command === '') command = ' ';
-		if (cmd && cmd.access(msg.author, msg.guild)) {
+		if (cmd && access.call(cmd, msg.author, msg.guild, this.config)) {
+			let perms = this.config.permissions(cmd) || cmd.permissions || new Permissions();
 			msg.channel.send({
 				embed: {
 					title: 'Permissions',
 					fields: {
 						name: command,
-						value: '`' + cmd.permissions(msg.guild.id).toArray(false).join('` `') + '`',
+						value: '`' + perms.toArray(false).join('` `') + '`',
 						inline: false,
 					},
 					color: 0xBB0000
@@ -80,10 +81,11 @@ function inGuild () {
 				fields: [],
 			};
 		for (let cmd of modules.values()) {
-			if (cmd.access(msg.author, msg.guild)) {
+			let perms = this.config.permissions(cmd) || cmd.permissions || new Permissions();
+			if (access.call(cmd, msg.author, msg.guild, this.config)) {
 				embed.fields.push({
 					name: cmd.command,
-					value: '`' + cmd.permissions(msg.guild.id).toArray(false).join('`\n`') + '`',
+					value: '`' + perms.toArray(false).join('`\n`') + '`',
 					inline: true,
 				});
 			}

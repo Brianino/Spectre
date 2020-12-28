@@ -1,5 +1,4 @@
-const log = require('./logger.js')('guild-config');
-const {parseBool, time} = require('./utilities.js');
+const parseBool = require('../utils/parseBool.js');
 const {Permissions} = require('discord.js');
 
 module.exports = class mappingUtilties {

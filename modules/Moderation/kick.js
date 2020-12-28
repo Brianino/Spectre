@@ -1,4 +1,4 @@
-const {getUserID} = require('../etc/utilities.js');
+const {getUserID} = require('../utils/getDiscordObject.js');
 const {DiscordAPIError} = require('discord.js');
 
 this.description = 'Kick a user';
