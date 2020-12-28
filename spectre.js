@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-if (!process.env.DEBUG) process.env.DEBUG = '*:log,*:info,*:warn,*:error';
+
 const log = require('./utils/logger.js')('main');
 const moduleLoader = require('./etc/moduleLoader.js');
 const {token, prefix} = require('./config.json');
