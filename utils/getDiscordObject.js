@@ -2,6 +2,7 @@
 
 const log = require('./logger.js')('utilities');
 const {GuildChannel, GuildMember} = require('discord.js');
+const split = require('./split.js');
 
 
 module.exports = exports;
@@ -94,7 +95,7 @@ async function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText 
 	if (res.length) return res;
 
 	log.debug(allowText? 'Searching for text' : 'Text searching disabled');
-	for (let text of exports.split(input)) {
+	for (let text of split(input)) {
 		let found = textSearch(manager.cache, text, allowText, prop);
 
 		if (found) {
