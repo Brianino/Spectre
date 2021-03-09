@@ -14,8 +14,9 @@ function inAll () {
 		}
 
 		for (let guild of guilds.values()) {
+			let clientGuildAcc = guild.members.resolve(getBot().user.id);
 			embed.fields.push({
-				name: guild.name,
+				name: `${guild.name} - ${clientGuildAcc.joinedAt.toDateString()}`,
 				value: guild.id
 			});
 		}

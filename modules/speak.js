@@ -1,13 +1,13 @@
 this.description = 'repeat a message';
 this.permissions = 'MANAGE_MESSAGES';
 
-this.arguments = '[message to repeat]'
+this.arguments = '[message to repeat]';
 
 function inGuild (emitter) {
 	emitter.on('message', async msg => {
 		if (msg.mentions.users.has(getBot().user.id)) {
 			log.debug('Message:', msg.content);
-			await msg.reply(`Hewwo, to use my commands use the prefix \`${this.config.prefix}\``);
+			await msg.reply(`to use my commands use the prefix \`${this.config.prefix}\``);
 		}
 	});
 

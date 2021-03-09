@@ -284,7 +284,7 @@ function inGuild () {
 	}
 
 	function pollList (list, channel, author, footerMsg) {
-		let menu, choice, embed = {
+		let embed = {
 			title: 'Active Polls:',
 			fields: [],
 			color: 0xBB0000,
