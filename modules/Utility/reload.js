@@ -10,11 +10,10 @@ function inAll () {
 	return async (msg, moduleStr) => {
 		let moduleObj = modules.get(moduleStr);
 
-		return log.warn('NEED ACCESS TO MODLOADER RELOAD FUNC');
 		msg.delete();
 		if (moduleObj) {
 			try {
-				moduleObj.reload();
+				await reload(moduleObj);
 				return (await msg.channel.send('Reloaded: ' + moduleStr)).delete({timeout: 10000});
 			} catch (e) {
 				log.error(time(), 'Unable to reload module');
@@ -22,7 +21,7 @@ function inAll () {
 			}
 		} else if (!moduleStr) {
 			try {
-				await run();
+				await loadNew();
 				return (await msg.channel.send('Loaded new modules')).delete({timeout: 10000});
 			} catch (e) {
 				log.error(time(), 'Unable to load new moduleStr');

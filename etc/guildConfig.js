@@ -197,7 +197,7 @@ function proxifyMap (map, varStore) {
 						let propVal = target.get(prop) || descriptor?.default, retVal;
 
 						log.debug('Using custom setter for', prop, 'with value', value, 'on', target.get('id'));
-						if (propVal) {
+						if (propVal && typeof propVal === 'object') {
 							retVal = descriptor.set.call(propVal, value);
 							value = retVal? retVal : propVal;
 						} else {
@@ -312,6 +312,11 @@ module.exports = class configManager {
 			default: prefix,
 			desc: 'prefix to use for commands',
 			configurable: true,
+			set (input) {
+				if (String(input).startsWith('/'))
+					throw new Error('Prefix cannot start with /');
+				return String(input);
+			}
 		});
 		confVars.set('permissions', {
 			type: 'map',

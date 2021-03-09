@@ -5,10 +5,12 @@ const supportsColor = require('supports-color');
 const debug_logger = require('debug');
 const Path = require('path');
 
-if (!process.env.DEBUG) process.env.DEBUG = '*:log,*:info,*:warn,*:error';
+if (!process.env.DEBUG) {
+	debug_logger.enable('*,-*:debug,-*:trace');
+}
 
 module.exports = (function () {
-	const conMap = new Map(), logDir = Path.resolve(__dirname, '../log'), wMap = new WeakMap();
+	const conMap = new Map(), logDir = Path.resolve(__dirname, '../log'), wMap = new WeakMap(),
 		maxSize = 1024 * 1024 * 512, selfLog = debug_logger('logger:error'); //max size of log files before rolling them up in bytes
 	mkdirSync(logDir, {recursive: true});
 	setInterval(cleanUp, 1000 * 60 * 60).unref();
@@ -123,7 +125,6 @@ module.exports = (function () {
 				throw ignore;
 			}
 		}
-		selfLog.debug('moving', file, 'to', temp, 'tDir:', tDir);
 		await fs.rename(file, temp, temp);
 		return date;
 	}
@@ -144,15 +145,15 @@ module.exports = (function () {
 							conMap.delete(Path.basename(filePath, '.log'));
 							oldStr.end('Log moved to dir: ' + date);
 						} catch (e) {
-							selfLog.error('Unable to roll up log file:', item.name);
-							selfLog.error(e);
+							selfLog('Unable to roll up log file:', item.name);
+							selfLog(e);
 						}
 					}
 				}
 			}
 		} catch (e) {
-			selfLog.error('Issue monitoring log files:', e.toString());
-			selfLog.error(e.stack);
+			selfLog('Issue monitoring log files:', e.toString());
+			selfLog(e.stack);
 		}
 	}
 })();

@@ -7,6 +7,7 @@ const listener = require('./proxyListener.js');
 const sym = {
 	guilds: Symbol('get guild function'),
 	dms: Symbol('get dms function'),
+	listeners: Symbol('attached listeners'),
 }
 
 const retrieveObject = objMap => mod => {
@@ -49,7 +50,30 @@ function addFuncs ([guild, dm, empty], func) {
 	}
 }
 
-function proxifyListener (listener, check) {
+function proxifyListener (listener, cmdObj, check) {
+	function register (ev, li) {
+		if (!cmdObj.hasOwnProperty(sym.listeners)) {
+			cmdObj[sym.listeners] = new Map();
+			cmdObj[sym.listeners].set(li, new Set([ev]));
+		} else {
+			let map = cmdObj[sym.listeners], evSet = map.get(li) || new Set();
+
+			if (evSet.size === 0)
+				map.set(li, evSet)
+			evSet.add(ev);
+		}
+	}
+	function unregister (ev, li) {
+		if (!cmdObj.hasOwnProperty(sym.listeners)) {
+			let map = cmdObj[sym.listeners], evSet = map.get(li) || new Set();
+
+			if (evSet.size <= 1)
+				map.delete(li);
+			if (evSet.size > 1)
+				evSet.delete(ev);
+		}
+	}
+	// add in store for all listeners that can be used to remove them when the module gets deleted
 	return new Proxy (listener, {
 		get: (target, prop, receiver) => {
 			let func = Reflect.get(target, prop);
@@ -58,9 +82,20 @@ function proxifyListener (listener, check) {
 				case 'once':
 				case 'addListener':
 				case 'prependListener':
-				case 'prependOnceListener':
-				return (event, listener) => {
-					return func.call(target, event, listener, check);
+				case 'prependOnceListener': {
+					return (event, listener) => {
+						register(event, listener);
+						return func.call(target, event, listener, check);
+					}
+				}
+				break;
+
+				case 'off':
+				case 'removeListener': {
+					return (event, listener) => {
+						unregister(event, listener);
+						return func.call(target, event, listener);
+					}
 				}
 				break;
 
@@ -113,6 +148,14 @@ module.exports = function (getConfigCallback) {
 		modListener.source = source;
 	}
 
+	this.cleanup = (cmdObj) => {
+		if (cmdObj.hasOwnProperty(sym.listeners)) {
+			for (let [listener, events] of cmdObj[sym.listeners])
+				for (let ev of events)
+					modListener.removeListener(ev, listener);
+		}
+	}
+
 	this.create = (cmdObj, mainCtx) => {
 		log.debug('Setting up', cmdObj.command);
 		log.debug('Provided:', ...Object.keys(mainCtx));
@@ -130,7 +173,7 @@ module.exports = function (getConfigCallback) {
 						if (!runFunc) {
 							runFunc = (function () {
 								let newObj = Object.create(cmdObj),
-									proxyListener = proxifyListener(modListener, checkGuild(guildId)),
+									proxyListener = proxifyListener(modListener, cmdObj, checkGuild(guildId)),
 									globObj = ctx.guilds.getObj(cmdObj);
 								// set config param on new obj here...
 								if (getConfigCallback)
@@ -152,9 +195,10 @@ module.exports = function (getConfigCallback) {
 
 					if (!runFunc) {
 						runFunc = (function () {
-							let newObj = Object.create(cmdObj), globObj = ctx.guilds.getObj(cmdObj);
+							let newObj = Object.create(cmdObj), globObj = ctx.guilds.getObj(cmdObj),
+								proxyListener = proxifyListener(modListener, cmdObj);
 							// set config param on new obj here...
-							return mainCtx[key].call(newObj, modListener, globObj);
+							return mainCtx[key].call(newObj, proxyListener, globObj);
 						})();
 						log.debug('Wrapped guild global function for:', cmdObj.command);
 						ctx.guilds.unique.set(cmdObj, runFunc);
@@ -170,9 +214,10 @@ module.exports = function (getConfigCallback) {
 
 					if (!runFunc) {
 						runFunc = (function () {
-							let newObj = Object.create(cmdObj), globObj = ctx.dms.getObj(cmdObj);
+							let newObj = Object.create(cmdObj), globObj = ctx.dms.getObj(cmdObj),
+								proxyListener = proxifyListener(modListener, cmdObj);
 							// set config param on new obj here...
-							return mainCtx[key].call(newObj, modListener, globObj);
+							return mainCtx[key].call(newObj, proxyListener, globObj);
 						})();
 						log.debug('Wrapped dm global function for:', cmdObj.command);
 						ctx.dms.funcMap.set(cmdObj, runFunc);
@@ -188,9 +233,10 @@ module.exports = function (getConfigCallback) {
 
 					if (!runFunc) {
 						runFunc = (function () {
-							let newObj = Object.create(cmdObj), globObj = ctx.all.getObj(cmdObj);
+							let newObj = Object.create(cmdObj), globObj = ctx.all.getObj(cmdObj),
+								proxyListener = proxifyListener(modListener, cmdObj);
 							// set config param on new obj here...
-							return mainCtx[key].call(newObj, modListener, globObj);
+							return mainCtx[key].call(newObj, proxyListener, globObj);
 						})();
 						log.debug('Wrapped global function for:', cmdObj.command);
 						ctx.all.funcMap.set(cmdObj, runFunc);

@@ -1,3 +1,5 @@
+const pagedEmbed = require('../utils/pagedEmbed.js');
+
 this.description = 'Display command help';
 this.description = 'Command arguments in the help will display a quick summary of the different format a command can take';
 this.description = 'Arguments surrounded with `[]` are optional, meaning that you can choose to leave it out (do not include the brackets when typing out the command)';
@@ -8,30 +10,35 @@ this.description = 'Arguments with `...` infront of them means that one or more 
 this.arguments = '[command]';
 this.arguments = '';
 
+const detailedHelp = {
+	"Configuration": 'These commands are used to change how the bot will operate on this server',
+	"Moderation": 'These commands are to assist with server moderation tasks',
+	"Utility": 'Utility commands'
+}
+
 function inAll () {
 	/* TO DO:
 	 * Implement paging based on categories
 	*/
 	return function (msg, arg) {
 		if (!arg) {
-			let embed = {
-				title: 'Options',
-				description: 'Available commands',
-				color: 0xBB0000,
-				fields: []
-			};
+			let helpEmbed = new pagedEmbed('Options'), pages = new Map();
 
-			for (let [cmd, moduleObj] of modules) {
-				if (access.call(moduleObj, msg.author, msg.guild, this)) {
-					embed.fields.push({
-						name: this.prefix + cmd,
-						value: moduleObj.description[0],
-						inline: false
-					});
+			helpEmbed.setColor(0xBB0000);
+			for (let moduleObj of modules.values()) {
+				let group = moduleObj.group, page = pages.get(moduleObj.group),
+					details = [moduleObj.command, moduleObj.description[0]];
+
+				if (page === undefined) {
+					let desc = detailedHelp[moduleObj.group] || (moduleObj.group + ' commands');
+					page = helpEmbed.addPage(moduleObj.group, [details]);
+					pages.set(moduleObj.group, page);
+				} else {
+					helpEmbed.addToPage(page, [details]);
 				}
 			}
 			log.debug(time(), 'Posting help (no args)');
-			return msg.channel.send({embed});
+			return helpEmbed.sendTo(msg.channel);
 		} else {
 			let cmd = modules.get(arg = String(arg));
 

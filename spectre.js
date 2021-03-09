@@ -52,7 +52,7 @@ bot.on('warn', info => {
 });
 
 bot.on('debug', info => {
-	log.file.debug('debug', info);
+	log.file.debug('Client debug', info);
 });
 
 bot.login(token).catch(e => {

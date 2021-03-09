@@ -122,7 +122,8 @@ module.exports = class listener {
 
 			this[sym.events].set(eventName, [lList, temp]);
 		}
-		if (check) this[sym.checks].set(listener, (typeof check === 'function')? check : () => check);
+		if (typeof check === 'function')
+			this[sym.checks].set(listener, check);
 		lList.add(listener);
 		return this;
 	}
