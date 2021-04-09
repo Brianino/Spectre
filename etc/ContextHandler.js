@@ -1,8 +1,8 @@
 'use strict';
-
+/** @module ContextHandler */
 const log = require('../utils/logger.js')('context-handler');
 const {Client, Guild, Collection} = require('discord.js');
-const listener = require('./proxyListener.js');
+const listener = require('./ProxyListener.js');
 
 const sym = {
 	guilds: Symbol('get guild function'),
@@ -115,6 +115,9 @@ function proxifyListener (listener, cmdObj, check) {
 // New method should allow the object itself to act as a global context, and the function to to operate under the new context object (which should allow the config var to be set)
 // Commands sharing context
 
+/**
+ * @class ContextHandler
+*/
 module.exports = function (getConfigCallback) {
 	let ctx = {
 		guilds: {

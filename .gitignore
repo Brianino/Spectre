@@ -49,4 +49,10 @@ jspm_packages
 #config example
 config.js
 
+# Documentation directory
+out
+
+# Data directory
+data
+
 package-lock.json

@@ -56,7 +56,7 @@ function attachToSource (event, lList, {[sym.source]: source, [sym.checks]:check
  * @param {EventEmitter} [source]                - source event emitter
  * @param {boolean}      [errorsFromSource=true] - true if uncaught listener errors should be forwarded to the error event
 */
-module.exports = class listener {
+class ProxyListener {
 	constructor (source, errorsFromSource = true) {
 		if (source && !source instanceof eventEmitter)
 			throw new Error('Source emitter is not an event emitter');
@@ -236,3 +236,5 @@ module.exports = class listener {
 		else return 0;
 	}
 }
+
+module.exports = ProxyListener;

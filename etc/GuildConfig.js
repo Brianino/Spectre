@@ -2,7 +2,7 @@
 
 const log = require('../utils/logger.js')('guild-config');
 const parseBool = require('../utils/parseBool.js');
-const mappingUtils = require('./mappingUtils.js');
+const mappingUtils = require('./MappingUtils.js');
 const {promises:fs, constants} = require('fs');
 const {Permissions} = require('discord.js');
 const {prefix} = require('../config.json');
@@ -19,7 +19,7 @@ const sym = {
 }
 
 /** The config object to interact with the configured guild properties
- * All config objects can be extended with the [config manager]{@link configManager#register}
+ * All config objects can be extended with the [config manager]{@link ConfigManager#register}
  * Setting any of the properties will cause the config properties to get saved
  * @typedef {Proxy} ConfigObject
  * @prop {string}  id          - the guild id of the guild the config object applies to
@@ -29,14 +29,14 @@ const sym = {
 */
 
 /** Custom method to return the permissions associated to a particular command
- * @func getPerm
+ * @typedef {function} getPerm
  * @desc gets the permissions required to run the command on a specific guild
  * @param {string} cmdName - the name of the command to get the permssions for
  * @return {Permissions} the permissions required to run a command on a specific guild
 */
 
 /** Argument for the custom setter, should be provided as an array of arguments
- * @func setPerm
+ * @typedef {function} setPerm
  * @param {string} cmd   - the command name
  * @param {...*}   perms - a list of [permission resolvables]{@link https://discord.js.org/#/docs/main/stable/typedef/PermissionResolvable}
 */
@@ -70,7 +70,7 @@ function convert (id, obj, varStore) {
  * @private
  * @param {Map}	map - a map of property names to property values
  * @param {Set} varStore - the set of all available config properties that may or may not be already configured
- * @returns {string|undefined} the json string if more than the id property is set
+ * @returns {(string|undefined)} the json string if more than the id property is set
 */
 function stringify (map, varStore) {
 	let res = {}, moreThanId = false;
@@ -303,7 +303,7 @@ function canHaveGetters (typeName) {
 }
 
 /** Handles the storage and manipulations of config objects for each guild */
-module.exports = class configManager {
+class ConfigManager {
 	constructor () {
 		let confVars = new Map();
 
@@ -406,6 +406,7 @@ module.exports = class configManager {
 	 * @prop {function} [toJson]       - a custom method to convert the property to an object that can be serialized with JSON.stringify
 	 * @prop {function} [from]         - a custom method to convert a json object back into the complext type of the variable
 	*/
+
 	/** Registers a new config property that can be accessed/set on a [Config object]{@link ConfigObject}
 	 * @param {string}          name  - the name of the property
 	 * @param {*}               type  - the type of object stored on the property (will use a constructor name, or the string value)
@@ -448,3 +449,5 @@ module.exports = class configManager {
 		log.file.guildConfig('INFO Loaded config directory successfully');
 	}
 }
+
+module.exports = ConfigManager;

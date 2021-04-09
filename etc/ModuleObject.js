@@ -27,7 +27,7 @@ const sym = {
  * @param {string} name  - the string used by a user to call the module function
  * @param {string} group - the name for the group of commands this module is part of
 */
-module.exports = class module {
+class ModuleObject {
 	constructor (name, group) {
 		Object.defineProperties(this, {
 			[sym.name]: {value: name},
@@ -133,6 +133,8 @@ module.exports = class module {
 		if (this[sym.clim].has(type)) this[sym.clim].set(type, new Set(ids));
 	}
 }
+
+module.exports = ModuleObject;
 
 module.exports.access = function (user, guild, config) {
 	let users = this[sym.clim].get('users'), guilds = this[sym.clim].get('guilds');

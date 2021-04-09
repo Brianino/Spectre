@@ -1,9 +1,9 @@
 'use strict';
 
 const logger = require('../utils/logger.js');
-const contextHandler = require('./contextHandler.js');
-const configManager = require('./guildConfig.js');
-const modObj = require('./moduleObject.js');
+const ContextHandler = require('./ContextHandler.js');
+const ConfigManager = require('./GuildConfig.js');
+const modObj = require('./ModuleObject.js');
 const time = require('../utils/time.js');
 const {promises:fs} = require('fs');
 const Path = require('path');
@@ -51,11 +51,11 @@ const globals = { // TODO: Lock off objects so that they can't be modified from 
 module.exports = class moduleLoader {
 	#modules = new Map();
 	#filePaths = new WeakMap();
-	#confMan = new configManager();
+	#confMan = new ConfigManager();
 	#context;
 
 	constructor () {
-		this.#context = new contextHandler(this.#confMan.getGuildConfig.bind(this.#confMan));
+		this.#context = new ContextHandler(this.#confMan.getGuildConfig.bind(this.#confMan));
 	}
 
 	get modules () {
@@ -76,7 +76,7 @@ module.exports = class moduleLoader {
 		input.on('guildCreate', guild => {
 			for (let mod of this.#modules.values()) {
 				try {
-					mod[contextHandler.guildSymbol](guild.id);
+					mod[ContextHandler.guildSymbol](guild.id);
 				} catch (e) {
 					log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id);
 					log.file['module-loader']('WARN - Failed to instantiate command', mod.command, 'on guild', guild.id);
@@ -117,9 +117,9 @@ module.exports = class moduleLoader {
 
 		if (cmd && modObj.access.call(cmd, msg.author, msg.guild, config)) {
 			if (msg.guild) //this creates instance, it doens't run the fun, return value needs to be run;
-				return cmd[contextHandler.guildSymbol](msg.guild.id).call(config, msg, ...msgStr);
+				return cmd[ContextHandler.guildSymbol](msg.guild.id).call(config, msg, ...msgStr);
 			else
-				return cmd[contextHandler.DMSymbol]().call(config, msg, ...msgStr);
+				return cmd[ContextHandler.DMSymbol]().call(config, msg, ...msgStr);
 		}
 	}
 
@@ -129,7 +129,9 @@ module.exports = class moduleLoader {
 			let {name, code} = await this.#loadFile(filePath), mod;
 
 			if (this.modules.has(name))
-				return log.debug('Skipping over exiting module', name);
+				return log.debug('Skipping over existing module', name);
+			if (code.startsWith('skip_me'))
+				return log.warn('Skip requested by', name);
 			this.modules.set(name, mod = this.#setupModule(name, group, filePath, code));
 			this.#filePaths.set(mod, filePath);
 			if (this.source && inst)
@@ -185,14 +187,14 @@ module.exports = class moduleLoader {
 	#instGuildCtx (mod) {
 		for (let {id} of this.source.guilds.cache.values()) {
 			try {
-				mod[contextHandler.guildSymbol](id);
+				mod[ContextHandler.guildSymbol](id);
 			} catch (e) {
 				log.warn('Failed to instantiate command', mod.command, 'on guild', id);
 				log.warn(e);
 			}
 		}
 		try {
-			mod[contextHandler.DMSymbol]();
+			mod[ContextHandler.DMSymbol]();
 		} catch (e) {
 			log.warn('Failed to instantiate command', mod.command, 'dm context');
 			log.warn(e);

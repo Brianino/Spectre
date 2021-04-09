@@ -11,7 +11,8 @@
   },
   "scripts": {
     "start": "node spectre.js",
-    "test": "mocha"
+    "test": "mocha",
+    "docs": "jsdoc -r spectre.js etc utils"
   },
   "dependencies": {
     "@discordjs/opus": "^0.3.2",

@@ -1,6 +1,6 @@
-const emojiController = require('./emojiController.js');
+const EmojiController = require('./EmojiController.js');
 
-class emojiPageController extends emojiController {
+class EmojiPageController extends EmojiController {
 
 	constructor (options = {}) {
 		super(options, new Map([
@@ -30,14 +30,16 @@ class emojiPageController extends emojiController {
 	}
 }
 
-module.exports = class pageController {
+class PageController {
 	constructor () {throw new Error('cannot initialise directly')};
 
 	static get emoji () {
-		return emojiPageController;
+		return EmojiPageController;
 	}
 
 	static [Symbol.hasInstance] (instance) {
-		return instance instanceof emojiPageController;
+		return instance instanceof EmojiPageController;
 	}
 }
+
+module.exports = PageController;
