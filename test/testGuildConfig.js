@@ -1,4 +1,4 @@
-const mod = require('../etc/guildConfig.js');
+const mod = require('../etc/GuildConfig.js');
 const {Permissions} = require('discord.js');
 const assert = require('assert').strict;
 const config = require('../config.json');
@@ -141,16 +141,16 @@ describe('Guild Config', function () {
 
 	let baseTypes = [], count = 0;
 
-	baseTypes.push([String, 'some default', 'test val']);
-	baseTypes.push([Number, 100, 20]);
-	baseTypes.push([Boolean, false, true]);
-	baseTypes.push([Boolean, true, false]);
-	baseTypes.push([Map, new Map([['default', 'test']]), new Map([['test', 'new']])]);
-	baseTypes.push([Set, new Set(['default', 'test']), new Set(['test', 'new'])]);
-	baseTypes.push([Array, ['default', 'test'], ['test', 'new']]);
-	baseTypes.push([Object, {default: 'test'}, {test: 'new'}]);
+	baseTypes.push([String, 'some default', 'test val', 'updated val']);
+	baseTypes.push([Number, 100, 20, 30]);
+	baseTypes.push([Boolean, false, true, false]);
+	baseTypes.push([Boolean, true, false, true]);
+	baseTypes.push([Map, new Map([['default', 'test']]), new Map([['test', 'new']]), new Map([['updated', 'test']])]);
+	baseTypes.push([Set, new Set(['default', 'test']), new Set(['test', 'new']), new Set(['updated', 'test'])]);
+	baseTypes.push([Array, ['default', 'test'], ['test', 'new'], ['updated', 'test']]);
+	baseTypes.push([Object, {default: 'test'}, {test: 'new'}, {updated: 'test'}]);
 
-	for (let [type, defVal, newVal] of baseTypes) {
+	for (let [type, defVal, newVal, otherVal] of baseTypes) {
 		let typeName = type.name, prop = count++ + 'test' + typeName, prop2 = prop + '2';
 
 		describe('Custom ' + typeName + ' Property', function () {
@@ -173,23 +173,49 @@ describe('Guild Config', function () {
 				return assert.ok(prop2 in testGuild, 'missing new property in config object');
 			});
 
-			it('can display the default of type ' + typeName, function () {
-				return assert.equal(testGuild[prop], defVal, 'default value was not returned');
+			it('can display the default', function () {
+				return assert.equal(testGuild[prop], defVal);
 			});
 
-			it('should return undefined for a property with no set default ' + typeName, function () {
-				return assert.equal(testGuild[prop2], undefined, 'received a value instead of undefined');
+			it('should return undefined when there is no default', function () {
+				return assert.equal(testGuild[prop2], undefined);
 			});
 
-			it('can modify the new property of type ' + typeName, function () {
+			it('can set the first value', function () {
 				testGuild[prop] = newVal;
-				return assert.equal(testGuild[prop], newVal, 'property value was not updated');
+				return assert.equal(testGuild[prop], newVal);
 			});
 
-			it('can modify the new defaultless property of type ' + typeName, function () {
+			it('can set the first value when there is no default', function () {
 				testGuild[prop2] = newVal;
-				return assert.equal(testGuild[prop2], newVal, 'property value was not updated');
+				return assert.equal(testGuild[prop2], newVal);
 			});
+
+			it('can modify the value', function () {
+				testGuild[prop] = otherVal;
+				return assert.equal(testGuild[prop], otherVal);
+			});
+
+			it('can modify the value when there is no default', function () {
+				testGuild[prop2] = otherVal;
+				return assert.equal(testGuild[prop2], otherVal);
+			});
+
+			it('can revert to the default', function () {
+				testGuild[prop] = undefined;
+				return assert.equal(testGuild[prop], defVal);
+			});
+
+			it('can revert to undefined', function () {
+				testGuild[prop2] = undefined;
+				return assert.equal(testGuild[prop2], undefined);
+			});
+
+			if (typeof defVal !== 'object') {
+				it('can use a custom setter (primitive)');
+
+				it('can use a custom getter (primitive)');
+			}
 		});
 	}
 
@@ -227,7 +253,7 @@ describe('Guild Config', function () {
 			return assert.equal(guildConfig.getConfigurable().get(prop)[1], desc, 'property ' + prop + ' description does not match');
 		});
 
-		it('can set a custom setter', function () {
+		it('can set a custom setter (object)', function () {
 			let testObj = {}, testVal = 'A test value';
 
 			guildConfig.register(prop, Object, {
@@ -252,7 +278,7 @@ describe('Guild Config', function () {
 			assert.equal(testGuild[prop].normal, testVal, testVal + ' was not assigned to the object (normal setter)');
 		});
 
-		it('can set a custom getter', function () {
+		it('can set a custom getter (object)', function () {
 			let testObj = {test: 'First:'}, append = 'Second';
 
 			guildConfig.register(prop, Object, {

@@ -5,7 +5,7 @@ const supportsColor = require('supports-color');
 const debug_logger = require('debug');
 const Path = require('path');
 
-if (!process.env.DEBUG) {
+if (!process.env.DEBUG && !process.env.TEST) {
 	debug_logger.enable('*,-*:debug,-*:trace');
 }
 

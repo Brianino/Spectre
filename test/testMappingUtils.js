@@ -1,4 +1,4 @@
-const map = require('../etc/mappingUtils.js');
+const map = require('../etc/MappingUtils.js');
 const {Permissions} = require('discord.js');
 const assert = require('assert').strict;
 

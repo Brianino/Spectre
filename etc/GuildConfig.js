@@ -153,10 +153,8 @@ async function loadConfig (varStore) {
 function proxifyMap (map, varStore) {
 	return new Proxy(map, {
 		get (target, prop, receiver) {
-			let descriptor = varStore.get(prop), value = target.get(prop);
+			let descriptor = varStore.get(prop), value = target.get(prop) ?? descriptor?.default;
 
-			if (value === undefined)
-				value = descriptor?.default;
 			if (prop === Symbol.iterator) {
 				log.debug('Returning config iterator on', target.get('id'));
 				log.file.guildConfig('INFO Returning config iterator on', target.get('id'));
@@ -167,11 +165,13 @@ function proxifyMap (map, varStore) {
 				return () => {
 					return map.get('id');
 				}
-			}
-			if (descriptor?.get && value) {
+			} else if (descriptor?.get) {
 				log.debug('Using custom getter for', prop, 'on', target.get('id'));
 				log.file.guildConfig('INFO Using custom getter for', prop, 'on', target.get('id'));
-				return descriptor.get.call(value);
+				if (typeof value === 'object')
+					return descriptor.get.call(value);
+				else
+					return descriptor.get(value);
 			}
 			log.debug('Returning the value of', prop, 'which is', value);
 			return value;
@@ -179,14 +179,18 @@ function proxifyMap (map, varStore) {
 		set (target, prop, value, receiver) {
 			let descriptor = varStore.get(prop);
 			switch (typeof prop) {
-				case 'string':
 				case 'number':
 				case 'bigint': {
-					if ((prop = String(prop)) === 'id') {
+					prop = String(prop);
+				}
+
+				case 'string': {
+					if (prop === 'id') {
 						log.debug('Blocking set to id on', target.get('id'));
 						log.file.guildConfig('WARN Blocking set to id on', target.get('id'));
 						throw new Error('Cannot set id');
 					}
+
 					if (!varStore.has(prop)) {
 						log.debug('Blocking set to unknown variable:', prop, 'on', target.get('id'));
 						log.file.guildConfig('WARN Blocking set to unknown variable:', prop, 'on', target.get('id'));
@@ -194,20 +198,14 @@ function proxifyMap (map, varStore) {
 					}
 
 					if (descriptor.set) {
-						let propVal = target.get(prop) || descriptor?.default, retVal;
+						let propVal = target.get(prop) ?? descriptor.default;
 
 						log.debug('Using custom setter for', prop, 'with value', value, 'on', target.get('id'));
-						if (propVal && typeof propVal === 'object') {
-							retVal = descriptor.set.call(propVal, value);
-							value = retVal? retVal : propVal;
+						if (typeof propVal === 'object') {
+							descriptor.set.call(propVal, value);
+							return true;
 						} else {
-							retVal = descriptor.set(value);
-							if (retVal === undefined) {
-								log.debug('Unable to use custom setter for', prop, 'due to missing value on', target.get('id'));
-								log.file.guildConfig('WARN Unable to use custom setter for', prop, 'due to missing value on', target.get('id'));
-								throw new Error('Unable to set value for ' + prop);
-							}
-							value = retVal;
+							value = descriptor.set(value);
 						}
 					}
 					if (value === undefined) {
@@ -232,7 +230,7 @@ function proxifyMap (map, varStore) {
 
 				default: {
 					log.debug('Unable to set value due to prop type:', typeof prop, prop);
-					throw new Error('Property needs to be a symbol or a string');
+					throw new Error('Property needs to be a string');
 				}
 			}
 		},

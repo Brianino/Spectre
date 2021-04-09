@@ -1,10 +1,10 @@
-const proxyListener = require('../etc/proxyListener.js');
+const ProxyListener = require('../etc/ProxyListener.js');
 const events = require('events');
 const assert = require('assert').strict;
 
 describe('Proxy Listner', function () {
 	describe('Initialised with source event emitter', function () {
-		let source = new events(), plistener = new proxyListener(source);
+		let source = new events(), plistener = new ProxyListener(source);
 
 		it('can create the proxy listener', function () {
 			assert.ok(plistener.isAttached);
@@ -15,7 +15,7 @@ describe('Proxy Listner', function () {
 	});
 
 	describe('Source event emitter added later', function () {
-		let source = new events(), plistener = new proxyListener(), list = [],
+		let source = new events(), plistener = new ProxyListener(), list = [],
 		evQue = Object.getOwnPropertySymbols(plistener).find(sym => sym.toString() === 'Symbol(queue)'),
 		evSym = Object.getOwnPropertySymbols(plistener).find(sym => sym.toString() === 'Symbol(events to listeners)');
 
@@ -92,7 +92,7 @@ describe('Proxy Listner', function () {
 	describe('Uncaught listener error forwarding', function () {
 		let source = new events();
 		it('should forward uncaught errors to the error event', function () {
-			let plistener = new proxyListener(source, true), event = Symbol();
+			let plistener = new ProxyListener(source, true), event = Symbol();
 
 			return new Promise((resolve) => {
 				let e = new Error('uncaught error');
