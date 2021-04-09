@@ -2,9 +2,8 @@
 "use strict";
 
 const log = require('./utils/logger.js')('main');
-const moduleLoader = require('./etc/moduleLoader.js');
+const moduleLoader = require('./etc/ModuleLoader.js');
 const {token, prefix} = require('./config.json');
-const {saved} = require('./etc/guildConfig.js');
 const time = require('./utils/time.js');
 const Discord = require('discord.js');
 //const log2 = logFile('main');

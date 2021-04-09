@@ -1,4 +1,4 @@
-const pagedEmbed = require('../utils/pagedEmbed.js');
+const PagedEmbed = require('../utils/PagedEmbed.js');
 
 this.description = 'Display command help';
 this.description = 'Command arguments in the help will display a quick summary of the different format a command can take';
@@ -22,7 +22,7 @@ function inAll () {
 	*/
 	return function (msg, arg) {
 		if (!arg) {
-			let helpEmbed = new pagedEmbed('Options'), pages = new Map();
+			let helpEmbed = new PagedEmbed('Options'), pages = new Map();
 
 			helpEmbed.setColor(0xBB0000);
 			for (let moduleObj of modules.values()) {

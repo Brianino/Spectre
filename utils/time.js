@@ -2,7 +2,8 @@
 
 /**
  * Gets the current time nicely formatted
- * @function
+ * @function time
+ * @memberof utils
  *
  * @return {string} the current date formatted in a specific way for logging
 */

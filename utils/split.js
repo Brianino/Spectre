@@ -2,12 +2,13 @@
 
 /**
  * Split a string up whilst keeping anything within double quotes grouped
+ * @memberof utils
  *
  * @param  {string}  str         - the input string to split
  * @param  {boolean} filterEmpty - when true empty groups are removed
  * @return {string[]} the input string split by space with quoted groups kept together
 */
-module.exports = function split (str, filterEmpty = true) {
+function split (str, filterEmpty = true) {
 	let groups = str.split('"'), res = [];
 
 	groups.forEach((val, i) => {
@@ -19,3 +20,5 @@ module.exports = function split (str, filterEmpty = true) {
 	if (filterEmpty) res = res.filter(val => val !== '');
 	return res;
 }
+
+module.exports = split;

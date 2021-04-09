@@ -2,11 +2,12 @@
 
 /**
  * Converts an input into a boolean value
+ * @memberof utils
  *
  * @param  {*} input
  * @return {boolean}
 */
-module.exports = function parseBool (input) {
+function parseBool (input) {
 	switch (typeof input) {
 		case 'bigint':
 		case 'number': return Boolean(input); break;
@@ -27,3 +28,5 @@ module.exports = function parseBool (input) {
 		}
 	}
 }
+
+module.exports = parseBool;

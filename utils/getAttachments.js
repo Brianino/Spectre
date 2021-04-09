@@ -10,13 +10,13 @@ const log = require('./logger.js')('utilities');
 
 /**
  * Gets the list of image names/urls from the message object
+ * @memberof utils
  *
  * @param   {Message}  msg     - the message object to search for attachments
  * @param   {iterable} formats - the list of accepted image formats to include
  * @return  {imageProps[]} a list of imageProps objects
 */
-
-module.exports = function getAttachments (msg, formats) {
+function getAttachments (msg, formats) {
 	let res = [], aformats = Array.from(formats);
 	for (let attachment of msg.attachments.values()) {
 		let name = attachment.name, url = attachment.url, temp = name.split('.').pop();
@@ -38,3 +38,5 @@ module.exports = function getAttachments (msg, formats) {
 	}
 	return res;
 }
+
+module.exports = getAttachments;

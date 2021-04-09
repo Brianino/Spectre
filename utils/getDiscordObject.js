@@ -10,6 +10,7 @@ module.exports = exports;
 /**
  * Perform a string matching algorithm on the objects of the source collection
  * @private
+ * @memberof utils
  *
  * @param  {Collection}        sourceCollection - the source to scan for a match
  * @param  {string}            value            - the value to search for
@@ -47,6 +48,7 @@ function textSearch (sourceCollection, value, type, prop) {
 /**
  * Finds the instances of the objects specified in the input string
  * @private
+ * @memberof utils
  *
  * @param  {object}
  * @prop   {string}            input           - the input string to search
@@ -118,6 +120,8 @@ async function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText 
 const channelReg = /<#(\d{17,19})>/;
 /**
  * Gets channel object(s) it finds in the input string
+ * @function
+ * @memberof utils
  *
  * @param  {(string|GuildChannel)} input           - the message content to search for user id's
  * @param  {Guild}                 guild           - The guild/scope to search within
@@ -148,6 +152,8 @@ exports.getChannelID = async function (input, guild, {maxCount = 1, resolve, ...
 const userReg = /<@!?(\d{17,19})>/;
 /**
  * Gets guild members object(s) it finds in the input string
+ * @function
+ * @memberof utils
  *
  * @param  {(string|GuildMember)} input           - the message content to search for user id's
  * @param  {Guild}                guild           - The guild/scope to search within
