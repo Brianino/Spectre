@@ -47,7 +47,7 @@ jspm_packages
 .yarn-integrity
 
 #config example
-config.js
+config.json
 
 # Documentation directory
 out
