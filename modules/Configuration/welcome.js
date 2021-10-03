@@ -36,8 +36,8 @@ function inGuild (emitter) {
 			else msg = replaceText(this.config.welcome_bot_message);
 
 			if (msg) {
-				let channel = await getChannelID(this.config.welcome_channel, guild, {allowText: 'partial'});
-
+				let channel = await getChannelID(this.config.welcome_channel, guild, {allowText: 'partial', resolve: true});
+				log.debug('Channel result:', channel, 'type?', channel.type);
 				if (channel && channel.type === 'text') {
 					if (this.config.welcome_embed) {
 						let title = replaceText(this.config.welcome_title),
