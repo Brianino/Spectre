@@ -129,7 +129,7 @@ module.exports = class module {
 	 * @param {string}    type  - the object type this limit applies to
 	 * @param {...string} [ids] - the ids of the object type that have access to the command
 	*/
-	limit (type, ...ids) {
+	set limit ([type, ...ids]) {
 		if (this[sym.clim].has(type)) this[sym.clim].set(type, new Set(ids));
 	}
 }
@@ -150,7 +150,8 @@ module.exports.access = function (user, guild, config) {
 		if (guilds.length)
 			return false;
 	}
-	if (users.length && users.indexOf(user.id) < 0)
+	log.info("users", users, "has?", users.has(user.id));
+	if (users.size && !users.has(user.id))
 		return false;
 	return true;
 };
