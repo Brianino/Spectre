@@ -34,7 +34,7 @@ const checkGuild = guildId => obj => {
 		if ('guild' in temp) guild = temp.guild;
 	}
 
-	log.debug('Guild id found is:', guild.id, 'against', guildId);
+	log.debug('Guild id found is:', guild?.id, 'against', guildId);
 	return guild && guild.id === guildId;
 }
 

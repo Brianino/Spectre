@@ -115,11 +115,12 @@ module.exports = class moduleLoader {
 			return;
 		cmd = this.modules.get(cmdStr.substr(config.prefix.length));
 
+		log.debug('Has guild?', msg.guild && true);
 		if (cmd && modObj.access.call(cmd, msg.author, msg.guild, config)) {
 			if (msg.guild) //this creates instance, it doens't run the fun, return value needs to be run;
-				return cmd[ContextHandler.guildSymbol](msg.guild.id).call(config, msg, ...msgStr);
+				return cmd[ContextHandler.guildSymbol](msg.guild.id)?.call(config, msg, ...msgStr);
 			else
-				return cmd[ContextHandler.DMSymbol]().call(config, msg, ...msgStr);
+				return cmd[ContextHandler.DMSymbol]()?.call(config, msg, ...msgStr);
 		}
 	}
 

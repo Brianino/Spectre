@@ -361,7 +361,7 @@ class ConfigManager {
 
 		if (!result) {
 			log.debug('Creating new config store for guild', guildId);
-			if (guildId !== 'undefined')
+			if (guildId !== 'undefined' && guildId !== 'null')
 				this[sym.guildStore].set(guildId, result = new Map([['id', guildId]]));
 			else
 				result = new Map([['id', guildId]]);

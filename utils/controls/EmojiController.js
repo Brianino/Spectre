@@ -45,7 +45,7 @@ class EmojiController extends events {
 	*/
 	addControl (evName, emoteName) {
 		emoteName = String(emoteName), evName = String(evName);
-		if (this.#options.allowUserStop && emoteName === this.#STOP_EMOTE)
+		if (this.#options.allowUserStop && emoteName === EmojiController.#STOP_EMOTE)
 			throw new this.ReservedEmoteError('The emote ' + emoteName + ' is reserved');
 		this.#emoteMap.set(emoteName, evName);
 		return this;
@@ -139,16 +139,12 @@ class EmojiController extends events {
 	 * @param {ReactionCollector} col - the reaction collector that needs to be ended
 	*/
 	#stopCol (msg, col) {
+		msg.reactions.removeAll().catch(e => {
+			log.warn('Unable to remove reaction:', e);
+			log.file('WARN Unable to remove reaction:', e);
+		});
 		col.stop();
 		this.#messages.delete(msg);
-		for (let emoteName of this.#emoteMap.keys())
-			this.#removeReaction(emoteName, [msg]);
-		try {
-			this.emit('end', msg);
-		} catch (e) {
-			log.warn('Control end event failed:', e);
-			log.file('ERROR control end event failed:', e);
-		}
 	}
 
 
@@ -162,9 +158,11 @@ class EmojiController extends events {
 			}
 		}
 		if (this.#options.allowUserStop) {
+			this.#emoteMap.set(EmojiController.#STOP_EMOTE, undefined);
 			try {
-				await msg.react(this.#STOP_EMOTE);
+				await msg.react(EmojiController.#STOP_EMOTE);
 			} catch (e) {
+				log.debug('Stop unicode:', EmojiController.#STOP_EMOTE);
 				log.warn('Unable to add stop emote to message:', e);
 				log.file('WARN Unable to add stop emote to message:', e);
 			}
@@ -224,6 +222,8 @@ class EmojiController extends events {
 					log.file('ERROR control event failed:', e);
 
 				}
+			} else if (this.#options.allowUserStop && reaction.emoji.toString() === EmojiController.#STOP_EMOTE) {
+				this.#stopCol(msg, collector);
 			}
 		});
 		collector.on('end', () => {
