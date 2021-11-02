@@ -4,7 +4,7 @@ const {owner} = require('../config.json');
 this.command = 'reload';
 this.description = 'Reload a named module';
 this.arguments = '<command>';
-this.limit = ['users', owner];
+this.limit('users', owner);
 
 function inAll () {
 	return async (msg, moduleStr) => {

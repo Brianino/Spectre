@@ -2,19 +2,6 @@
 
 const log = require('../utils/logger.js')('module-object');
 const {Permissions} = require('discord.js');
-const sym = {
-	name: Symbol('command name'),
-	mgrp: Symbol('command mgrp'),
-	ogrp: Symbol('command ogrp'),
-	desc: Symbol('command desc'),
-	args: Symbol('command args'),
-	conf: Symbol('command conf'),
-	perm: Symbol('command perm'),
-	clim: Symbol('command clim'),
-	ctxg: Symbol('comm srv ctx'),
-	ctxu: Symbol('comm usr ctx'),
-	ctxf: Symbol('ctx type def'),
-}
 
 /*
  * possibly link properties with {@link discord.js#Properties}
@@ -28,20 +15,18 @@ const sym = {
  * @param {string} group - the name for the group of commands this module is part of
 */
 class ModuleObject {
+
+	#name;
+	#group;
+	#objectGroup;
+	#description = [];
+	#arguments = [];
+	#permissions = new Permissions('VIEW_CHANNEL');
+	#limitedTo = new Map([['users', new Set()], ['guilds', new Set()]]);
+
 	constructor (name, group) {
-		Object.defineProperties(this, {
-			[sym.name]: {value: name},
-			[sym.mgrp]: {value: group},
-			[sym.ogrp]: {writable: true, value: null},
-			[sym.ctxg]: {writable: true, value: null},
-			[sym.ctxu]: {writable: true, value: null},
-			[sym.ctxf]: {writable: true, value: 0},
-			[sym.desc]: {writable: true, value: []},
-			[sym.args]: {writable: true, value: []},
-			[sym.conf]: {writable: true, value: []},
-			[sym.perm]: {writable: true, value: new Permissions('VIEW_CHANNEL')},
-			[sym.clim]: {value: new Map([['users', new Set()], ['guilds', new Set()]])},
-		});
+		this.#name = name;
+		this.#group = group;
 	}
 
 	/**
@@ -49,29 +34,29 @@ class ModuleObject {
 	 *
 	 * @return {string} the command name
 	*/
-	get command () {return this[sym.name]}
+	get command () {return this.#name}
 
 	/**
 	 * Gets the name of the group this module is part of
 	 *
 	 * @return {string} the group name
 	*/
-	get group () {return this[sym.mgrp]}
+	get group () {return this.#group}
 
 	/**
 	 * Sets the name of the shared group.
 	 * Modules in this group share the passed global object
 	 *
-	 * @param {string} input - the shared group name
+	 * @param {string|Symbol} input - the shared group name
 	*/
-	set objectGroup (input) {this[sym.ogrp] = (typeof input === 'symbol')? input : String(input)}
+	set objectGroup (input) {this.#objectGroup = (typeof input === 'symbol')? input : String(input)}
 
 	/**
 	 * Gets the name of the shared group.
 	 *
-	 * @return {string} the shared group name
+	 * @return {string|Symbol} the shared group name
 	*/
-	get objectGroup () {return this[sym.ogrp]}
+	get objectGroup () {return this.#objectGroup}
 
 	/**
 	 * Sets decription of the module, multiple calls can be made to add more lines
@@ -79,14 +64,14 @@ class ModuleObject {
 	 *
 	 * @param {string} input - the description of what the module does
 	*/
-	set description (input) {this[sym.desc].push(String(input))}
+	set description (input) {this.#description.push(String(input))}
 
 	/**
 	 * Gets decription of the module
 	 *
 	 * @return {string[]} the lines of description for the module
 	*/
-	get description () {return this[sym.desc]}
+	get description () {return this.#description}
 
 	/**
 	 * Sets the command usage, multiple calls can be made to add more formats
@@ -99,50 +84,56 @@ class ModuleObject {
 	 *
 	 * @param {string} input - the description of what the module does
 	*/
-	set arguments (input) {this[sym.args].push(String(input))}
+	set arguments (input) {this.#arguments.push(String(input))}
 
 	/**
 	 * Gets the command usage, multiple calls can be made to add more formats
 	 *
 	 * @return {string[]} input - the description of what the module does
 	*/
-	get arguments () {return this[sym.args]}
+	get arguments () {return this.#arguments}
 
 	/**
 	 * Sets the default required permission level to run the command
 	 *
 	 * @param {Permissions} input - what the default required permissions should be
 	*/
-	set permissions (input) {this[sym.perm] = new Permissions(input)}
+	set permissions (input) {this.#permissions = new Permissions(input)}
 
 	/**
 	 * Gets the default required permission level to run the command
 	 *
 	 * @return {Permissions} input - the default required permissions
 	*/
-	get permissions () {return this[sym.perm]}
+	get permissions () {return this.#permissions}
 
 	/**
-	 * Use to limit the access of the command
+	 * Use to limit the access of the command, or return the set of id's that apply to a limit (if no id's are provided)
 	 * e.g. to limit the servers that have access to it, or the users who do
+	 * e.g. get the set of server id's that have access to it, or the set of user id's
 	 *
-	 * @param {string}    type  - the object type this limit applies to
+	 * @param {string}    type  - the object type this limit applies to, Or the limit type to get
 	 * @param {...string} [ids] - the ids of the object type that have access to the command
 	*/
-	set limit ([type, ...ids]) {
-		if (this[sym.clim].has(type)) this[sym.clim].set(type, new Set(ids));
+	limit (type, ...ids) {
+		if (ids.length) {
+			if (this.#limitedTo.has(type))
+				this.#limitedTo.set(type, new Set(ids));
+		} else {
+			return new Set(this.#limitedTo.get(type));
+		}
 	}
 }
 
 module.exports = ModuleObject;
 
 module.exports.access = function (user, guild, config) {
-	let users = this[sym.clim].get('users'), guilds = this[sym.clim].get('guilds');
+	let users = this.limit('users'), guilds = this.limit('guilds');
 
 	if (guild) {
 		let gUser = guild.members.cache.get(user.id);
 
-		if (gUser && !gUser.permissions.has(config.permissions(this.command) || this[sym.perm]))
+		if (gUser && !gUser.permissions.has(config.permissions(this.command) || this.permissions))
 			return false;
 		if (guilds.length && guilds.indexOf(guild.id) < 0)
 			return false;

@@ -205,10 +205,15 @@ module.exports = class moduleLoader {
 	#proxifyModule (mod, main) {
 		return new Proxy (main, {
 			get: (target, prop, receiver) => {
-				if (Object.getPrototypeOf(mod).hasOwnProperty(prop))
-					return Reflect.get(mod, prop);
-				else
+				if (Object.getPrototypeOf(mod).hasOwnProperty(prop)){
+					let val = Reflect.get(mod, prop);
+					if (val instanceof Function)
+						return val.bind(mod);
+					else
+						return val;
+				} else {
 					return Reflect.get(target, prop);
+				}
 			},
 			set: (target, prop, value, receiver) => {
 				if (Object.getPrototypeOf(mod).hasOwnProperty(prop))
@@ -216,6 +221,10 @@ module.exports = class moduleLoader {
 				else
 					return Reflect.set(target, prop, value);
 			},
+			apply: (target, thisArg, args) => {
+				log.info("Apply called:");
+				return Reflect.apply(target, thisArg, args);
+			}
 		});
 	}
 
