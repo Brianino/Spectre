@@ -133,4 +133,11 @@ module.exports = class mappingUtilties {
 			from: (input) => new Permissions(input)
 		}
 	}
+
+	static get regexp () {
+		return {
+			toJson: (input) => ({source: input.source, flags: input.flags}),
+			from: (input) => new RegExp(input.source, input.flags)
+		}
+	}
 }

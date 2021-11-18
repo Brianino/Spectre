@@ -15,7 +15,7 @@ const retrieveObject = objMap => mod => {
 	if (group) {
 		res = objMap.get(group);
 
-		if (!res) object.set(group, res = {});
+		if (!res) objMap.set(group, res = {});
 	} else {
 		res = {};
 	}
@@ -170,14 +170,16 @@ module.exports = function (getConfigCallback) {
 				addFuncs.call(cmdObj, [true, false],(() => {
 					let guildMap = new Map();
 
-					return (guildId) => {
-						let runFunc = guildMap.get(guildId = String(guildId));
+					return (guildObj) => {
+						let runFunc = guildMap.get(guildObj.id), guildId = String(guildObj.id);
 
 						if (!runFunc) {
 							runFunc = (function () {
 								let newObj = Object.create(cmdObj),
 									proxyListener = proxifyListener(modListener, cmdObj, checkGuild(guildId)),
 									globObj = ctx.guilds.getObj(cmdObj);
+								// set Guild property, so that moduels within the guild context have quick access to it
+								Object.defineProperty(newObj, 'Guild', {value: guildObj});
 								// set config param on new obj here...
 								if (getConfigCallback)
 									Object.defineProperty(newObj, 'config', {value: getConfigCallback(guildId)});

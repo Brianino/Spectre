@@ -20,34 +20,21 @@ function attachToSource (event, lList, {[sym.source]: source, [sym.checks]:check
 	let res;
 
 	log.debug('attaching new event listener to source:', event, lList);
-	if (checks) {
-		source.on(event, res = async (...params) => {
-			for (let temp of lList) {
-				let check = checks.get(temp);
-				try {
-					if (!check || await check(...params)) {
-						await temp(...params);
-					} else {
-						log.debug('Skipping listener due to failed check');
-					}
-				} catch (e) {
-					if (forwardEv) source.emit('error', e);
-					else log.error('Uncaught error in', eventName, 'listener:', e);
-				}
-			}
-		});
-	} else {
-		source.on(event, res = async (...params) => {
-			for (let temp of lList) {
-				try {
+	source.on(event, res = async (...params) => {
+		for (let temp of lList) {
+			let check = checks.get(temp);
+			try {
+				if (!check || await check(...params)) {
 					await temp(...params);
-				} catch (e) {
-					if (forwardEv) source.emit('error', e);
-					else log.error('Uncaught error in', eventName, 'listener:', e);
+				} else {
+					log.debug('Skipping listener due to failed check');
 				}
+			} catch (e) {
+				if (forwardEv) source.emit('error', e);
+				else log.error('Uncaught error in', eventName, 'listener:', e);
 			}
-		});
-	}
+		}
+	});
 	return res;
 }
 

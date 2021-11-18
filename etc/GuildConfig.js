@@ -104,7 +104,7 @@ async function saveConfig (guildObj, varStore) {
 	let path = Path.resolve(confDir, guildObj.get('id') + '.json'), data = stringify(guildObj, varStore);
 
 	if (data) {
-		log.debug(time(), 'Attempting to save config:', path);
+		log.debug(time(), 'Attempting to save config:', path, 'data:', data);
 		log.file.guildConfig('INFO Attempting to save config:', path);
 		return fs.writeFile(path, data, {flag: 'w'});
 	} else {

@@ -76,7 +76,7 @@ module.exports = class moduleLoader {
 		input.on('guildCreate', guild => {
 			for (let mod of this.#modules.values()) {
 				try {
-					mod[ContextHandler.guildSymbol](guild.id);
+					mod[ContextHandler.guildSymbol](guild);
 				} catch (e) {
 					log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id);
 					log.file['module-loader']('WARN - Failed to instantiate command', mod.command, 'on guild', guild.id);
@@ -118,7 +118,7 @@ module.exports = class moduleLoader {
 		log.debug('Has guild?', msg.guild && true);
 		if (cmd && modObj.access.call(cmd, msg.author, msg.guild, config)) {
 			if (msg.guild) //this creates instance, it doens't run the fun, return value needs to be run;
-				return cmd[ContextHandler.guildSymbol](msg.guild.id)?.call(config, msg, ...msgStr);
+				return cmd[ContextHandler.guildSymbol](msg.guild)?.call(config, msg, ...msgStr);
 			else
 				return cmd[ContextHandler.DMSymbol]()?.call(config, msg, ...msgStr);
 		}
@@ -186,11 +186,11 @@ module.exports = class moduleLoader {
 	}
 
 	#instGuildCtx (mod) {
-		for (let {id} of this.source.guilds.cache.values()) {
+		for (let guild of this.source.guilds.cache.values()) {
 			try {
-				mod[ContextHandler.guildSymbol](id);
+				mod[ContextHandler.guildSymbol](guild);
 			} catch (e) {
-				log.warn('Failed to instantiate command', mod.command, 'on guild', id);
+				log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id);
 				log.warn(e);
 			}
 		}

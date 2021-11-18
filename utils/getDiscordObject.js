@@ -1,7 +1,7 @@
 'use strict';
 
 const log = require('./logger.js')('utilities');
-const {GuildChannel, GuildMember} = require('discord.js');
+const {GuildChannel, GuildMember, Role} = require('discord.js');
 const split = require('./split.js');
 
 
@@ -65,13 +65,15 @@ function textSearch (sourceCollection, value, type, prop) {
 async function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText = '', allowID = true, fetch = true}) {
 	let temp, res = [], tempReg = new RegExp(reg, 'g');
 
-	if (maxCount < 1) maxCount = 1;
-
-	input = String(input);
-
+	if (!input)
+		return res;
+	else
+		input = String(input);
+	if (maxCount < 1)
+		maxCount = 1;
 	log.debug('Searching for mentions:', input);
 	while ((temp = tempReg.exec(input)) && res.length < maxCount) {
-		log.debug('Found a match:', temp[1], 'is in guild cache:', manager.cache.has(temp[1]));
+		log.debug('Found a match:', temp[1], 'using', tempReg.toString(), 'is in guild cache:', manager.cache.has(temp[1]));
 		log.debug(temp);
 		if (manager.cache.has(temp[1]))
 			res.push(resolve? manager.cache.get(temp[1]) : temp[1]);
@@ -123,17 +125,17 @@ const channelReg = /<#(\d{17,19})>/;
  * @function
  * @memberof utils
  *
- * @param  {(string|GuildChannel)} input           - the message content to search for user id's
+ * @param  {(string|GuildChannel)} input           - the message content to search for channel id's
  * @param  {Guild}                 guild           - The guild/scope to search within
  * @param  {object}                [options]
  * @prop   {number}                [maxCount=1]    - the maximum number of results to return, if it is greater than 1 then an array will be returned
- * @prop   {boolean}               [resolve=false] - whether to return the id, or the channel object
+ * @prop   {boolean}               [resolve=false] - whether to return the id (false), or the channel object (true)
  * @prop   {boolean}               [allowID=true]  - toggle to allow searching for id strings
  * @prop   {string}                [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
  * @return {(string|string[]|GuildChannel|GuildChannel[])} either a list of channels, or the channel itself
 */
 exports.getChannelID = async function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
-	let reg = channelReg, manager = guild.channels, prop = 'name', res;
+	let manager = guild.channels, res;
 
 	log.debug('Looking for channel, input:', input, 'max', maxCount, 'options', options);
 	if (typeof input === 'object' && input instanceof GuildChannel) {
@@ -143,11 +145,41 @@ exports.getChannelID = async function (input, guild, {maxCount = 1, resolve, ...
 		else
 			return maxCount <= 1 ? undefined : [];
 	}
-	res = await getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount, resolve}));
+	res = await getIDs(Object.assign({}, options, {input, manager, maxCount, resolve}, {reg: channelReg, prop: 'name'}));
 	log.debug('Found channel(s):', res.map(val => val.toString()));
 	return maxCount > 1? res : res[0];
 }
 
+const roleReg = /<@&(\d{17,19})>/;
+/**
+ * Gets role object(s) it finds in the input string
+ * @function
+ * @memberof utils
+ *
+ * @param  {(string|Role)} input                   - the message content to search for role id's
+ * @param  {Guild}                 guild           - The guild/scope to search within
+ * @param  {object}                [options]
+ * @prop   {number}                [maxCount=1]    - the maximum number of results to return, if it is greater than 1 then an array will be returned
+ * @prop   {boolean}               [resolve=false] - whether to return the id (false), or the role object (true)
+ * @prop   {boolean}               [allowID=true]  - toggle to allow searching for id strings
+ * @prop   {string}                [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
+ * @return {(string|string[]|Role|Role[])} either a list of roles, or the role itself
+*/
+exports.getRoleID = async function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
+	let manager = guild.roles, res;
+
+	log.debug('Looking for role, input:', input, 'max', maxCount, 'options', options);
+	if (typeof input === 'object' && input instanceof Role) {
+		let temp = resolve? input : input.id;
+		if (manager.cache.has(input.id))
+			return maxCount <= 1 ? temp : [temp];
+		else
+			return maxCount <= 1 ? undefined : [];
+	}
+	res = await getIDs(Object.assign({}, options, {input, manager, maxCount, resolve}, {reg: roleReg, prop: 'name'}));
+	log.debug('Found role(s):', res.map(val => val.toString()));
+	return maxCount > 1? res : res[0];
+}
 
 const userReg = /<@!?(\d{17,19})>/;
 /**
@@ -159,14 +191,14 @@ const userReg = /<@!?(\d{17,19})>/;
  * @param  {Guild}                guild           - The guild/scope to search within
  * @param  {object}               [options]
  * @prop   {number}               [maxCount=1]    - the maximum number of results to return, if it is greater than 1 then an array will be returned
- * @prop   {boolean}              [resolve=false] - whether to return the id, or the member object
+ * @prop   {boolean}              [resolve=false] - whether to return the id (false), or the member object (true)
  * @prop   {boolean}              [allowID=true]  - toggle to allow searching for id strings
  * @prop   {string}               [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
  * @prop   {boolean}              [fetch=true]    - when true will fetch from discord if the user isn't in cache
  * @return {(string|string[]|GuildMember)} either a list of guild members, or the member itself
 */
 exports.getUserID = async function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
-	let reg = channelReg, prop = 'displayName', res, manager = guild.members;
+	let manager = guild.members, res;
 
 	log.debug('Looking for user, input:', input, 'max', maxCount, 'options', options);
 	if (typeof input === 'object' && input instanceof GuildMember) {
@@ -176,7 +208,7 @@ exports.getUserID = async function (input, guild, {maxCount = 1, resolve, ...opt
 		else
 			return maxCount <= 1 ? undefined : [];
 	}
-	res = await getIDs(Object.assign({}, options, {input, manager, prop, reg, maxCount, resolve}));
+	res = await getIDs(Object.assign({}, options, {input, manager, maxCount, resolve}, {reg: userReg, prop: 'displayName'}));
 	log.debug('Found user(s):', res.map(val => val.toString()));
 	return maxCount > 1? res : res[0];
 }
