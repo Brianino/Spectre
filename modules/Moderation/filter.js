@@ -54,7 +54,7 @@ function inGuild (emitter, groupObj) {
 
 	async function addFilter(filterName, exempt, regex) {
 		if (filterName in common) {
-			return this.config.filter_regex.set(filterName, common[filterName]);
+			regex = common[filterName];
 		} else if (!regex && exempt) {
 			regex = exempt;
 			exempt = undefined;

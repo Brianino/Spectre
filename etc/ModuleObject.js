@@ -143,7 +143,7 @@ module.exports.access = function (user, guild, config) {
 		if (guilds.length)
 			return false;
 	}
-	log.info("users", users, "has?", users.has(user.id));
+	log.debug("users", users, "has?", users.has(user.id));
 	if (users.size && !users.has(user.id))
 		return false;
 	return true;
