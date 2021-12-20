@@ -111,7 +111,7 @@ function inGuild () {
 
 					if (!added) return (await msg.channel.send('Cannot have more than 10 options')).delete({timeout: 10000});
 				} catch (e) {
-					log.error(time(), 'error modifying dynamic poll');
+					log.error('error modifying dynamic poll');
 					log.error(e);
 					return (await msg.channel.send('An error occured whilst modifying the poll')).delete({timeout: 10000});
 				}
@@ -131,7 +131,7 @@ function inGuild () {
 			try {
 				return await choice.delete();
 			} catch (e) {
-				log.error(time(), 'error modifying dynamic poll');
+				log.error('error modifying dynamic poll');
 				log.error(e);
 				return (await msg.channel.send('An error occured whilst modifying the poll')).delete({timeout: 10000});
 			}
@@ -315,13 +315,13 @@ function inGuild () {
 			if (msg.author.id === author.id) {
 				let i = Number(msg.content);
 				if ((!isNaN(i) && i > 0 && i <= list.length) || msg.content === 'cancel' || (msg.content === 'all' && allAllowed)) {
-					msg.delete().catch(e => log.warn(time(), 'Unable to delete poll choice message', e.toString()));
+					msg.delete().catch(e => log.warn('Unable to delete poll choice message', e.toString()));
 					return true;
 				}
 			}
 			return false;
 		}, {max: 1, time: 30000});
-		await menu.delete().catch(e => log.warn(time(), 'Unable to delete menu message', e.toString()));
+		await menu.delete().catch(e => log.warn('Unable to delete menu message', e.toString()));
 		if (choice.first()) {
 			let temp = choice.first().content, i = Number(temp);
 
@@ -343,7 +343,7 @@ function inGuild () {
 			.then(() => activeWarn.delete(channel.id))
 			.catch(e => {
 				activeWarn.channel.delete(channel.id);
-				log.warn(time(), 'Unable to delete poll warning message', e.toString());
+				log.warn('Unable to delete poll warning message', e.toString());
 			});
 		activeWarn.add(channel.id);
 		return;

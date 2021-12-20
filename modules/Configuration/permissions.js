@@ -42,7 +42,7 @@ function inGuild () {
 				this.config.permissions = [command, ...perms];
 				return msg.channel.send(`Permissions for \`${command}\` updated`);
 			} catch (e) {
-				log.error(time(), 'Failed to set permissions:', e.toString());
+				log.error('Failed to set permissions:', e.toString());
 				log.debug(e.stack);
 				return msg.channel.send('There was an error updating permissions, check server logs for more info');
 			}

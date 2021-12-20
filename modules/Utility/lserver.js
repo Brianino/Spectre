@@ -11,7 +11,7 @@ function inAll () {
 			await getBot().guilds.resolve(id).leave();
 			return msg.channel.send('Left server');
 		} catch (e) {
-			log.error(time(), 'unable to leave server:', e.toString());
+			log.error('unable to leave server:', e.toString());
 			return msg.channel.send('Unable to leave server, check logs');
 		}
 	}

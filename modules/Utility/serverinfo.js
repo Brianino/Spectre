@@ -14,7 +14,7 @@ function inGuild () {
 		 	idle = users.filter(tmp => ['idle', 'dnd'].indexOf(tmp.presence.status) >= 0),
 		 	ping = roles.filter(tmp => tmp.mentionable);
 
-		log.debug(time(), 'Icon?', server.icon);
+		log.debug('Icon?', server.icon);
 		return msg.channel.send({
 			embed: {
 				title: server.name,

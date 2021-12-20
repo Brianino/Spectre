@@ -12,20 +12,20 @@ const bot = new Discord.Client();
 const modLoader = new moduleLoader();
 
 process.on('unhandledRejection', (e, origin) => {
-	log.error(time(), 'Promise Error:', e.toString());
+	log.error('Promise Error:', e.toString());
 	log.error('At Promise:', origin);
 	log.debug(e.stack);
 });
 
 //ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
 bot.on('ready', async () => {
-	log.info(time(), 'Connected to discord');
+	log.info('Connected to discord');
 	try {
 		modLoader.source = bot;
 		await modLoader.setup();
-		log.info(time(), 'Bot ready');
+		log.info('Bot ready');
 	} catch (e) {
-		log.error(time(), 'Something went wrong during startup for the bot');
+		log.error('Something went wrong during startup for the bot');
 		log.error(e);
 		process.exit();
 	}
@@ -35,13 +35,13 @@ bot.on('message', async (msg) => {
 	try {
 		await modLoader.runCommand(msg);
 	} catch (e) {
-		log.error(time(), 'There was an error executing a command', e.toString());
+		log.error('There was an error executing a command', e.toString());
 		log.error(e.stack);
 	}
 });
 
 bot.on('error', e => {
-	log.error(time(), 'Bot error:', e.toString());
+	log.error('Bot error:', e.toString());
 	log.debug(e.stack);
 	log.file('ERROR', e);
 });
@@ -55,6 +55,6 @@ bot.on('debug', info => {
 });
 
 bot.login(token).catch(e => {
-	log.error(time(), 'Login error:', e.toString());
+	log.error('Login error:', e.toString());
 	log.debug(e.stack);
 }); //Bot Token

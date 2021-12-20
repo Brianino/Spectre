@@ -34,7 +34,7 @@ function inGuild () {
 				if (desc) val.value += ': ' + desc;
 				embed.fields.push(val);
 			}
-			log.debug(time(), 'Posting settings info');
+			log.debug('Posting settings info');
 			return msg.channel.send({embed});
 		}
 
@@ -42,7 +42,7 @@ function inGuild () {
 			//set value
 			if (input[0] === 'undefined') {
 				this.config[setting] = undefined;
-				log.info(time(), 'Setting', setting, 'for guild', msg.guild.name, 'reverted to default');
+				log.info('Setting', setting, 'for guild', msg.guild.name, 'reverted to default');
 				return msg.channel.send('Setting reverted to default');
 			}
 			log.debug('Inputs:', input.toString());
@@ -58,7 +58,7 @@ function inGuild () {
 					if (isNaN(temp)) temp = input;
 					this.config[setting] = temp; break;
 				}
-				log.info(time(), 'Updated', setting, 'setting to', this.config[setting], 'for guild', msg.guild.name);
+				log.info('Updated', setting, 'setting to', this.config[setting], 'for guild', msg.guild.name);
 				return msg.channel.send('Updated the setting ' + setting);
 			} catch (e) {
 				log.file.configuration('WARN Issue updating config variable:', e);

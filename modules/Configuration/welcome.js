@@ -66,7 +66,7 @@ function inGuild (emitter) {
 						return channel.send(msg);
 					}
 				} else {
-					log.error(time(), 'Unable to find welcome text channel');
+					log.error('Unable to find welcome text channel');
 					log.file.configuration('ERROR: unable to find welcome channel for server', guild.name, '<->', guild.id);
 					this.config.welcome_channel = undefined;
 				}
@@ -77,7 +77,7 @@ function inGuild (emitter) {
 	return (msg, ...input) => {
 		let message = input.join(' ');
 
-		log.info(time(), 'Updating welcome message for', msg.guild.name, 'to:', message);
+		log.info('Updating welcome message for', msg.guild.name, 'to:', message);
 		log.file.configuration('INFO: updated welcome message for', msg.guild.name, 'to:', message);
 		if (message === '') this.config.welcome_message = undefined;
 		else this.config.welcome_message = message;
