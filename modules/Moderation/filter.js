@@ -55,7 +55,7 @@ function inGuild (emitter, groupObj) {
 					return log.debug('User is exempt from filter due to higher role');
 				log.info('Deleting filtered message', msg.content, 'from user', msg.author.username);
 				msg.delete().catch(e => {
-					log.error('Unable to delete filtered message') && log.file.moderation('ERROR', 'Unable to delete filtered message', msg.content, 'from user', msg.author.username)
+					log.error('Unable to delete filtered message', msg.content, 'from user', msg.author.username, `(${msg.author.id})`);
 				});
 				if (groupObj.autoban) {
 					groupObj.autoban(msg);

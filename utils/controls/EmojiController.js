@@ -1,6 +1,6 @@
 'use strict';
 
-const log = require('../logger.js')('utilities');
+const log = require('../logger.js')('Utilities');
 const TwoWayMap = require('../TwoWayMap.js');
 const {Message} = require('discord.js');
 const events = require('events');
@@ -249,9 +249,7 @@ class EmojiController extends events {
 	*/
 	#cleanUp (msg) {
 		msg.reactions.removeAll().catch(e => {
-			log.warn('Unable to remove reaction:', e.toString());
-			log.file('WARN Unable to remove reaction:', e);
-			log.debug(e);
+			log.warn('Unable to remove reaction:', e);
 		});
 		this.#messages.delete(msg);
 	}
@@ -274,9 +272,7 @@ class EmojiController extends events {
 					continue;
 				await msg.react(String(emote));
 			} catch (e) {
-				log.warn('Unable to add emote', String(emote), 'to message:', e.toString());
-				log.file('WARN Unable to add emote', String(emote), 'to message:', e);
-				log.debug(e);
+				log.warn('Unable to add emote', String(emote), 'to message:', e);
 			}
 		}
 		if (this.#options.allowUserStop) {
@@ -286,9 +282,7 @@ class EmojiController extends events {
 					await msg.react(EmojiController.#STOP_EMOTE);
 			} catch (e) {
 				log.debug('Stop unicode:', EmojiController.#STOP_EMOTE);
-				log.warn('Unable to add stop emote to message:', e.toString());
-				log.file('WARN Unable to add stop emote to message:', e);
-				log.debug(e);
+				log.warn('Unable to add stop emote to message:', e);
 			}
 		}
 	}
@@ -301,7 +295,6 @@ class EmojiController extends events {
 		await Promise.allSettled(promises).then(res => {
 			let failed = res.filter(({status}) => status === 'rejected');
 			log.warn('Failed to remote emote', emoteName, 'from', failed.length, 'messages');
-			log.file('WARN Failed to remote emote', emoteName, 'from', failed.length, 'messages');
 		});
 	}
 
@@ -327,16 +320,13 @@ class EmojiController extends events {
 							this.#options.removeEmote = false;
 						} else {
 							log.error('Unable to remove reaction', e);
-							log.file('ERROR Unable to remove reaction:', e);
 						}
 					});
 				}
 				try {
 					this.emit(evName, msg);
 				} catch (e) {
-					log.warn('Control event failed:', e.toString());
-					log.file('ERROR control event failed:', e);
-					log.debug(e);
+					log.warn('Control event failed:', e);
 				}
 			} else if (this.#options.allowUserStop && reaction.emoji.toString() === EmojiController.#STOP_EMOTE) {
 				collector.stop();
@@ -347,9 +337,7 @@ class EmojiController extends events {
 				this.#cleanUp(msg);
 				this.emit('end', msg);
 			} catch (e) {
-				log.warn('Control end event failed:', e.toString());
-				log.file('ERROR control end event failed:', e);
-				log.debug(e);
+				log.warn('Control end event failed:', e);
 			}
 		});
 	}

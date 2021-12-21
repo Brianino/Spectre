@@ -1,7 +1,7 @@
 'use strict';
 
 const PageController = require('./controls/PageController.js');
-const log = require('./logger.js')('utilities');
+const log = require('./logger.js')('Utilities');
 const {MessageEmbed, Message, Channel} = require('discord.js');
 
 function trimStr (str, lim) {
@@ -256,7 +256,6 @@ class PagedEmbed {
 					embed: this.#setEmbedDefaults(this.#pages[group.page])
 				}).catch(e => {
 					log.error('Unable to modify embed', e);
-					log.file('ERROR Unable to modify embed', e);
 				});
 			}
 		});
@@ -273,7 +272,6 @@ class PagedEmbed {
 					embed: this.#setEmbedDefaults(this.#pages[group.page])
 				}).catch(e => {
 					log.error('Unable to modify embed', e);
-					log.file('ERROR Unable to modify embed', e);
 				});
 			}
 		});
@@ -287,7 +285,6 @@ class PagedEmbed {
 					embed: this.#setEmbedDefaults(this.#pages[0])
 				}).catch(e => {
 					log.error('Unable to modify embed', e);
-					log.file('ERROR Unable to modify embed', e);
 				});
 			}
 		});
@@ -301,14 +298,12 @@ class PagedEmbed {
 					embed: this.#setEmbedDefaults(this.#pages[group.page])
 				}).catch(e => {
 					log.error('Unable to modify embed', e);
-					log.file('ERROR Unable to modify embed', e);
 				});
 			}
 		});
 		this.#controller.on('end', msg => {
 			msg.delete().catch(e => {
 				log.error('Unable to delete embed', e);
-				log.file('ERROR Unable to delete embed', e);
 			});
 		});
 	}

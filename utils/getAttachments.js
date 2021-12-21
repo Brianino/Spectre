@@ -1,6 +1,6 @@
 'use strict';
 
-const log = require('./logger.js')('utilities');
+const log = require('./logger.js')('Utilities');
 
 /**
  * @typedef {object}   imageProps

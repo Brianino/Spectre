@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 "use strict";
 
-const log = require('./utils/logger.js')('main');
+const log = require('./utils/logger.js')('Main');
 const moduleLoader = require('./etc/ModuleLoader.js');
 const {token, prefix} = require('./config.json');
 const time = require('./utils/time.js');
 const Discord = require('discord.js');
-//const log2 = logFile('main');
 
 const bot = new Discord.Client();
 const modLoader = new moduleLoader();
@@ -23,7 +22,7 @@ bot.on('ready', async () => {
 	try {
 		modLoader.source = bot;
 		await modLoader.setup();
-		log.info('Bot ready');
+		log.info('Client ready');
 	} catch (e) {
 		log.error('Something went wrong during startup for the bot');
 		log.error(e);
@@ -35,23 +34,20 @@ bot.on('message', async (msg) => {
 	try {
 		await modLoader.runCommand(msg);
 	} catch (e) {
-		log.error('There was an error executing a command', e.toString());
-		log.error(e.stack);
+		log.error('There was an error executing a command', e);
 	}
 });
 
 bot.on('error', e => {
-	log.error('Bot error:', e.toString());
-	log.debug(e.stack);
-	log.file('ERROR', e);
+	log.error('Client error:', e);
 });
 
 bot.on('warn', info => {
-	log.file('WARN', info);
+	log.warn('Client warn:', info);
 });
 
 bot.on('debug', info => {
-	log.file.debug('Client debug', info);
+	log.debug('Client debug', info);
 });
 
 bot.login(token).catch(e => {

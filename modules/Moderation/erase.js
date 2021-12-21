@@ -80,22 +80,20 @@ function inGuild () {
 		}
 		if (failed.length === 0) {
 			let names = channels.map(channel => channel.name);
-			log.warn(msg.author.username, 'erased', number, 'messages from', names.toString());
-			log.file.moderation('WARN', msg.author.username, '(' + msg.author.id + ')', 'erased', number, 'messages');
-			log.file.moderation('WARN Channel erase targets:', names.toString());
-			log.file.moderation('WARN User erase targets:', users.map(user => user.displayName() + '(' + user.id + ')').toString());
+			log.info(`${msg.author.username} (${msg.author.id}) erased ${number} messages from ${names.toString()}`);
+			log.info('Channel erase targets:', names.toString());
+			log.info('WARN User erase targets:', users.map(user => `${user.displayName()} (${user.id})`).toString());
 			return (await msg.channel.send('Successfully deleted ' + number + ' messages from: ' + names.toString())).delete({timeout: 10000});
 		} else if (failed.length > 1) {
 			let names = channels.map(channel => channel.name), text = 'Failed to delete messages on some channels:';
 			for (let obj of failed) {
-				text+= '\n<#' + obj.channel.id + '>: ' + obj.message;
+				text += `\n<#${obj.channel.id}>: ${obj.message}`;
 			}
-			log.warn(msg.author.username, 'erased', number, 'messages from', names.toString());
-			log.file.moderation('WARN', msg.author.username, 'erased', number, 'messages from', names.toString());
-			log.file.moderation('WARN', text);
+			log.info(`${msg.author.username} (${msg.author.id}) erased ${number} messages from ${names.toString()}`);
+			log.warn(text);
 			return (await msg.channel.send(text)).delete({timeout: 10000});
 		} else {
-			log.file.moderation('WARN', msg.author.username, '(' + msg.author.id + ')', 'tried to erase:', failed[0].channel.id, failed[0].message);
+			log.warn(`${msg.author.username} (${msg.author.id}) failed to erase: <#${failed[0].channel.id}> ${failed[0].message}`);
 			return (await msg.channel.send('Failed to delete messages in <#' + failed[0].channel.id + '>: ' + failed[0].message)).delete({timeout: 10000});
 		}
 	}

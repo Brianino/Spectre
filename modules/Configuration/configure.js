@@ -61,7 +61,7 @@ function inGuild () {
 				log.info('Updated', setting, 'setting to', this.config[setting], 'for guild', msg.guild.name);
 				return msg.channel.send('Updated the setting ' + setting);
 			} catch (e) {
-				log.file.configuration('WARN Issue updating config variable:', e);
+				log.warn('Issue updating config variable:', e);
 				return msg.channel.send('Unable to update setting: ' + e.message);
 			}
 		} else {
