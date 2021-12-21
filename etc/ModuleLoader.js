@@ -9,7 +9,8 @@ const {promises:fs} = require('fs');
 const Path = require('path');
 const vm = require('vm');
 
-const log = logger('module-loader');
+const log = logger('Module-Loader');
+const cmdlog = logger('Commands');
 // move iniTimeout to config, maybe add an option for timeout running a command?
 const moduleFolder = '../modules', iniTimeout = 1000;
 
@@ -78,9 +79,7 @@ module.exports = class moduleLoader {
 				try {
 					mod[ContextHandler.guildSymbol](guild);
 				} catch (e) {
-					log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id);
-					log.file['module-loader']('WARN - Failed to instantiate command', mod.command, 'on guild', guild.id);
-					log.file['module-loader']('WARN - ', e);
+					log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id, e);
 				}
 			}
 		});
@@ -117,10 +116,13 @@ module.exports = class moduleLoader {
 
 		log.debug('Has guild?', msg.guild && true);
 		if (cmd && modObj.access.call(cmd, msg.author, msg.guild, config)) {
-			if (msg.guild) //this creates instance, it doens't run the fun, return value needs to be run;
+			if (msg.guild) { //this creates instance, it doens't run the fun, return value needs to be run;
+				cmdlog.info(`User ${msg.author.username} (${msg.author.id}) is running command ${cmd.command} on server ${msg.guild.name} (${msg.guild.id})`);
 				return cmd[ContextHandler.guildSymbol](msg.guild)?.call(config, msg, ...msgStr);
-			else
+			} else {
+				cmdlog.info(`User ${msg.author.username} (${msg.author.id}) is running command ${cmd.command} in direct messages`);
 				return cmd[ContextHandler.DMSymbol]()?.call(config, msg, ...msgStr);
+			}
 		}
 	}
 
@@ -140,12 +142,11 @@ module.exports = class moduleLoader {
 			log.info(name, 'Module instantiated');
 		} catch (e) {
 			log.error('Unable to setup module:', filePath);
-			try {
+			try { // To deal with special errors from the vm context
 				log.error(e);
-				log.file['module-loader']('ERROR - Unable to set up module:', e);
 			} catch (ignore) {
+				log.warn(ignore); // Reason error couldn't be logged as an error
 				log.error(e.toString());
-				log.file['module-loader']('ERROR - Unable to set up module:', e.toString());
 			}
 		}
 	}
@@ -247,7 +248,7 @@ module.exports = class moduleLoader {
 			access: modObj.access,
 			getBot: () => this.source,
 			getConfigurable: () => this.#confMan.getConfigurable(),
-			log: logger('Module-' + group + '-' + name),
+			log: logger(`Module-${group}`),
 			addConfig: (varName, type, {description, configurable, ...props}) => {
 				log.debug('Adding config for', name, varName);
 				this.#confMan.register(varName, type, {description, configurable, ...props});
@@ -257,7 +258,7 @@ module.exports = class moduleLoader {
 				log.debug('Config added for', name, varName);
 			},
 		}, globals);
-		script.runInNewContext(this.#proxifyModule(obj, ctx), {contextName: 'Main Context: ' + name, timeout: iniTimeout});
+		script.runInNewContext(this.#proxifyModule(obj, ctx), {contextName: `Main Context: ${name}`, timeout: iniTimeout});
 		return this.#context.create(obj, ctx);
 	}
 }

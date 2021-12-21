@@ -1,6 +1,6 @@
 'use strict';
 
-const log = require('./logger.js')('utilities');
+const log = require('./logger.js')('Utilities');
 
 /**
  * @typedef {object}   imageProps
@@ -31,7 +31,7 @@ function getAttachments (msg, formats) {
 				if (aformats.find(val => val === temp)) res.push({name, url});
 				else res.push({url});
 			} catch (e) {
-				log.warn(exports.time(), 'Unable to parse url embed:', e.message);
+				log.warn('Unable to parse url embed:', e.message);
 				log.warn('url is:', embed.url);
 			}
 		}

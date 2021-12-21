@@ -1,6 +1,6 @@
 'use strict';
 
-const log = require('../utils/logger.js')('guild-config');
+const log = require('../utils/logger.js')('Guild-Config');
 const parseBool = require('../utils/parseBool.js');
 const mappingUtils = require('./MappingUtils.js');
 const {promises:fs, constants} = require('fs');
@@ -58,9 +58,8 @@ function convert (id, obj, varStore) {
 				res.set(key, mappingUtils.asObject(type, obj[key]));
 			}
 		} catch (e) {
-			log.error('Unable to parse', key, 'for', obj.id, 'because', e.toString());
+			log.error('Unable to parse', key, 'for', obj.id, 'because', e);
 			log.debug('in store:', [...varStore.keys()].toString());
-			log.file.guildConfig('ERROR Unable to parse', key, 'for', obj.id, 'because', e);
 		}
 	}
 	return res;
@@ -87,8 +86,7 @@ function stringify (map, varStore) {
 					moreThanId = true;
 			}
 		} catch (e) {
-			log.error('Unable to stringify', key, 'for', map.get('id'), 'because', e.toString());
-			log.file.guildConfig('ERROR Unable to stringify', key, 'for', map.get('id'), 'because', e);
+			log.error('Unable to stringify', key, 'for', map.get('id'), 'because', e);
 		}
 	}
 	if (moreThanId)
@@ -104,8 +102,7 @@ async function saveConfig (guildObj, varStore) {
 	let path = Path.resolve(confDir, guildObj.get('id') + '.json'), data = stringify(guildObj, varStore);
 
 	if (data) {
-		log.debug(time(), 'Attempting to save config:', path, 'data:', data);
-		log.file.guildConfig('INFO Attempting to save config:', path);
+		log.info('Attempting to save config:', path, 'data:', data);
 		return fs.writeFile(path, data, {flag: 'w'});
 	} else {
 		let exists = true;
@@ -113,8 +110,7 @@ async function saveConfig (guildObj, varStore) {
 		await fs.access(path, constants.F_OK).catch(e => exists = false);
 
 		if (exists) {
-			log.debug(time(), 'Deleting config:', path);
-			log.file.guildConfig('INFO Deleting config:', path);
+			log.info('Deleting config:', path);
 			return fs.unlink(path);
 		}
 	}
@@ -135,9 +131,7 @@ async function loadConfig (varStore) {
 
 				res.set(String(id), convert(id, conf, varStore));
 			} catch (e) {
-				log.warn(time(), 'Unable to load config for', file.name);
-				log.debug(e);
-				log.file.guildConfig('WARN Unable to load config for', file.name, e);
+				log.warn('Unable to load config for', file.name, e);
 			}
 		}
 	}
@@ -156,18 +150,15 @@ function proxifyMap (map, varStore) {
 			let descriptor = varStore.get(prop), value = target.get(prop) ?? descriptor?.default;
 
 			if (prop === Symbol.iterator) {
-				log.debug('Returning config iterator on', target.get('id'));
-				log.file.guildConfig('INFO Returning config iterator on', target.get('id'));
+				log.info('Returning config iterator on', target.get('id'));
 				return target[Symbol.iterator].bind(target);
 			} else if (prop === Symbol.toPrimitive) {
-				log.debug('Returning config string value (id) on', target.get('id'));
-				log.file.guildConfig('INFO Returning config string value (id) on', target.get('id'));
+				log.info('Returning config string value (id) on', target.get('id'));
 				return () => {
 					return map.get('id');
 				}
 			} else if (descriptor?.get) {
-				log.debug('Using custom getter for', prop, 'on', target.get('id'));
-				log.file.guildConfig('INFO Using custom getter for', prop, 'on', target.get('id'));
+				log.info('Using custom getter for', prop, 'on', target.get('id'));
 				if (typeof value === 'object')
 					return descriptor.get.call(value);
 				else
@@ -186,14 +177,12 @@ function proxifyMap (map, varStore) {
 
 				case 'string': {
 					if (prop === 'id') {
-						log.debug('Blocking set to id on', target.get('id'));
-						log.file.guildConfig('WARN Blocking set to id on', target.get('id'));
+						log.warn('Blocking set to id on', target.get('id'));
 						throw new Error('Cannot set id');
 					}
 
 					if (!varStore.has(prop)) {
-						log.debug('Blocking set to unknown variable:', prop, 'on', target.get('id'));
-						log.file.guildConfig('WARN Blocking set to unknown variable:', prop, 'on', target.get('id'));
+						log.warn('Blocking set to unknown variable:', prop, 'on', target.get('id'));
 						throw new Error('Property ' + prop + ' does not exist');
 					}
 
@@ -209,20 +198,17 @@ function proxifyMap (map, varStore) {
 						}
 					}
 					if (value === undefined) {
-						log.debug('Removing value of', prop);
-						log.file.guildConfig('INFO Removing value of', prop, 'on', target.get('id'));
+						log.info('Removing value of', prop);
 						target.delete(prop);
 						return true;
 					} else if (value.constructor.name.toLowerCase() !== descriptor.type) {
 						log.debug('Unable to set value due to type mismatch:', value.constructor.name, 'instead of', descriptor.type);
 						throw new Error('Value does not match expected type of ' + descriptor.type);
 					}
-					log.debug('Updating value of', prop, 'to', value);
-					log.file.guildConfig('INFO Updating value of', prop, 'to', value, 'on', target.get('id'));
+					log.info('Updating value of', prop, 'to', value);
 					target.set(prop, value);
 					saveConfig(target, varStore).catch(e => {
-						log.error(time(), 'Unable to save config for', target.get('id'));
-						log.file.guildConfig('ERROR Unable to save config for', target.get('id'), e);
+						log.error('Unable to save config for', target.get('id'), e);
 					});
 					return true;
 				}
@@ -432,19 +418,16 @@ class ConfigManager {
 		}
 		if (toJson && from) {
 			Object.defineProperty(mappingUtils, type, {value: {toJson, from}});
-			log.debug('Set up json conversion functions for property', name);
-			log.file.guildConfig('INFO Set up json conversion functions for property', name);
+			log.info('Set up json conversion functions for property', name);
 		}
 		log.info('Finished registering config property', name);
-		log.file.guildConfig('INFO Finished registering config property', name);
 		// iterate through store and convert any non converted objects
 	}
 
 	/** Parses the guild config from the config files */
 	async loadConfig () {
 		this[sym.guildStore] = await loadConfig(this[sym.confVars]);
-		log.info(time(), 'Loaded config directory successfully');
-		log.file.guildConfig('INFO Loaded config directory successfully');
+		log.info('Loaded config directory successfully');
 	}
 }
 

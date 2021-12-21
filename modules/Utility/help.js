@@ -37,7 +37,7 @@ function inAll () {
 					helpEmbed.addToPage(page, [details]);
 				}
 			}
-			log.debug(time(), 'Posting help (no args)');
+			log.debug('Posting help (no args)');
 			return helpEmbed.sendTo(msg.channel);
 		} else {
 			let cmd = modules.get(arg = String(arg));
@@ -64,7 +64,7 @@ function inAll () {
 						value: '`' + cmd.vars.join('` `') + '`',
 					});
 				}
-				log.debug(time(), 'Posting help (args)');
+				log.debug('Posting help (args)');
 				return msg.channel.send({embed});
 			} else {
 				return msg.channel.send(`Could not find command \`${arg}\``);

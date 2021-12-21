@@ -20,22 +20,21 @@ function inGuild () {
 
 			try {
 				await user.kick(String(message || 'No reason given'));
-				log.warn(time(), msg.author.username, 'kicked', user.user.username);
-				log.file.moderation('WARN', msg.author.username, 'kicked', user.user.username, 'ids:', msg.author.id, user.id);
-				return msg.channel.send('User `' + user.user.username + '` was kicked');
+				log.warn(`${msg.author.username} (${msg.author.id}) kicked ${user.user.username} (${user.id})`);
+				return msg.channel.send(`User ${user.user.username} was kicked`);
 			} catch (e) {
-				log.warn(time(), msg.author.username, 'tried to kick', user.user.username);
+				log.warn(`${msg.author.username} (${msg.author.id}) tried to kick ${user.user.username} (${user.id}) - Failed because ${e.toString()}`);
 				if (e instanceof DiscordAPIError)
-					return msg.channel.send('Unable to kick user: ' + e.message);
+					return msg.channel.send(`Unable to kick user: ${e.message}`);
 				else {
-					log.error(time(), e);
-					return msg.channel.send('Internal error, check server logs');
+					log.error(e);
+					return msg.channel.send('Internal error occured');
 				}
 			}
 		} else if (user && !user.manageable) {
 			msg.channel.send('I lack the permissions to do so');
 		} else {
-			log.debug(time(), 'Search for:', user?.toString(), 'or', input);
+			log.debug('Search for:', user?.toString(), 'or', input);
 			msg.channel.send('Unable to find user');
 		}
 	}

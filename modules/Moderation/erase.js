@@ -39,37 +39,37 @@ function inGuild () {
 				sum += obj.limit;
 				msgs = await channel.messages.fetch(obj);
 
-				log.debug(time(), 'Collected', msgs.size, 'messages in channel', channel.name, 'last message id', messages.size ? messages.last().id : undefined);
+				log.debug('Collected', msgs.size, 'messages in channel', channel.name, 'last message id', messages.size ? messages.last().id : undefined);
 				if (users.size > 0) msgs = msgs.filter(msg => users.has(msg.author.id));
 				// figure out something for roles....  msgs.filter(msg => msg.member.roles.cache.intersect(roles).size > 0)
-				log.debug(time(), 'Collection of messages reduced to', msgs.size);
+				log.debug('Collection of messages reduced to', msgs.size);
 				tmp = msgs.firstKey(number - messages.size);
 				messages = messages.concat(msgs.filter(msg => tmp.indexOf(msg.id) >= 0));
 				i += 10;
 			}
-			log.info(time(), 'Searched', sum, 'messages, will delete', messages.size);
+			log.info('Searched', sum, 'messages, will delete', messages.size);
 			try {
 				let count = 0;
 				while (messages.size > 0) {
 					let chunk = messages.first(100), temp = chunk.filter(msg => Date.now() - msg.createdAt.getTime() > 1209600000);
 
 					await channel.bulkDelete(chunk, true);
-					log.debug(time(), 'Chunk of', chunk.length - temp.length, 'messages deleted');
+					log.debug('Chunk of', chunk.length - temp.length, 'messages deleted');
 					count += chunk.length - temp.length;
 					if (temp.length > 0  && this.config.clear_old) {
 						for (let msg of temp) {
 							await msg.delete();
 							count += 1;
 						}
-						log.debug(time(), 'Deleted remaining', temp.length, 'messages');
+						log.debug('Deleted remaining', temp.length, 'messages');
 					}
 					chunk.forEach(msg => messages.delete(msg.id));
-					log.debug(time(), 'Remaining messages to delete', messages.size);
+					log.debug('Remaining messages to delete', messages.size);
 				}
 				if (count !== number)
 					throw new lessThan('Deleted ' + count + '/' + number + ' messages');
 			} catch (e) {
-				log.error(time(), 'Unable to delete messages from channel', channel.name, ':', e.message);
+				log.error('Unable to delete messages from channel', channel.name, ':', e.message);
 				if (e instanceof DiscordAPIError || e instanceof lessThan) {
 					failed.push({channel, message: e.message});
 				} else {
@@ -80,22 +80,20 @@ function inGuild () {
 		}
 		if (failed.length === 0) {
 			let names = channels.map(channel => channel.name);
-			log.warn(time(), msg.author.username, 'erased', number, 'messages from', names.toString());
-			log.file.moderation('WARN', msg.author.username, '(' + msg.author.id + ')', 'erased', number, 'messages');
-			log.file.moderation('WARN Channel erase targets:', names.toString());
-			log.file.moderation('WARN User erase targets:', users.map(user => user.displayName() + '(' + user.id + ')').toString());
+			log.info(`${msg.author.username} (${msg.author.id}) erased ${number} messages from ${names.toString()}`);
+			log.info('Channel erase targets:', names.toString());
+			log.info('WARN User erase targets:', users.map(user => `${user.displayName()} (${user.id})`).toString());
 			return (await msg.channel.send('Successfully deleted ' + number + ' messages from: ' + names.toString())).delete({timeout: 10000});
 		} else if (failed.length > 1) {
 			let names = channels.map(channel => channel.name), text = 'Failed to delete messages on some channels:';
 			for (let obj of failed) {
-				text+= '\n<#' + obj.channel.id + '>: ' + obj.message;
+				text += `\n<#${obj.channel.id}>: ${obj.message}`;
 			}
-			log.warn(time(), msg.author.username, 'erased', number, 'messages from', names.toString());
-			log.file.moderation('WARN', msg.author.username, 'erased', number, 'messages from', names.toString());
-			log.file.moderation('WARN', text);
+			log.info(`${msg.author.username} (${msg.author.id}) erased ${number} messages from ${names.toString()}`);
+			log.warn(text);
 			return (await msg.channel.send(text)).delete({timeout: 10000});
 		} else {
-			log.file.moderation('WARN', msg.author.username, '(' + msg.author.id + ')', 'tried to erase:', failed[0].channel.id, failed[0].message);
+			log.warn(`${msg.author.username} (${msg.author.id}) failed to erase: <#${failed[0].channel.id}> ${failed[0].message}`);
 			return (await msg.channel.send('Failed to delete messages in <#' + failed[0].channel.id + '>: ' + failed[0].message)).delete({timeout: 10000});
 		}
 	}

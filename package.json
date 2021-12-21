@@ -17,6 +17,7 @@
   "dependencies": {
     "@discordjs/opus": "^0.3.2",
     "discord.js": "^12.5.1",
+    "log4js": "^6.3.0",
     "timespan-parser": "^1.0.2",
     "ytdl-core": "^2.1.7"
   },
@@ -32,7 +33,6 @@
   ],
   "license": "None",
   "devDependencies": {
-    "debug": "^4.2.0",
     "jsdoc": "^3.6.5",
     "mocha": "^8.2.0",
     "supports-color": "^7.2.0"

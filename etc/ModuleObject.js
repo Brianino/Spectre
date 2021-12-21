@@ -1,6 +1,6 @@
 'use strict';
 
-const log = require('../utils/logger.js')('module-object');
+const log = require('../utils/logger.js')('Module-Object');
 const {Permissions} = require('discord.js');
 
 /*

@@ -1,6 +1,6 @@
 'use strict';
 
-const log = require('./logger.js')('utilities');
+const log = require('./logger.js')('Utilities');
 const {GuildChannel, GuildMember, Role} = require('discord.js');
 const split = require('./split.js');
 

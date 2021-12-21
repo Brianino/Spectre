@@ -1,5 +1,5 @@
-const {DiscordAPIError} = require('discord.js');
 const {getRoleID} = require('../utils/getDiscordObject.js');
+const PagedEmbed = require('../utils/PagedEmbed.js');
 
 this.objectGroup = 'auto_mod';
 this.description = 'use a regex filter to remove messages and auto ban abusers';
@@ -18,11 +18,23 @@ addConfig('filter_exempt', Map, {default: new Map(), configurable: false});
 addConfig('filter_automod', Boolean, {default: true, configurable: true});
 
 let common = {
-	links: '([hH][tT]{2}[pP][sS]?://|www\.)[^/:\s]+(:\d+)?(/\S+)?',
-	uri: '[^:\s]+://([^\s@]@)?[^:\s]+(:\d+)?(/\S+)?',
+	links: '([hH][tT]{2}[pP][sS]?://|www\\.)[^/:\\s]+(:\\d+)?(/\\S+)?',
+	uri: '[^:\\s]+://([^\\s@]+@)?[^:\\s]+(:\\d+)?(/\\S+)?',
 };
 
 function inGuild (emitter, groupObj) {
+	UpdateCommonReg: {
+		let updated = false;
+		for (let name of this.config.filter_regex.keys()) {
+			if (name in common) {
+				this.config.filter_regex.set(name, new RegExp(common[name]));
+				updated = true;
+			}
+		}
+		if (updated)
+			this.config.filter_regex = this.config.filter_regex;
+	}
+
 	async function checkExempt (member, exemptRole) {
 		if (member.permissions.has('ADMINISTRATOR'))
 			return true;
@@ -35,15 +47,15 @@ function inGuild (emitter, groupObj) {
 	}
 	emitter.on('message', async msg => {
 		for (let [name, reg] of this.config.filter_regex) {
-			log.debug(time(), 'Will check message content against', reg.toString());
+			log.debug('Will check', msg.content, ' against', reg.toString());
 			if (msg.content.match(reg)) {
-				log.debug(time(), 'Message has a match');
+				log.debug('Message has a match');
 				// check user has exempt role
 				if (await checkExempt.call(this, msg.member, this.config.filter_exempt.get(name)))
-					return log.debug(time(), 'User is exempt from filter due to higher role');
+					return log.debug('User is exempt from filter due to higher role');
 				log.info('Deleting filtered message', msg.content, 'from user', msg.author.username);
 				msg.delete().catch(e => {
-					log.error(time(), 'Unable to delete filtered message') && log.file.moderation('ERROR', 'Unable to delete filtered message', msg.content, 'from user', msg.author.username)
+					log.error('Unable to delete filtered message', msg.content, 'from user', msg.author.username, `(${msg.author.id})`);
 				});
 				if (groupObj.autoban) {
 					groupObj.autoban(msg);
@@ -59,7 +71,7 @@ function inGuild (emitter, groupObj) {
 			regex = exempt;
 			exempt = undefined;
 		} else if (!regex) {
-			throw new Error('Missing regex');
+			throw new SyntaxError('Missing regex');
 		}
 		if (exempt)
 			this.config.filter_exempt.set(filterName, await getRoleID(exempt, this.Guild));
@@ -76,20 +88,50 @@ function inGuild (emitter, groupObj) {
 		return this.config.filter_regex = this.config.filter_regex;
 	}
 
+	function list (msg) {
+		let listEmbed = new PagedEmbed(), rows = [...this.config.filter_regex.keys()];
+
+		if (rows.length) {
+			rows = rows.map(name => [name, this.config.filter_exempt.has(name) ? `Exempt Role: <@&${this.config.filter_exempt.get(name)}>`: 'Only Admins are exempt']);
+			listEmbed.addPage('Active Filters', rows, 'The filter name and the lowest exempt role');
+		} else {
+			listEmbed.addPage('No Active Filters', undefined, 'Set up a filter with the filter add command');
+		}
+		return listEmbed.sendTo(msg.channel);
+	}
+
+	function listCommon (msg) {
+		let listEmbed = new PagedEmbed(), rows = Object.entries(common);
+
+		listEmbed.addPage('Common Filters', rows, 'Regex filters for common filters that may be applied');
+		return listEmbed.sendTo(msg.channel);
+	}
+
 	return async (msg, action, filterName, exempt, regex) => {
 		switch (action) {
-			case 'add': try {
-				return await addFilter.call(this, filterName, exempt, regex)
-			} catch (e) {
-				if (e instanceof SyntaxError) {
-					(await msg.reply('Unable to create the filter:', e.message)).delete({timeout: 10000});
-				}
-				throw e;
-			}; break;
+			case 'a':
+			case 'add': {
+				try {
+					return await addFilter.call(this, filterName, exempt, regex)
+				} catch (e) {
+					if (e instanceof SyntaxError) {
+						(await msg.reply(`Unable to create the filter: ${e.message}`)).delete({timeout: 10000});
+					}
+					throw e;
+				}; break;
+			}
+
+			case 'd':
 			case 'del':
 			case 'delete': return delFilter.call(this, filterName); break;
-			case 'list':
-			case 'common': return (await msg.reply('not yet implemented')).delete({timeout: 10000}); break;
+
+			case 'l':
+			case 'li':
+			case 'list': return list.call(this, msg); break;
+
+			case 'c':
+			case 'common': return listCommon.call(this, msg); break;
+
 			default: return (await msg.reply('Please pick between options add/del/list/common')).delete({timeout: 10000}); break;
 		}
 	}

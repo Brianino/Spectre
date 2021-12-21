@@ -13,20 +13,20 @@ class EmojiPageController extends EmojiController {
 		]));
 	}
 
-	next () {
-		this.emit('next');
+	next (...input) {
+		this.emit('next', ...input);
 	}
 
-	prev () {
-		this.emit('prev');
+	prev (...input) {
+		this.emit('prev', ...input);
 	}
 
-	first () {
-		this.emit('first');
+	first (...input) {
+		this.emit('first', ...input);
 	}
 
-	lest () {
-		this.emit('last');
+	lest (...input) {
+		this.emit('last', ...input);
 	}
 }
 
