@@ -1,12 +1,12 @@
-const {getUserID} = require('../utils/getDiscordObject.js');
-const {DiscordAPIError} = require('discord.js');
-
 this.description = 'Kick a user';
 this.arguments = '<@user> [reason]';
 this.arguments = '<user id> [reason]';
 this.permissions = 'KICK_MEMBERS'
 
-function inGuild () {
+async function inGuild () {
+	const { DiscordAPIError } = await import('discord.js');
+	const { getUserID } = Utils;
+
 	return async (msg, input, message) => {
 		let user = msg.guild.member(await getUserID(input, msg.guild, {resolve: true}));
 

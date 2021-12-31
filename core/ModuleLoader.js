@@ -1,18 +1,22 @@
 'use strict';
 
-const logger = require('../utils/logger.js');
-const ContextHandler = require('./ContextHandler.js');
-const ConfigManager = require('./GuildConfig.js');
-const modObj = require('./ModuleObject.js');
-const time = require('../utils/time.js');
-const {promises:fs} = require('fs');
-const Path = require('path');
-const vm = require('vm');
+import logger from './logger.js';
+import ContextHandler, { GuildSymbol, DMSymbol } from './ContextHandler.js';
+import ModuleObject, { access } from './ModuleObject.js';
+import { promises as fs, readFileSync } from 'fs';
+import ConfigManager from './GuildConfig.js';
+import { createRequire } from 'module';
+import Utils from '../utils/utils.js';
+import { fileURLToPath } from 'url';
+import Path from 'path';
+import vm from 'vm';
 
 const log = logger('Module-Loader');
 const cmdlog = logger('Commands');
 // move iniTimeout to config, maybe add an option for timeout running a command?
 const moduleFolder = '../modules', iniTimeout = 1000;
+const __dirname = Path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(readFileSync('./config.json'));
 
 const globals = { // TODO: Lock off objects so that they can't be modified from within the module
 	// Value Globals
@@ -44,12 +48,17 @@ const globals = { // TODO: Lock off objects so that they can't be modified from 
 	ArrayBuffer, SharedArrayBuffer, Atomics, DataView, JSON,
 
 	// Other
-	Promise, Reflect, Proxy, Intl, WebAssembly, require, logger, TextEncoder,
-	setImmediate, setInterval, setTimeout, URL, URLSearchParams, TextDecoder,
-	time,
+	Promise, Reflect, Proxy, Intl, WebAssembly, TextEncoder, TextDecoder,
+	setImmediate, setInterval, setTimeout, URL, URLSearchParams,
+
+	// Utils
+	Utils,
+
+	// Bot config
+	OwnerID: config.owner,
 }
 
-module.exports = class moduleLoader {
+class ModuleLoader {
 	#modules = new Map();
 	#filePaths = new WeakMap();
 	#confMan = new ConfigManager();
@@ -74,10 +83,10 @@ module.exports = class moduleLoader {
 
 		if (this.modules.size)
 			this.modules.forEach(mod => this.#instGuildCtx(mod));
-		input.on('guildCreate', guild => {
+		input.on('guildCreate', async guild => {
 			for (let mod of this.#modules.values()) {
 				try {
-					mod[ContextHandler.guildSymbol](guild);
+					await mod[GuildSymbol](guild);
 				} catch (e) {
 					log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id, e);
 				}
@@ -100,14 +109,14 @@ module.exports = class moduleLoader {
 	reload (mod) {
 		if (typeof mod === 'string')
 			mod = this.modules.get(mod);
-		else if (mod instanceof modObj === false)
+		else if (mod instanceof ModuleObject === false)
 			throw new Error('Need either a module object, or a module name');
 		this.#context.cleanup(mod);
 		this.modules.delete(mod.command);
 		return this.#loadModule({filePath: this.#filePaths.get(mod), group: mod.group});
 	}
 
-	runCommand (msg) {
+	async runCommand (msg) {
 		let [cmdStr, ...msgStr] = msg.content.split(' '), config = this.#confMan.getGuildConfig(msg.guild?.id), cmd;
 
 		if (!cmdStr.startsWith(config.prefix))
@@ -115,13 +124,13 @@ module.exports = class moduleLoader {
 		cmd = this.modules.get(cmdStr.substr(config.prefix.length));
 
 		log.debug('Has guild?', msg.guild && true);
-		if (cmd && modObj.access.call(cmd, msg.author, msg.guild, config)) {
+		if (cmd && access.call(cmd, msg.author, msg.guild, config)) {
 			if (msg.guild) { //this creates instance, it doens't run the fun, return value needs to be run;
 				cmdlog.info(`User ${msg.author.username} (${msg.author.id}) is running command ${cmd.command} on server ${msg.guild.name} (${msg.guild.id})`);
-				return cmd[ContextHandler.guildSymbol](msg.guild)?.call(config, msg, ...msgStr);
+				return (await cmd[GuildSymbol](msg.guild))?.call(config, msg, ...msgStr);
 			} else {
 				cmdlog.info(`User ${msg.author.username} (${msg.author.id}) is running command ${cmd.command} in direct messages`);
-				return cmd[ContextHandler.DMSymbol]()?.call(config, msg, ...msgStr);
+				return (await cmd[DMSymbol]())?.call(config, msg, ...msgStr);
 			}
 		}
 	}
@@ -135,10 +144,10 @@ module.exports = class moduleLoader {
 				return log.debug('Skipping over existing module', name);
 			if (code.startsWith('skip_me'))
 				return log.warn('Skip requested by', name);
-			this.modules.set(name, mod = this.#setupModule(name, group, filePath, code));
+			this.modules.set(name, mod = await this.#setupModule(name, group, filePath, code));
 			this.#filePaths.set(mod, filePath);
 			if (this.source && inst)
-				this.#instGuildCtx(mod);
+				await this.#instGuildCtx(mod);
 			log.info(name, 'Module instantiated');
 		} catch (e) {
 			log.error('Unable to setup module:', filePath);
@@ -186,17 +195,17 @@ module.exports = class moduleLoader {
 		return res;
 	}
 
-	#instGuildCtx (mod) {
+	async #instGuildCtx (mod) {
 		for (let guild of this.source.guilds.cache.values()) {
 			try {
-				mod[ContextHandler.guildSymbol](guild);
+				await mod[GuildSymbol](guild);
 			} catch (e) {
 				log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id);
 				log.warn(e);
 			}
 		}
 		try {
-			mod[ContextHandler.DMSymbol]();
+			await mod[DMSymbol]();
 		} catch (e) {
 			log.warn('Failed to instantiate command', mod.command, 'dm context');
 			log.warn(e);
@@ -229,8 +238,8 @@ module.exports = class moduleLoader {
 		});
 	}
 
-	#setupModule (name, group, filename, code) {
-		let script = new vm.Script(code, {filename}), obj = new modObj(name, group),
+	async #setupModule (name, group, filename, code) {
+		let script = new vm.Script(code, {filename}), obj = new ModuleObject(name, group),
 			temp = {}, ctx = Object.create(temp), vars = [];
 
 		if (name === 'reload') {
@@ -245,10 +254,10 @@ module.exports = class moduleLoader {
 			__dirname: Path.dirname(filename),
 			setupModule: this.#proxifyModule(obj, ctx),
 			modules: this.modules,
-			access: modObj.access,
+			access: access,
+			log: logger(`Module-${group}`),
 			getBot: () => this.source,
 			getConfigurable: () => this.#confMan.getConfigurable(),
-			log: logger(`Module-${group}`),
 			addConfig: (varName, type, {description, configurable, ...props}) => {
 				log.debug('Adding config for', name, varName);
 				this.#confMan.register(varName, type, {description, configurable, ...props});
@@ -262,3 +271,5 @@ module.exports = class moduleLoader {
 		return this.#context.create(obj, ctx);
 	}
 }
+
+export { ModuleLoader as default };

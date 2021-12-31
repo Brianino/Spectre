@@ -49,4 +49,4 @@ class TwoWayMap extends Map {
 	}
 }
 
-module.exports = TwoWayMap;
+export default TwoWayMap;

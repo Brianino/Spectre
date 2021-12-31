@@ -34,4 +34,4 @@ function waitFor (time = 1000, interval = 10, checkFunc) {
 	})
 }
 
-module.exports = waitFor;
+export default waitFor;

@@ -30,4 +30,4 @@ function checkForUrl (text, getMatches = false, flags = '') {
 	}
 }
 
-module.exports = checkForUrl;
+export default checkForUrl;

@@ -21,4 +21,4 @@ function split (str, filterEmpty = true) {
 	return res;
 }
 
-module.exports = split;
+export default split;

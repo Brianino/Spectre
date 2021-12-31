@@ -29,4 +29,4 @@ function parseBool (input) {
 	}
 }
 
-module.exports = parseBool;
+export default parseBool;

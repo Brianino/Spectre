@@ -1,9 +1,13 @@
-const mod = require('../etc/GuildConfig.js');
-const {Permissions} = require('discord.js');
-const assert = require('assert').strict;
-const config = require('../config.json');
-const {promises:fs} = require('fs');
-const Path = require('path');
+import { promises as fs, readFileSync } from 'fs';
+import { Permissions } from 'discord.js';
+import GuildConfig from '../core/GuildConfig.js';
+import waitFor from '../utils/waitFor.js';
+import { fileURLToPath } from 'url';
+import assert from 'assert/strict';
+import Path from 'path';
+
+const config = JSON.parse(readFileSync('./config.json'));
+const __dirname = Path.resolve(fileURLToPath(import.meta.url), '../');
 
 describe('Guild Config', function () {
 	let guildConfig, testGuild;
@@ -12,7 +16,7 @@ describe('Guild Config', function () {
 		let savedValue = 'new';
 
 		it('should create a new guild config manager object', function () {
-			guildConfig = new mod();
+			guildConfig = new GuildConfig();
 			return assert.ok(guildConfig, 'no guild manager object');
 		});
 
@@ -44,13 +48,19 @@ describe('Guild Config', function () {
 			let guild = guildConfig.getGuildConfig('savetest'), file;
 
 			guild.prefix = savedValue;
-			file = await fs.readFile(Path.resolve(__dirname, '../data/savetest.json'), 'utf8');
-
+			await waitFor(undefined, undefined, async () => {
+				try {
+					file = await fs.readFile(Path.resolve(__dirname, '../data/savetest.json'), 'utf8');
+					return true;
+				} catch (e) {
+					return false;
+				}
+			});
 			assert.equal(JSON.parse(file).prefix, savedValue);
 		});
 
 		it('can load properties', async function () {
-			let tempConfig = new mod(), guild;
+			let tempConfig = new GuildConfig(), guild;
 
 			await tempConfig.loadConfig();
 			guild = tempConfig.getGuildConfig('savetest');

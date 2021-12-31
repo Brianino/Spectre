@@ -16,7 +16,7 @@
 		},
 		"mainFile": {
 			"type": "file",
-			"filename": "log/main.log",
+			"filename": "logs/main.log",
 			"maxLogSize": 536870912,
 			"backups": 5,
 			"compress": true,
@@ -28,7 +28,7 @@
 		},
 		"debugFile": {
 			"type": "file",
-			"filename": "log/debug.log",
+			"filename": "logs/debug.log",
 			"maxLogSize": 536870912,
 			"backups": 5,
 			"compress": true,
@@ -40,7 +40,7 @@
 		},
 		"commands": {
 			"type": "file",
-			"filename": "log/commands.log",
+			"filename": "logs/commands.log",
 			"maxLogSize": 536870912,
 			"backups": 5,
 			"compress": true,
@@ -52,7 +52,7 @@
 		},
 		"config": {
 			"type": "file",
-			"filename": "log/Guild_Config.log",
+			"filename": "logs/Guild_Config.log",
 			"maxLogSize": 536870912,
 			"backups": 5,
 			"compress": true,
@@ -64,7 +64,7 @@
 		},
 		"module-loader": {
 			"type": "file",
-			"filename": "log/Module_Loader.log",
+			"filename": "logs/Module_Loader.log",
 			"maxLogSize": 536870912,
 			"backups": 5,
 			"compress": true,
@@ -76,7 +76,8 @@
 		},
 		"modules": {
 			"type": "multiFile",
-			"base": "log/",
+			"base": "logs/",
+			"extension": ".log",
 			"property": "categoryName",
 			"maxLogSize": 536870912,
 			"backups": 5,
@@ -123,7 +124,7 @@
 		},
 		"Commands": {
 			"appenders": ["commands"],
-			"level": "info",
+			"level": "info"
 		},
 		"Context-Handler": {
 			"appenders": ["main", "out", "err", "debug"],

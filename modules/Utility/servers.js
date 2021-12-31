@@ -1,7 +1,5 @@
-const {owner} = require('../config.json');
-
 this.description = 'lists all the servers the bot is in';
-this.limit('users', owner);
+this.limit('users', OwnerID);
 
 this.arguments = '';
 

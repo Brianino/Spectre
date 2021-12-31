@@ -1,9 +1,11 @@
 'use strict';
 
-const log = require('../logger.js')('Utilities');
-const TwoWayMap = require('../TwoWayMap.js');
-const {Message} = require('discord.js');
-const events = require('events');
+import logger from '../../core/logger.js';
+import TwoWayMap from '../TwoWayMap.js';
+import { Message } from 'discord.js';
+import events from 'events';
+
+const log = logger('Utilities');
 
 /** Extra properties object
  * @typedef {Object} emojiControllerProperties
@@ -366,4 +368,4 @@ class EmojiController extends events {
 	}
 }
 
-module.exports = EmojiController;
+export default EmojiController;

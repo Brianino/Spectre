@@ -1,12 +1,11 @@
-const {Permissions} = require('discord.js');
-
 this.description = 'Modifying required permissions for commands';
 this.arguments = 'set <command> [...permission]';
 this.arguments = 'show <command>';
 this.arguments = 'list';
 this.permissions = 'ADMINISTRATOR';
 
-function inGuild () {
+async function inGuild () {
+	const { Permissions } = await import('discord.js');
 
 	return (msg, ...args) => {
 		switch (args.shift()) {

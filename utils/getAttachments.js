@@ -1,6 +1,7 @@
 'use strict';
 
-const log = require('./logger.js')('Utilities');
+import logger from '../core/logger.js';
+const log = logger('Utilities');
 
 /**
  * @typedef {object}   imageProps
@@ -39,4 +40,4 @@ function getAttachments (msg, formats) {
 	return res;
 }
 
-module.exports = getAttachments;
+export default getAttachments;

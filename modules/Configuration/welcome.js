@@ -1,6 +1,3 @@
-const {getChannelID} = require('../utils/getDiscordObject.js');
-const checkForUrl = require('../utils/checkForUrl.js');
-
 this.description = 'set the server welcome message';
 this.description = 'user mention: {user}';
 this.description = 'server name: {server}';
@@ -21,6 +18,7 @@ addConfig('welcome_thumbnail', String, {description: 'The image link to use as a
 addConfig('welcome_image', String, {description: 'The image link to attach to an embeded welcome (image below the main text)', configurable: true});
 
 function inGuild (emitter) {
+	const { getChannelID, checkForUrl } = Utils;
 	emitter.on('guildMemberAdd', async member => {
 		let guild = member.guild, replaceText = (input) => {
 			if (typeof input === 'string')

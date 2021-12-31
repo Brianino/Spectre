@@ -1,27 +1,3 @@
-const timespan = require('timespan-parser')('msec');
-const split = require('../utils/split.js');
-
-const hardlimit = timespan.parse('1 month'), emoteDelete = '\uD83D\uDDD1\uFE0F';
-/* Custom emote set, not used for now
-emoteSet = [
-	'\u26AA', //WHITE CIRCLE
-	'\u26AB', //BLACK CIRCLE
-	'\uD83D\uDD34', //RED CIRCLE
-	'\uD83D\uDD35', //BLUE CIRCLE
-	'\uD83D\uDFE0', //ORANGE CIRCLE
-	'\uD83D\uDFE1', //YELLOW CIRCLE
-	'\uD83D\uDEF2', //GREEN CIRCLE
-	'\uD83D\uDEF3', //PURPLE CIRCLE
-	'\uD83D\uDEF4', //BROWN CIRCLE
-	'\uD83D\uDEF5', //RED SQUARE
-	'\uD83D\uDEF6', //BLUE SQUARE
-	'\uD83D\uDEF7', //ORANGE SQUARE
-	'\uD83D\uDEF8', //YELLOW SQUARE
-	'\uD83D\uDEF9', //GREEN SQUARE
-	'\uD83D\uDEFA', //PURPLE SQUARE
-	'\uD83D\uDEFB', //BROWN SQUARE
-];*/
-
 this.description = 'create a poll in the channel';
 this.description = 'single - a poll where you can only vote for one option';
 this.description = 'multi - a poll where you can specify the max number of votes';
@@ -56,8 +32,30 @@ this.addConfig('poll_reactions', Boolean, {default: true, description: 'use reac
 //this.addConfig('poll_active', Map, {default: new Map(), configurable: false});
 
 function inGuild () {
-	let active = new Map(), dynamicPolls = new Set(), activeWarn = new Set();
-	//CHECK FOR GUILD LEAK, IT SHOULD BE FIXED
+	const timespan = (await import('timespan-parser'))('msec');
+	const { split } = Utils, hardlimit = timespan.parse('1 month');
+	const active = new Map(), dynamicPolls = new Set(), activeWarn = new Set();
+
+	const emoteDelete = '\uD83D\uDDD1\uFE0F';
+	/* Custom emote set, not used for now
+	emoteSet = [
+		'\u26AA', //WHITE CIRCLE
+		'\u26AB', //BLACK CIRCLE
+		'\uD83D\uDD34', //RED CIRCLE
+		'\uD83D\uDD35', //BLUE CIRCLE
+		'\uD83D\uDFE0', //ORANGE CIRCLE
+		'\uD83D\uDFE1', //YELLOW CIRCLE
+		'\uD83D\uDEF2', //GREEN CIRCLE
+		'\uD83D\uDEF3', //PURPLE CIRCLE
+		'\uD83D\uDEF4', //BROWN CIRCLE
+		'\uD83D\uDEF5', //RED SQUARE
+		'\uD83D\uDEF6', //BLUE SQUARE
+		'\uD83D\uDEF7', //ORANGE SQUARE
+		'\uD83D\uDEF8', //YELLOW SQUARE
+		'\uD83D\uDEF9', //GREEN SQUARE
+		'\uD83D\uDEFA', //PURPLE SQUARE
+		'\uD83D\uDEFB', //BROWN SQUARE
+	];*/
 
 	return async (msg, ...input) => {
 		let tmp = parseInput(input.join(' '), this.config), votes, emMsg, tmpType, list, choice;

@@ -1,8 +1,10 @@
 'use strict';
 /** @module ContextHandler */
-const log = require('../utils/logger.js')('Context-Handler');
-const {Client, Guild, Collection} = require('discord.js');
-const listener = require('./ProxyListener.js');
+import logger from './logger.js';
+import { Client, Guild, Collection } from 'discord.js';
+import ConsolidatedListener from './ConsolidatedListener.js';
+import Listener from './ProxyListener.js';
+const log = logger('Context-Handler');
 
 const sym = {
 	guilds: Symbol('get guild function'),
@@ -38,19 +40,19 @@ const checkGuild = guildId => obj => {
 	return guild && guild.id === guildId;
 }
 
-function addFuncs ([guild, dm, empty], func) {
-	if (guild && dm && !empty && (this[sym.guilds] || this[sym.dms])) return;
-	if ((guild || empty) && !this[sym.guilds]) {
+function addFuncs ({guild, dm, fill}, func) {
+	if (guild && dm && !fill && (this[sym.guilds] || this[sym.dms])) return;
+	if (guild && !this[sym.guilds]) {
 		log.debug('Assigning Guild function to:', this.command);
 		Object.defineProperty(this, sym.guilds, {value: func});
 	}
-	if ((dm || empty) && !this[sym.dms]) {
+	if (dm && !this[sym.dms]) {
 		log.debug('Assigning DM function to:', this.command);
 		Object.defineProperty(this, sym.dms, {value: func});
 	}
 }
 
-function proxifyListener (listener, cmdObj, check) {
+function proxifyListener (evListener, cmdObj, check) {
 	function register (ev, li) {
 		if (!cmdObj.hasOwnProperty(sym.listeners)) {
 			cmdObj[sym.listeners] = new Map();
@@ -74,7 +76,7 @@ function proxifyListener (listener, cmdObj, check) {
 		}
 	}
 	// add in store for all listeners that can be used to remove them when the module gets deleted
-	return new Proxy (listener, {
+	return new Proxy (evListener, {
 		get: (target, prop, receiver) => {
 			let func = Reflect.get(target, prop);
 			switch (prop) {
@@ -107,18 +109,10 @@ function proxifyListener (listener, cmdObj, check) {
 	});
 }
 
-// Disabled all shared contexes for now (need to think of a better way to do it)
-// Thinking of shifting all the shared contexes to work in a way that allows a medule to pick what commands can share the context (whether that be group, or individual commands)
-// Globally shared seems pointless (hmm, now that i think about it, maybe there are use cases for it but i should come up with a standard practice for them)
-// Add basic objects to context (such as the module, the logger, the require)
-// REPLACE VM CONTEXT WITH OBJECT.CREATE() (CREATES A NEW OBJECT USING OLD ONE AS PROTOTYPE)
-// New method should allow the object itself to act as a global context, and the function to to operate under the new context object (which should allow the config var to be set)
-// Commands sharing context
-
 /**
  * @class ContextHandler
 */
-module.exports = function (getConfigCallback) {
+function ContextHandler (getConfigCallback) {
 	let ctx = {
 		guilds: {
 			// Function that is shared between guilds
@@ -138,7 +132,7 @@ module.exports = function (getConfigCallback) {
 			// Context that is shared between guild, dms and commands
 			objMap: new Map(),
 		}
-	}, modListener = new listener(undefined, true);
+	}, modListener = new Listener(undefined, true), consolidated = new ConsolidatedListener();
 
 	ctx.guilds.getObj = retrieveObject(ctx.guilds.objMap);
 	ctx.dms.getObj = retrieveObject(ctx.dms.objMap);
@@ -157,17 +151,22 @@ module.exports = function (getConfigCallback) {
 				for (let ev of events)
 					modListener.removeListener(ev, listener);
 		}
+		cmdObj.revemoveFrom(consolidated);
 	}
 
 	this.create = (cmdObj, mainCtx) => {
+		// Variables set to true simplify object creation.
+		// Used to specify what type of function to set in addFunc
+		let guild = true, dm = true, fill = true;
+
 		log.debug('Setting up', cmdObj.command);
 		log.debug('Provided:', ...Object.keys(mainCtx));
-
+		cmdObj.setAsSourceOf(ConsolidatedListener);
 		for (let key of Object.getOwnPropertyNames(mainCtx)) {
 			log.debug('Processing:', key, 'in', cmdObj.command);
 			switch (key) {
 				case 'inGuild':
-				addFuncs.call(cmdObj, [true, false],(() => {
+				addFuncs.call(cmdObj, {guild},(() => {
 					let guildMap = new Map();
 
 					return (guildObj) => {
@@ -195,7 +194,7 @@ module.exports = function (getConfigCallback) {
 				break;
 
 				case 'inAllGuilds':
-				addFuncs.call(cmdObj, [true, false], () => {
+				addFuncs.call(cmdObj, {guild}, () => {
 					let runFunc = ctx.guilds.funcMap.get(cmdObj);
 
 					if (!runFunc) {
@@ -214,7 +213,7 @@ module.exports = function (getConfigCallback) {
 				break;
 
 				case 'inAllDM':
-				addFuncs.call(cmdObj, [false, true], () => {
+				addFuncs.call(cmdObj, {dm}, () => {
 					let runFunc = ctx.dms.funcMap.get(cmdObj);
 
 					if (!runFunc) {
@@ -233,7 +232,7 @@ module.exports = function (getConfigCallback) {
 				break;
 
 				case 'inAll':
-				addFuncs.call(cmdObj, [true, true], () => {
+				addFuncs.call(cmdObj, {guild, dm}, () => {
 					let runFunc = ctx.all.funcMap.get(cmdObj);
 
 					if (!runFunc) {
@@ -253,7 +252,11 @@ module.exports = function (getConfigCallback) {
 			}
 		}
 		log.debug('Adding empty functions');
-		addFuncs.call(cmdObj, [false, false, true], () => {});
+		addFuncs.call(cmdObj, {guild, dm, fill}, () => {});
+		// scan for events? add to the allowable emit list?
+		// the above will only work if i add in the proxy a way to emit the events from the bot (as there is no way to emit on the proxy listener)
+		// Will i have to add a second listener? or do i add a way to emit directly on the proxy listener? maybe by extending it???
+		// Or maybe since i already register the events, i add a way to directly call them?
 		log.debug('Finished processing:', cmdObj.command);
 
 		return cmdObj;
@@ -262,5 +265,7 @@ module.exports = function (getConfigCallback) {
 	return this;
 }
 
-module.exports.guildSymbol = sym.guilds;
-module.exports.DMSymbol = sym.dms;
+export default ContextHandler;
+export const GuildSymbol = sym.guilds;
+export const DMSymbol = sym.dms;
+

@@ -1,8 +1,10 @@
 'use strict';
 
-const PageController = require('./controls/PageController.js');
-const log = require('./logger.js')('Utilities');
-const {MessageEmbed, Message, Channel} = require('discord.js');
+import PageController from './controls/PageController.js';
+import { MessageEmbed, Message, Channel } from 'discord.js';
+import logger from '../core/logger.js';
+
+const log = logger('Utilities');
 
 function trimStr (str, lim) {
 	str = String(str);
@@ -341,4 +343,4 @@ class PagedEmbed {
 }
 
 
-module.exports = PagedEmbed;
+export { PagedEmbed as default, GroupManager };

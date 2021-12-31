@@ -1,8 +1,8 @@
-const ProxyListener = require('../etc/ProxyListener.js');
-const events = require('events');
-const assert = require('assert').strict;
+import ProxyListener from '../core/ProxyListener.js';
+import assert from 'assert/strict';
+import events from 'events';
 
-describe('Proxy Listner', function () {
+describe('Proxy Listener', function () {
 	describe('Initialised with source event emitter', function () {
 		let source = new events(), plistener = new ProxyListener(source);
 
@@ -94,11 +94,13 @@ describe('Proxy Listner', function () {
 		it('should forward uncaught errors to the error event', function () {
 			let plistener = new ProxyListener(source, true), event = Symbol();
 
-			return new Promise((resolve) => {
+			return new Promise((resolve, reject) => {
 				let e = new Error('uncaught error');
 				plistener.on('error', (err) => {
 					if (err === e)
 						return resolve();
+					else
+						return reject();
 				});
 				plistener.on(event, () => {throw e});
 				source.emit(event);

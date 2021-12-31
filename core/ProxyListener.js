@@ -1,41 +1,15 @@
 'use strict';
 
-const log = require('../utils/logger.js')('proxy-listener');
-const eventEmitter = require('events');
+import logger from './logger.js';
+import EventEmitter from 'events';
+
+const log = logger('Proxy-Listener');
 const sym = {
 	source: Symbol('source listener'),
 	events: Symbol('events to listeners'),
 	checks: Symbol('listeners to check'),
 	errors: Symbol('forward errors'),
 	queue: Symbol('queue')
-}
-
-/** Attaches an event listener to the source event emitter
- * @private
- * @param {string}     event - name of the event to attach a listener to
- * @param {function[]} lList - set of listener methods that run when the event is called
- * @param {listener}   param - the proxy listener
-*/
-function attachToSource (event, lList, {[sym.source]: source, [sym.checks]:checks, [sym.errors]: forwardEv}) {
-	let res;
-
-	log.debug('attaching new event listener to source:', event, lList);
-	source.on(event, res = async (...params) => {
-		for (let temp of lList) {
-			let check = checks.get(temp);
-			try {
-				if (!check || await check(...params)) {
-					await temp(...params);
-				} else {
-					log.debug('Skipping listener due to failed check');
-				}
-			} catch (e) {
-				if (forwardEv) source.emit('error', e);
-				else log.error('Uncaught error in', eventName, 'listener:', e);
-			}
-		}
-	});
-	return res;
 }
 
 /** Proxy listener
@@ -45,7 +19,7 @@ function attachToSource (event, lList, {[sym.source]: source, [sym.checks]:check
 */
 class ProxyListener {
 	constructor (source, errorsFromSource = true) {
-		if (source && !source instanceof eventEmitter)
+		if (source && !source instanceof EventEmitter)
 			throw new Error('Source emitter is not an event emitter');
 		Object.defineProperties(this, {
 			[sym.source]: {value: source, writable: true},
@@ -56,12 +30,39 @@ class ProxyListener {
 		});
 	}
 
-	/** Sets the source event emitter is one wasn't set during the instantiation
+	/** Attaches an event listener to the source event emitter
+	 * @private
+	 * @param {string}     event - name of the event to attach a listener to
+	 * @param {function[]} lList - set of listener methods that run when the event is called
+	*/
+	#attachToSource (event, lList) {
+		let res;
+
+		log.debug('attaching new event listener to source:', event, lList);
+		this[sym.source].on(event, res = async (...params) => {
+			for (let temp of lList) {
+				let check = this[sym.checks].get(temp);
+				try {
+					if (!check || await check(...params)) {
+						await temp(...params);
+					} else {
+						log.debug('Skipping listener due to failed check');
+					}
+				} catch (e) {
+					if (this[sym.errors]) this[sym.source].emit('error', e);
+					else log.error('Uncaught error in', eventName, 'listener:', e);
+				}
+			}
+		});
+		return res;
+	}
+
+	/** Sets the source event emitter if one wasn't set during the instantiation
 	 * @param {EventEmitter} input - the source event emitter
 	 * @throws will throw an error if the source event emitter is already set
 	*/
 	set source (input) {
-		if (!this[sym.source] && input instanceof eventEmitter) {
+		if (!this[sym.source] && input instanceof EventEmitter) {
 			this[sym.source] = input;
 			log.debug('Proxy listener source set');
 			log.debug(this[sym.queue].length, 'listener queued up for addition');
@@ -105,7 +106,7 @@ class ProxyListener {
 			return this;
 		}
 		if (!lList) {
-			let temp = attachToSource(eventName, lList = new Set(), this);
+			let temp = this.#attachToSource(eventName, lList = new Set());
 
 			this[sym.events].set(eventName, [lList, temp]);
 		}
@@ -224,4 +225,4 @@ class ProxyListener {
 	}
 }
 
-module.exports = ProxyListener;
+export { ProxyListener as default };

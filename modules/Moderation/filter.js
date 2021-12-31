@@ -1,17 +1,16 @@
-const {getRoleID} = require('../utils/getDiscordObject.js');
-const PagedEmbed = require('../utils/PagedEmbed.js');
-
-this.objectGroup = 'auto_mod';
 this.description = 'use a regex filter to remove messages and auto ban abusers';
 this.description = 'Filter names must be unique, some names are reserved for common filters (list with common option)';
 this.description = 'The exmept_role is used to define the lowest required role to be exempt from the filter';
 this.description = 'All the active filters can be displayed with the list option';
+
 this.arguments = 'add <filter_name> [exempt_role] <regex>';
 this.arguments = 'add <common_filter_name> [exempt_role]';
 this.arguments = 'del <filter_name>';
 this.arguments = 'list';
 this.arguments = 'common';
+
 this.permissions = 'MANAGE_GUILD'
+this.objectGroup = 'auto_mod';
 
 addConfig('filter_regex', Map, {default: new Map(), configurable: false});
 addConfig('filter_exempt', Map, {default: new Map(), configurable: false});
@@ -23,6 +22,8 @@ let common = {
 };
 
 function inGuild (emitter, groupObj) {
+	const { getRoleID, PagedEmbed } = Utils;
+
 	UpdateCommonReg: {
 		let updated = false;
 		for (let name of this.config.filter_regex.keys()) {

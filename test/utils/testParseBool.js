@@ -1,5 +1,5 @@
-const parseBool = require('../../utils/parseBool.js');
-const assert = require('assert').strict;
+import parseBool from '../../utils/parseBool.js';
+import assert from 'assert/strict';
 
 describe('Parse Bool', function () {
 	describe('String into boolean', function () {

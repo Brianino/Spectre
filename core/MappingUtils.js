@@ -1,9 +1,8 @@
 'use strict';
 
-const parseBool = require('../utils/parseBool.js');
-const {Permissions} = require('discord.js');
+import { Permissions } from 'discord.js';
 
-module.exports = class mappingUtilties {
+class MappingUtilties {
 	static getConverter (type) {
 		let typeName = String(type).toLowerCase();
 		if (typeName in this)
@@ -62,10 +61,10 @@ module.exports = class mappingUtilties {
 	static get boolean () {
 		return {
 			toJson (input) {
-				return parseBool(input);
+				return !!input;
 			},
 			from (input) {
-				return parseBool(input);
+				return input;
 			}
 		}
 	}
@@ -141,3 +140,5 @@ module.exports = class mappingUtilties {
 		}
 	}
 }
+
+export default MappingUtilties;

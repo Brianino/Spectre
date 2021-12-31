@@ -1,11 +1,10 @@
 'use strict';
 
-const log = require('./logger.js')('Utilities');
-const {GuildChannel, GuildMember, Role} = require('discord.js');
-const split = require('./split.js');
+import { GuildChannel, GuildMember, Role } from 'discord.js';
+import logger from '../core/logger.js';
+import split from './split.js';
 
-
-module.exports = exports;
+const log = logger('Utilities');
 
 /**
  * Perform a string matching algorithm on the objects of the source collection
@@ -134,7 +133,7 @@ const channelReg = /<#(\d{17,19})>/;
  * @prop   {string}                [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
  * @return {(string|string[]|GuildChannel|GuildChannel[])} either a list of channels, or the channel itself
 */
-exports.getChannelID = async function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
+async function getChannelID (input, guild, {maxCount = 1, resolve, ...options} = {}) {
 	let manager = guild.channels, res;
 
 	log.debug('Looking for channel, input:', input, 'max', maxCount, 'options', options);
@@ -165,7 +164,7 @@ const roleReg = /<@&(\d{17,19})>/;
  * @prop   {string}                [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
  * @return {(string|string[]|Role|Role[])} either a list of roles, or the role itself
 */
-exports.getRoleID = async function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
+async function getRoleID (input, guild, {maxCount = 1, resolve, ...options} = {}) {
 	let manager = guild.roles, res;
 
 	log.debug('Looking for role, input:', input, 'max', maxCount, 'options', options);
@@ -197,7 +196,7 @@ const userReg = /<@!?(\d{17,19})>/;
  * @prop   {boolean}              [fetch=true]    - when true will fetch from discord if the user isn't in cache
  * @return {(string|string[]|GuildMember)} either a list of guild members, or the member itself
 */
-exports.getUserID = async function (input, guild, {maxCount = 1, resolve, ...options} = {}) {
+async function getUserID (input, guild, {maxCount = 1, resolve, ...options} = {}) {
 	let manager = guild.members, res;
 
 	log.debug('Looking for user, input:', input, 'max', maxCount, 'options', options);
@@ -212,3 +211,5 @@ exports.getUserID = async function (input, guild, {maxCount = 1, resolve, ...opt
 	log.debug('Found user(s):', res.map(val => val.toString()));
 	return maxCount > 1? res : res[0];
 }
+
+export { getUserID, getChannelID, getRoleID };

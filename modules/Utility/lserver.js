@@ -1,9 +1,7 @@
-const {owner} = require('../config.json');
-
 this.description = 'leaves a specified server';
 this.extraDesc = 'use the list servers command to get the server id';
 this.arguments = '<serverid>';
-this.limit('users', owner);
+this.limit('users', OwnerID);
 
 function inAll () {
 	return async (msg, id) => {

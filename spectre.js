@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 "use strict";
 
-const log = require('./utils/logger.js')('Main');
-const moduleLoader = require('./etc/ModuleLoader.js');
-const {token, prefix} = require('./config.json');
-const time = require('./utils/time.js');
-const Discord = require('discord.js');
+import Discord from 'discord.js';
+import logger from './core/logger.js';
+import ModuleLoader from './core/ModuleLoader.js';
+import { readFile } from 'fs/promises';
 
+const log = logger('Main');
 const bot = new Discord.Client();
-const modLoader = new moduleLoader();
+const modLoader = new ModuleLoader();
 
 process.on('unhandledRejection', (e, origin) => {
 	log.error('Promise Error:', e.toString());
@@ -50,7 +50,10 @@ bot.on('debug', info => {
 	log.debug('Client debug', info);
 });
 
-bot.login(token).catch(e => {
-	log.error('Login error:', e.toString());
-	log.debug(e.stack);
-}); //Bot Token
+readFile(new URL('./config.json', import.meta.url)).then((data) => {
+	let { token } = JSON.parse(data);
+	bot.login(token).catch(e => {
+		log.error('Login error:', e.toString());
+		log.debug(e.stack);
+	}); //Bot Token
+});

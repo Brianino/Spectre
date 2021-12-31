@@ -1,9 +1,3 @@
-const {GuildChannel, DiscordAPIError} = require('discord.js');
-const {getChannelID} = require('../utils/getDiscordObject.js');
-const getAttachments = require('../utils/getAttachments.js');
-const checkForUrl = require('../utils/checkForUrl.js');
-const waitFor = require('../utils/waitFor.js');
-
 this.description = 'Repost images into an image gallery channel';
 this.description = 'At least one source channel needs to be provided, and a gallery channel';
 this.arguments = '<...source> to <gallery>';
@@ -13,7 +7,10 @@ addConfig('repost_galleries', Map, {default: new Map(), configurable: false});
 addConfig('repost_prefer_url', Boolean, {default: true, description: 'Prefer to post image url\'s rather than reuploading the file', configurable: true});
 addConfig('repost_formats', Set, {default: new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']), description: 'Image formats that should be reposted', configurable: true});
 
-function inGuild (emitter) {
+async function inGuild (emitter) {
+	const { GuildChannel, DiscordAPIError } = await import('discord.js');
+	const { getChannelID, getAttachments, checkForUrl, waitFor } = Utils;
+
 	// modify this so that the listener is only attached if there is a gallery set for the guild
 	let att = false, repost = async msg => {
 		let gallList = this.config.repost_galleries.get(msg.channel.id) || [], attachments = [], urlCount = checkForUrl(msg.content, true, 'g').length;

@@ -2,6 +2,7 @@
   "name": "Spectre",
   "version": "0.1.0",
   "description": "A shitty general purpose bot",
+  "type": "module",
   "engines": {
     "node": "^14.0.0"
   },
@@ -11,11 +12,10 @@
   },
   "scripts": {
     "start": "node spectre.js",
-    "test": "TEST=true mocha",
+    "test": "TEST=true mocha --input-type=module",
     "docs": "jsdoc -r spectre.js etc utils"
   },
   "dependencies": {
-    "@discordjs/opus": "^0.3.2",
     "discord.js": "^12.5.1",
     "log4js": "^6.3.0",
     "timespan-parser": "^1.0.2",

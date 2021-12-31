@@ -7,7 +7,7 @@
  *
  * @return {string} the current date formatted in a specific way for logging
 */
-module.exports = (function time () {
+let time (function () {
 	let formatter = new Intl.DateTimeFormat('en-GB', {
 		timeZone: 'GMT',
 		year: 'numeric',
@@ -22,3 +22,5 @@ module.exports = (function time () {
 		return formatter.format(new Date());
 	}
 })();
+
+export default time;

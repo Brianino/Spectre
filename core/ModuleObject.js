@@ -1,7 +1,11 @@
 'use strict';
 
-const log = require('../utils/logger.js')('Module-Object');
-const {Permissions} = require('discord.js');
+import logger from './logger.js';
+import { Permissions } from 'discord.js';
+import EventEmitter from 'events';
+import ConsolidatedListener from './ConsolidatedListener.js';
+
+const log = logger('Module-Object');
 
 /*
  * possibly link properties with {@link discord.js#Properties}
@@ -15,7 +19,6 @@ const {Permissions} = require('discord.js');
  * @param {string} group - the name for the group of commands this module is part of
 */
 class ModuleObject {
-
 	#name;
 	#group;
 	#objectGroup;
@@ -23,8 +26,11 @@ class ModuleObject {
 	#arguments = [];
 	#permissions = new Permissions('VIEW_CHANNEL');
 	#limitedTo = new Map([['users', new Set()], ['guilds', new Set()]]);
+	#events = new EventEmitter();
+	#consolidated = new Set();
 
 	constructor (name, group) {
+		super();
 		this.#name = name;
 		this.#group = group;
 	}
@@ -123,11 +129,27 @@ class ModuleObject {
 			return new Set(this.#limitedTo.get(type));
 		}
 	}
+
+	emit (...params) {
+		this.#events.emit(...params);
+	}
+
+	setAsSourceOf (consolidatedListener) {
+		if (consolidatedListener instanceof ConsolidatedListener) {
+			consolidatedListener.addSource(this.#events);
+			this.#consolidated.add(consolidatedListener);
+		}
+	}
+
+	revemoveFrom (consolidatedListener) {
+		if (consolidatedListener instanceof ConsolidatedListener) {
+			consolidatedListener.removeSource(this.#events);
+			this.#consolidated.delete(consolidatedListener);
+		}
+	}
 }
 
-module.exports = ModuleObject;
-
-module.exports.access = function (user, guild, config) {
+function access (user, guild, config) {
 	let users = this.limit('users'), guilds = this.limit('guilds');
 
 	if (guild) {
@@ -148,3 +170,5 @@ module.exports.access = function (user, guild, config) {
 		return false;
 	return true;
 };
+
+export { ModuleObject as default, access};

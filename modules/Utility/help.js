@@ -1,5 +1,3 @@
-const PagedEmbed = require('../utils/PagedEmbed.js');
-
 this.description = 'Display command help';
 this.description = 'Command arguments in the help will display a quick summary of the different format a command can take';
 this.description = 'Arguments surrounded with `[]` are optional, meaning that you can choose to leave it out (do not include the brackets when typing out the command)';
@@ -17,9 +15,8 @@ const detailedHelp = {
 }
 
 function inAll () {
-	/* TO DO:
-	 * Implement paging based on categories
-	*/
+	const { PagedEmbed } = Utils;
+
 	return function (msg, arg) {
 		if (!arg) {
 			let helpEmbed = new PagedEmbed('Options'), pages = new Map();

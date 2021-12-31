@@ -1,5 +1,3 @@
-const {DiscordAPIError, Collection} = require('discord.js');
-
 class lessThan extends Error {};
 
 this.description = 'erase a number of messages from a user or from all users';
@@ -10,7 +8,9 @@ addConfig('default_clear', Number, {default:50, description: 'default number of 
 addConfig('message_limit', Number, {default: 1000, description: 'max number of messages to check through to delete', configurable: true});
 addConfig('clear_old', Boolean, {default: true, description: 'allow the clearing for messages older than two weeks (clearing these messages is much slower)', configurable: true});
 
-function inGuild () {
+async function inGuild () {
+	const { DiscordAPIError, Collection } = await import('discord.js');
+
 	return async (msg, number) => {
 		let channels = msg.mentions.channels.filter(tmp => tmp.type === 'text');
 			users = msg.mentions.members, roles = msg.mentions.roles, failed = [];

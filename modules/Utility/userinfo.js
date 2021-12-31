@@ -1,5 +1,3 @@
-const {getUserID} = require('../utils/getDiscordObject.js');
-
 this.command = 'userinfo';
 this.description = 'Displays info on a user';
 this.description = 'A user user can be picked with thier id, by mention, or by name';
@@ -7,6 +5,8 @@ this.description = 'A user user can be picked with thier id, by mention, or by n
 this.arguments = '[user]';
 
 function inGuild () {
+	const { getUserID } = Utils;
+
 	return async (msg, ...input) => {
 		let user = await getUserID(input.join(' '), msg.guild, {allowText: 'partial', resolve: true}) || msg.member, embed;
 

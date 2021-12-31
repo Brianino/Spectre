@@ -1,4 +1,6 @@
-const EmojiController = require('./EmojiController.js');
+'use strict';
+
+import EmojiController from './EmojiController.js';
 
 class EmojiPageController extends EmojiController {
 
@@ -42,4 +44,4 @@ class PageController {
 	}
 }
 
-module.exports = PageController;
+export { PageController as default, EmojiPageController };

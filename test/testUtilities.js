@@ -1,3 +1,3 @@
 describe('Utilities', function () {
-	require('./utils/testParseBool.js');
+	import('./utils/testParseBool.js');
 });

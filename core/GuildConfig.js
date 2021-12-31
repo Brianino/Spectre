@@ -1,22 +1,15 @@
 'use strict';
 
-const log = require('../utils/logger.js')('Guild-Config');
-const parseBool = require('../utils/parseBool.js');
-const mappingUtils = require('./MappingUtils.js');
-const {promises:fs, constants} = require('fs');
-const {Permissions} = require('discord.js');
-const {prefix} = require('../config.json');
-const time = require('../utils/time.js');
-const Path = require('path');
+import logger from './logger.js';
+import { Permissions } from 'discord.js';
+import MappingUtils from './MappingUtils.js';
+import { promises as fs, constants, readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import Path from 'path';
 
-const guilds = new Map(), confProp = new Set(), configurable = new Map();
-
-const confDir = Path.resolve(__dirname, '../data/');
-
-const sym = {
-	guildStore: Symbol(),
-	confVars: Symbol(),
-}
+const log = logger('Guild-Config');
+const { prefix } = JSON.parse(readFileSync('./config.json'));
+const confDir = Path.resolve(fileURLToPath(import.meta.url), '../../data/');
 
 /** The config object to interact with the configured guild properties
  * All config objects can be extended with the [config manager]{@link ConfigManager#register}
@@ -53,9 +46,10 @@ function convert (id, obj, varStore) {
 
 	for (let key in obj) {
 		try {
+			log.debug('Processing Key', key);
 			if (key !== 'id') {
 				let {type} = varStore.get(key);
-				res.set(key, mappingUtils.asObject(type, obj[key]));
+				res.set(key, MappingUtils.asObject(type, obj[key]));
 			}
 		} catch (e) {
 			log.error('Unable to parse', key, 'for', obj.id, 'because', e);
@@ -77,7 +71,7 @@ function stringify (map, varStore) {
 		try {
 			if (key !== 'id') {
 				let {type} = varStore.get(key);
-				res[key] = mappingUtils.asJson(type, val);
+				res[key] = MappingUtils.asJson(type, val);
 				if (res[key] instanceof Array && !res[key].length)
 					delete res[key];
 				else if (res[key] instanceof Object && !Object.getOwnPropertyNames(res[key]).length)
@@ -103,6 +97,7 @@ async function saveConfig (guildObj, varStore) {
 
 	if (data) {
 		log.info('Attempting to save config:', path, 'data:', data);
+		await createConfigDir();
 		return fs.writeFile(path, data, {flag: 'w'});
 	} else {
 		let exists = true;
@@ -116,19 +111,36 @@ async function saveConfig (guildObj, varStore) {
 	}
 }
 
+/** Created the config directory if it doesn't exist already
+ * @private
+*/
+async function createConfigDir () {
+	try {
+		await fs.stat(confDir);
+	} catch (ignore) {
+		log.warn('Config dir didn\'t exist, will create the config dir', confDir);
+		await fs.mkdir(confDir);
+	}
+	createConfigDir = () => Promise.resolve();
+}
+
 /** Loads the guild config map from file
  * @private
  * @param {Set} varStore - the set of all available config properties
  * @return {Map} the map of guild config variable names to config values
 */
 async function loadConfig (varStore) {
-	let dir = await fs.readdir(confDir, {encoding: 'utf8', withFileTypes: true}), res = new Map();
+	let dir, res = new Map();
 
+	await createConfigDir();
+	dir = await fs.readdir(confDir, {encoding: 'utf8', withFileTypes: true});
 	for (let file of dir) {
 		if (file.isFile()) {
 			try {
-				let conf = require(Path.join(confDir, file.name)), id = Path.basename(file.name, '.json');
+				let conf = JSON.parse(await fs.readFile(Path.join(confDir, file.name))), 
+					id = Path.basename(file.name, '.json');
 
+				log.debug('File name is', file.name, 'id', id, varStore);
 				res.set(String(id), convert(id, conf, varStore));
 			} catch (e) {
 				log.warn('Unable to load config for', file.name, e);
@@ -288,10 +300,11 @@ function canHaveGetters (typeName) {
 
 /** Handles the storage and manipulations of config objects for each guild */
 class ConfigManager {
-	constructor () {
-		let confVars = new Map();
+	#confVars = new Map();
+	#guildStore = new Map();
 
-		confVars.set('prefix', {
+	constructor () {
+		this.#confVars.set('prefix', {
 			type: 'string',
 			default: prefix,
 			desc: 'prefix to use for commands',
@@ -302,7 +315,7 @@ class ConfigManager {
 				return String(input);
 			}
 		});
-		confVars.set('permissions', {
+		this.#confVars.set('permissions', {
 			type: 'map',
 			default: new Map(),
 			configurable: false,
@@ -322,7 +335,7 @@ class ConfigManager {
 					this.delete(cmd);
 			}
 		});
-		confVars.set('disabled', {
+		this.#confVars.set('disabled', {
 			type: 'set',
 			default: new Set(),
 			configurable: false,
@@ -332,10 +345,6 @@ class ConfigManager {
 				}
 			},
 		});
-		Object.defineProperties(this, {
-			[sym.confVars]: {value: confVars},
-			[sym.guildStore]: {value: new Map(), writable: true},
-		});
 	};
 
 	/** Returns the stored config object for a particular guild
@@ -343,16 +352,16 @@ class ConfigManager {
 	 * @return {ConfigObject} the config object
 	*/
 	getGuildConfig (guildId) {
-		let result = this[sym.guildStore].get(guildId = String(guildId));
+		let result = this.#guildStore.get(guildId = String(guildId));
 
 		if (!result) {
 			log.debug('Creating new config store for guild', guildId);
 			if (guildId !== 'undefined' && guildId !== 'null')
-				this[sym.guildStore].set(guildId, result = new Map([['id', guildId]]));
+				this.#guildStore.set(guildId, result = new Map([['id', guildId]]));
 			else
 				result = new Map([['id', guildId]]);
 		}
-		return proxifyMap(result, this[sym.confVars]);
+		return proxifyMap(result, this.#confVars);
 	}
 
 	/** Deletes the stored config object and file for a particular guild
@@ -360,7 +369,7 @@ class ConfigManager {
 	 * @return {boolean} true if there was a config object to delete
 	*/
 	async deleteGuildConfig (guildId) {
-		let deleted = this[sym.guildStore].delete(guildId = String(guildId));
+		let deleted = this.#guildStore.delete(guildId = String(guildId));
 
 		if (deleted)
 			await saveConfig(new Map([['id', guildId]]));
@@ -373,7 +382,7 @@ class ConfigManager {
 	getConfigurable () {
 		let res = new Map();
 
-		for (let [key, {type, desc, configurable}] of this[sym.confVars]) {
+		for (let [key, {type, desc, configurable}] of this.#confVars) {
 			if (configurable)
 				res.set(key, [type, desc]);
 		}
@@ -404,8 +413,8 @@ class ConfigManager {
 		type = getTypeName(type);
 		log.debug('Type for', name, 'is', type);
 		if (!type) return;
-		if (this[sym.confVars].has(name)) return;
-		this[sym.confVars].set(name, temp = {
+		if (this.#confVars.has(name)) return;
+		this.#confVars.set(name, temp = {
 			type: type,
 			default: defaultVal,
 			desc: description,
@@ -417,7 +426,7 @@ class ConfigManager {
 			temp.set = set;
 		}
 		if (toJson && from) {
-			Object.defineProperty(mappingUtils, type, {value: {toJson, from}});
+			Object.defineProperty(MappingUtils, type, {value: {toJson, from}});
 			log.info('Set up json conversion functions for property', name);
 		}
 		log.info('Finished registering config property', name);
@@ -426,9 +435,9 @@ class ConfigManager {
 
 	/** Parses the guild config from the config files */
 	async loadConfig () {
-		this[sym.guildStore] = await loadConfig(this[sym.confVars]);
+		this.#guildStore = await loadConfig(this.#confVars);
 		log.info('Loaded config directory successfully');
 	}
 }
 
-module.exports = ConfigManager;
+export { ConfigManager as default };

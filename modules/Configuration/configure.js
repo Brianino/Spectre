@@ -1,6 +1,3 @@
-const parseBool = require('../utils/parseBool.js');
-const {inspect} = require('util');
-
 this.description = 'set server configuration';
 this.description = 'Adding no arguments will display the available settings to configure';
 this.description = 'using the setting with no value will display more info on the setting.';
@@ -10,7 +7,9 @@ this.arguments = '';
 
 this.permissions = 'MANAGE_GUILD';
 
-function inGuild () {
+async function inGuild () {
+	const { inspect } = await import('util');
+
 	return (msg, setting, ...input) => {
 		let options = getConfigurable(), type, desc;
 
