@@ -7,7 +7,7 @@
  *
  * @return {string} the current date formatted in a specific way for logging
 */
-let time (function () {
+let time = (function () {
 	let formatter = new Intl.DateTimeFormat('en-GB', {
 		timeZone: 'GMT',
 		year: 'numeric',
@@ -18,7 +18,7 @@ let time (function () {
 		minute: '2-digit',
 		second: '2-digit'
 	});
-	return () => {
+	return (date = new Date()) => {
 		return formatter.format(new Date());
 	}
 })();

@@ -4,8 +4,8 @@ this.arguments = 'show <command>';
 this.arguments = 'list';
 this.permissions = 'ADMINISTRATOR';
 
-async function inGuild () {
-	const { Permissions } = await import('discord.js');
+function inGuild () {
+	const { Permissions } = discordjs;
 
 	return (msg, ...args) => {
 		switch (args.shift()) {

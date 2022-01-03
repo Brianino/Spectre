@@ -1,13 +1,16 @@
 'use strict';
 
-import logger from './logger.js';
-import ContextHandler, { GuildSymbol, DMSymbol } from './ContextHandler.js';
+import ContextHandler from './ContextHandler.js';
 import ModuleObject, { access } from './ModuleObject.js';
 import { promises as fs, readFileSync } from 'fs';
 import ConfigManager from './GuildConfig.js';
+import * as Utils from '../utils/utils.js';
+import * as discordjs from 'discord.js';
+import timespan from 'timespan-parser';
 import { createRequire } from 'module';
-import Utils from '../utils/utils.js';
 import { fileURLToPath } from 'url';
+import logger from './logger.js';
+import { inspect } from 'util';
 import Path from 'path';
 import vm from 'vm';
 
@@ -49,7 +52,8 @@ const globals = { // TODO: Lock off objects so that they can't be modified from 
 
 	// Other
 	Promise, Reflect, Proxy, Intl, WebAssembly, TextEncoder, TextDecoder,
-	setImmediate, setInterval, setTimeout, URL, URLSearchParams,
+	setImmediate, setInterval, setTimeout, URL, URLSearchParams, inspect,
+	timespan: timespan('msec'), discordjs,
 
 	// Utils
 	Utils,
@@ -86,7 +90,7 @@ class ModuleLoader {
 		input.on('guildCreate', async guild => {
 			for (let mod of this.#modules.values()) {
 				try {
-					await mod[GuildSymbol](guild);
+					await this.#context.getContext(mod).getGuildContext(guild);
 				} catch (e) {
 					log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id, e);
 				}
@@ -125,12 +129,15 @@ class ModuleLoader {
 
 		log.debug('Has guild?', msg.guild && true);
 		if (cmd && access.call(cmd, msg.author, msg.guild, config)) {
+			let ctx = this.#context.getContext(cmd);
 			if (msg.guild) { //this creates instance, it doens't run the fun, return value needs to be run;
 				cmdlog.info(`User ${msg.author.username} (${msg.author.id}) is running command ${cmd.command} on server ${msg.guild.name} (${msg.guild.id})`);
-				return (await cmd[GuildSymbol](msg.guild))?.call(config, msg, ...msgStr);
+				log.info('Will Attempt to run:', await ctx.getGuildContext(msg.guild));
+				return (await ctx.getGuildContext(msg.guild)).call(config, msg, ...msgStr);
 			} else {
 				cmdlog.info(`User ${msg.author.username} (${msg.author.id}) is running command ${cmd.command} in direct messages`);
-				return (await cmd[DMSymbol]())?.call(config, msg, ...msgStr);
+				log.info('Will Attempt to run:', await ctx.getDMContext());
+				return (await ctx.getDMContext()).call(config, msg, ...msgStr);
 			}
 		}
 	}
@@ -198,14 +205,14 @@ class ModuleLoader {
 	async #instGuildCtx (mod) {
 		for (let guild of this.source.guilds.cache.values()) {
 			try {
-				await mod[GuildSymbol](guild);
+				await this.#context.getContext(mod).getGuildContext(guild);
 			} catch (e) {
 				log.warn('Failed to instantiate command', mod.command, 'on guild', guild.id);
 				log.warn(e);
 			}
 		}
 		try {
-			await mod[DMSymbol]();
+			await this.#context.getContext(mod).getDMContext();
 		} catch (e) {
 			log.warn('Failed to instantiate command', mod.command, 'dm context');
 			log.warn(e);
@@ -268,7 +275,8 @@ class ModuleLoader {
 			},
 		}, globals);
 		script.runInNewContext(this.#proxifyModule(obj, ctx), {contextName: `Main Context: ${name}`, timeout: iniTimeout});
-		return this.#context.create(obj, ctx);
+		this.#context.create(obj, ctx);
+		return obj;
 	}
 }
 

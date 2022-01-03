@@ -8,8 +8,8 @@ addConfig('default_clear', Number, {default:50, description: 'default number of 
 addConfig('message_limit', Number, {default: 1000, description: 'max number of messages to check through to delete', configurable: true});
 addConfig('clear_old', Boolean, {default: true, description: 'allow the clearing for messages older than two weeks (clearing these messages is much slower)', configurable: true});
 
-async function inGuild () {
-	const { DiscordAPIError, Collection } = await import('discord.js');
+function inGuild () {
+	const { DiscordAPIError, Collection } = discordjs;
 
 	return async (msg, number) => {
 		let channels = msg.mentions.channels.filter(tmp => tmp.type === 'text');

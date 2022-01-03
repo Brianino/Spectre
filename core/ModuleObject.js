@@ -30,7 +30,6 @@ class ModuleObject {
 	#consolidated = new Set();
 
 	constructor (name, group) {
-		super();
 		this.#name = name;
 		this.#group = group;
 	}

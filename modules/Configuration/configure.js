@@ -7,8 +7,7 @@ this.arguments = '';
 
 this.permissions = 'MANAGE_GUILD';
 
-async function inGuild () {
-	const { inspect } = await import('util');
+function inGuild () {
 
 	return (msg, setting, ...input) => {
 		let options = getConfigurable(), type, desc;

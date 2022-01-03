@@ -32,7 +32,6 @@ this.addConfig('poll_reactions', Boolean, {default: true, description: 'use reac
 //this.addConfig('poll_active', Map, {default: new Map(), configurable: false});
 
 function inGuild () {
-	const timespan = (await import('timespan-parser'))('msec');
 	const { split } = Utils, hardlimit = timespan.parse('1 month');
 	const active = new Map(), dynamicPolls = new Set(), activeWarn = new Set();
 

@@ -3,269 +3,369 @@
 import logger from './logger.js';
 import { Client, Guild, Collection } from 'discord.js';
 import ConsolidatedListener from './ConsolidatedListener.js';
+import ModuleObject from './ModuleObject.js';
 import Listener from './ProxyListener.js';
 const log = logger('Context-Handler');
 
-const sym = {
-	guilds: Symbol('get guild function'),
-	dms: Symbol('get dms function'),
-	listeners: Symbol('attached listeners'),
-}
+class CtxObjectBundle {
+	#mainCtx;
+	#moduleObject;
+	#proxyListener;
+	#consolidatedListener;
 
-const retrieveObject = objMap => mod => {
-	let res, group = mod.objectGroup;
-	if (group) {
-		res = objMap.get(group);
-
-		if (!res) objMap.set(group, res = {});
-	} else {
-		res = {};
-	}
-	return res;
-}
-
-const checkGuild = guildId => obj => {
-	let guild;
-
-	if (obj instanceof Guild) guild = obj;
-	else if ('guild' in obj) guild = obj.guild;
-	else if (obj.message) guild = obj.message.guild;
-	else if (obj instanceof Collection) {
-		let temp = obj.first();
-
-		if ('guild' in temp) guild = temp.guild;
+	constructor (mainCtx, moduleObject, proxyListener, consolidatedListener) {
+		this.#mainCtx = mainCtx;
+		this.#moduleObject = moduleObject;
+		this.#proxyListener = proxyListener;
+		this.#consolidatedListener = consolidatedListener;
 	}
 
-	log.debug('Guild id found is:', guild?.id, 'against', guildId);
-	return guild && guild.id === guildId;
+	get mainCtx () { return this.#mainCtx; }
+	get moduleObject () { return this.#moduleObject; }
+	get proxyListener () { return this.#proxyListener; }
+	get consolidatedListener () { return this.#consolidatedListener; }
 }
 
-function addFuncs ({guild, dm, fill}, func) {
-	if (guild && dm && !fill && (this[sym.guilds] || this[sym.dms])) return;
-	if (guild && !this[sym.guilds]) {
-		log.debug('Assigning Guild function to:', this.command);
-		Object.defineProperty(this, sym.guilds, {value: func});
-	}
-	if (dm && !this[sym.dms]) {
-		log.debug('Assigning DM function to:', this.command);
-		Object.defineProperty(this, sym.dms, {value: func});
-	}
+class NullContext {
+	static setup () { /* Do Nothing */ }
 }
 
-function proxifyListener (evListener, cmdObj, check) {
-	function register (ev, li) {
-		if (!cmdObj.hasOwnProperty(sym.listeners)) {
-			cmdObj[sym.listeners] = new Map();
-			cmdObj[sym.listeners].set(li, new Set([ev]));
-		} else {
-			let map = cmdObj[sym.listeners], evSet = map.get(li) || new Set();
+class GenericContext {
+	_moduleObject;
+	#mainCtx;
+	#proxyListener;
+	#consolidatedListener;
+	#globObj = {};
+	#runFunc;
 
-			if (evSet.size === 0)
-				map.set(li, evSet)
-			evSet.add(ev);
+	constructor (ctxObjectBundle) {
+		// Wrapped module object so that added properties are specific to this context
+		this._moduleObject = Object.create(ctxObjectBundle.moduleObject);
+		this.#proxyListener = ctxObjectBundle.proxyListener;
+		this.#consolidatedListener = ctxObjectBundle.consolidatedListener;
+		this.#mainCtx = ctxObjectBundle.mainCtx;
+	}
+
+	set globObj (obj) {
+		this.#globObj = obj;
+	}
+
+	_setupContextSpecificProperties () {
+		let keys = ['on', 'addListener', 'once', 'prependListener', 'prependOnceListener', 'off', 'removeListener'];
+
+		for (let key of keys) {
+			Object.defineProperty(this._moduleObject, key, { 
+				value: (event, listener) => {
+					this.#consolidatedListener[key](event, listener);
+				}
+			});
 		}
 	}
-	function unregister (ev, li) {
-		if (!cmdObj.hasOwnProperty(sym.listeners)) {
-			let map = cmdObj[sym.listeners], evSet = map.get(li) || new Set();
 
-			if (evSet.size <= 1)
-				map.delete(li);
-			if (evSet.size > 1)
-				evSet.delete(ev);
+	async setup (ctxKey) {
+		if (!ctxKey)
+			throw new Error ('Need a context key');
+		if (!this.#runFunc) {
+			this._setupContextSpecificProperties();
+			this.#runFunc = await this.#mainCtx[ctxKey].call(this._moduleObject, this.#proxyListener, this.#globObj);
 		}
+		return this.#runFunc;
+
 	}
-	// add in store for all listeners that can be used to remove them when the module gets deleted
-	return new Proxy (evListener, {
-		get: (target, prop, receiver) => {
-			let func = Reflect.get(target, prop);
-			switch (prop) {
-				case 'on':
-				case 'once':
-				case 'addListener':
-				case 'prependListener':
-				case 'prependOnceListener': {
-					return (event, listener) => {
-						register(event, listener);
-						return func.call(target, event, listener, check);
-					}
-				}
-				break;
+}
 
-				case 'off':
-				case 'removeListener': {
-					return (event, listener) => {
-						unregister(event, listener);
-						return func.call(target, event, listener);
-					}
-				}
-				break;
+class GuildContext extends GenericContext {
+	// If it isn't set, it will be a function to return undefined
+	#configCallback = (guildId) => undefined;
+	#consolidatedListener;
+	#guild;
+	static contextKey = 'inGuild';
 
-				default:
-				return func;
-				break;
+	constructor (ctxObjectBundle, guild) {
+		super(ctxObjectBundle);
+		if (guild instanceof Guild === false)
+			throw new Error('Need an instance of guild to set up a guild specific context');
+		this.#consolidatedListener = ctxObjectBundle.consolidatedListener;
+		this.#guild = guild;
+	}
+
+	set configCallback (callback) {
+		if (typeof callback === 'function')
+			this.#configCallback = callback;
+	}
+
+	#checkGuild () {
+		let guildId = this.#guild.id;
+		return obj => {
+			let guild;
+
+			if (obj instanceof Guild) guild = obj;
+			else if ('guild' in obj) guild = obj.guild;
+			else if (obj.message) guild = obj.message.guild;
+			else if (obj instanceof Collection) {
+				let temp = obj.first();
+
+				if ('guild' in temp) guild = temp.guild;
 			}
+
+			log.debug('Guild id found is:', guild?.id, 'against', guildId);
+			return guild?.id === guildId;
 		}
-	});
+	}
+
+	_setupContextSpecificProperties () {
+		let keys = ['on', 'addListener', 'once', 'prependListener', 'prependOnceListener', 'off', 'removeListener'];
+
+		for (let key of keys) {
+			Object.defineProperty(this._moduleObject, key, { 
+				value: (event, listener) => {
+					this.#consolidatedListener[key](event, listener, this.#checkGuild());
+				}
+			});
+		}
+		Object.defineProperties(this._moduleObject, {
+			Guild: {value: this.#guild},
+			config: {get: () => this.#configCallback(this.#guild.id)},
+		});
+	}
+
+	setup () {
+		return super.setup(GuildContext.contextKey);
+	}
+
+	static Handler = class GuildContextHandler {
+		#ctxObjectBundle;
+		#configCallback;
+		#store = new Map();
+
+		constructor (ctxObjectBundle) {
+			this.#ctxObjectBundle = ctxObjectBundle;
+		}
+
+		set configCallback (callback) {
+			if (typeof callback === 'function')
+				this.#configCallback = callback;
+		}
+
+		setup (guild) {
+			let ctx = this.#store.get(guild.id);
+
+			if (!ctx) {
+				ctx = new GuildContext(this.#ctxObjectBundle, guild);
+				this.#store.set(guild.id, ctx);
+				ctx.configCallback = this.#configCallback;
+			}
+			return ctx.setup();
+		}
+	}
 }
 
-/**
- * @class ContextHandler
-*/
-function ContextHandler (getConfigCallback) {
-	let ctx = {
-		guilds: {
-			// Function that is shared between guilds
-			funcMap: new WeakMap(), // Map command object to function
-			// Object shared between members of the group
-			objMap: new Map(),
-		},
-		dms: {
-			// Function that is shared between dms
-			funcMap: new WeakMap(), // Map command object to function
-			// Object shared between members of the group
-			objMap: new Map(),
-		},
-		all: {
-			// Function that is shared between guild and dms
-			funcMap: new WeakMap(),
-			// Context that is shared between guild, dms and commands
-			objMap: new Map(),
-		}
-	}, modListener = new Listener(undefined, true), consolidated = new ConsolidatedListener();
+class AllGuildContext extends GenericContext {
+	static contextKey = 'inAllGuilds';
 
-	ctx.guilds.getObj = retrieveObject(ctx.guilds.objMap);
-	ctx.dms.getObj = retrieveObject(ctx.dms.objMap);
-	ctx.all.getObj = retrieveObject(ctx.all.objMap);
-	this.setEventSource = source => {
-		// check that the source is an instance of client, otherwise throw error
+	constructor (ctxObjectBundle) {
+		super(ctxObjectBundle);
+	}
+
+	setup () {
+		return super.setup(AllGuildContext.contextKey);
+	}
+}
+
+class AllDMContext extends GenericContext {
+	static contextKey = 'inAllDM';
+
+	constructor (ctxObjectBundle) {
+		super(ctxObjectBundle);
+	}
+
+	setup () {
+		return super.setup(AllDMContext.contextKey);
+	}
+}
+
+class AllContext extends GenericContext {
+	static contextKey = 'inAll';
+
+	constructor (ctxObjectBundle) {
+		super(ctxObjectBundle);
+	}
+
+	setup () {
+		return super.setup(AllContext.contextKey);
+	}
+}
+
+class ModuleContext {
+	#moduleObject;
+	#proxyListener;
+	#consolidatedListener;
+	#configCallback;
+	#guildContext = NullContext;
+	#dmContext = NullContext;
+	#listeners = new Map();
+
+	constructor (cmdObj, proxyListener, consolidatedListener, configCallback) {
+		if (cmdObj instanceof ModuleObject === false)
+			throw new Error('Need a ModuleObject to instantiate a ModuleContext');
+		this.#moduleObject = cmdObj;
+		this.#proxyListener = proxyListener;
+		this.#consolidatedListener = consolidatedListener;
+		this.#configCallback = configCallback;
+		cmdObj.setAsSourceOf(consolidatedListener);
+	}
+
+	#register(event, listener) {
+		let evSet = this.#listeners.get(event);
+
+		if (!evSet)
+			this.#listeners.set(event, evSet = new Set());
+		evSet.add(listener);
+	}
+
+	#unregister (event, listener) {
+		let evSet = this.#listeners.get(event);
+
+		if (evSet?.size > 1)
+			evSet.delete(listener);
+		else if (evSet instanceof Set)
+			this.#listeners.delete(event);
+	}
+
+	#wrapListener (check) {
+		return new Proxy (this.#proxyListener, {
+			get: (target, prop, receiver) => {
+				let func = Reflect.get(target, prop);
+				switch (prop) {
+					case 'on':
+					case 'once':
+					case 'addListener':
+					case 'prependListener':
+					case 'prependOnceListener': {
+						return (event, listener) => {
+							this.#register(event, listener);
+							return func.call(target, event, listener, check);
+						}
+					}
+					break;
+
+					case 'off':
+					case 'removeListener': {
+						return (event, listener) => {
+							this.#unregister(event, listener);
+							return func.call(target, event, listener);
+						}
+					}
+					break;
+
+					default:
+					return func;
+					break;
+				}
+			}
+		});
+	}
+
+	cleanup () {
+		for (let [event, listeners] of this.#listeners) {
+			for (let listener of listeners)
+				this.#proxyListener.removeListener(event, listener);
+		}
+		this.#moduleObject.removeFrom(this.#consolidatedListener);
+	}
+
+	#createCtxBundle (mainCtx) {
+		return new CtxObjectBundle(mainCtx, this.#moduleObject, this.#proxyListener, this.#consolidatedListener);
+	}
+
+	create (mainCtx) {
+		if (AllContext.contextKey in mainCtx) {
+			let context = new AllContext(this.#createCtxBundle(mainCtx));
+			this.#guildContext = context;
+			this.#dmContext = context;
+			return
+		}
+
+		if (GuildContext.contextKey in mainCtx) {
+			this.#guildContext = new GuildContext.Handler(this.#createCtxBundle(mainCtx));
+			this.#guildContext.configCallback = this.#configCallback;
+		} else if (AllGuildContext.contextKey in mainCtx) {
+			this.#guildContext = new AllGuildContext(this.#createCtxBundle(mainCtx));
+		}
+		if (AllDMContext.contextKey in mainCtx) {
+			this.#dmContext = new AllDMContext(this.#createCtxBundle(mainCtx));
+		}
+	}
+
+	getGuildContext (guild) {
+		let ctx = this.#guildContext, ctxname = ctx === NullContext? ctx.name : ctx.constructor.name;
+		log.debug(`[${this.#moduleObject.command}] Returning setup for: ${ctxname} (Guild ${guild.name})`);
+		return ctx.setup(guild);
+	}
+
+	getDMContext () {
+		let ctx = this.#dmContext, ctxname = ctx === NullContext? ctx.name : ctx.constructor.name;
+		log.debug(`[${this.#moduleObject.command}] Returning setup for: ${ctxname}`);
+		return ctx.setup();
+	}
+}
+
+class ContextHandler {
+	#proxyListener = new Listener(undefined, true);
+	#consolidated = new ConsolidatedListener();
+	#moduleStore = new Map();
+	#configCallback;
+
+	constructor (configCallback) {
+		this.#configCallback = configCallback;
+	};
+
+	#retrieveObject (objMap) {
+		return mod => {
+			let res, group = mod.objectGroup;
+			if (group) {
+				res = objMap.get(group);
+
+				if (!res) objMap.set(group, res = {});
+			} else {
+				res = {};
+			}
+			return res;
+		}
+	}
+
+	setEventSource (source) {
 		if (!source instanceof Client)
 			throw new Error('Emitter source needs to be a discord client');
 		log.debug('Attempting to set proxy listener source');
-		modListener.source = source;
+		this.#proxyListener.source = source;
 	}
 
-	this.cleanup = (cmdObj) => {
-		if (cmdObj.hasOwnProperty(sym.listeners)) {
-			for (let [listener, events] of cmdObj[sym.listeners])
-				for (let ev of events)
-					modListener.removeListener(ev, listener);
+	cleanup (cmdObj) {
+		let modContext = this.#moduleStore.get(cmdObj);
+
+		if (modContext) {
+			modContext.cleanup();
+			this.#moduleStore.delete(cmdObj);
+		} else {
+			log.warn('Attempting to clean up non existant module:', new Error().stack);
 		}
-		cmdObj.revemoveFrom(consolidated);
 	}
 
-	this.create = (cmdObj, mainCtx) => {
-		// Variables set to true simplify object creation.
-		// Used to specify what type of function to set in addFunc
-		let guild = true, dm = true, fill = true;
-
-		log.debug('Setting up', cmdObj.command);
-		log.debug('Provided:', ...Object.keys(mainCtx));
-		cmdObj.setAsSourceOf(ConsolidatedListener);
-		for (let key of Object.getOwnPropertyNames(mainCtx)) {
-			log.debug('Processing:', key, 'in', cmdObj.command);
-			switch (key) {
-				case 'inGuild':
-				addFuncs.call(cmdObj, {guild},(() => {
-					let guildMap = new Map();
-
-					return (guildObj) => {
-						let runFunc = guildMap.get(guildObj.id), guildId = String(guildObj.id);
-
-						if (!runFunc) {
-							runFunc = (function () {
-								let newObj = Object.create(cmdObj),
-									proxyListener = proxifyListener(modListener, cmdObj, checkGuild(guildId)),
-									globObj = ctx.guilds.getObj(cmdObj);
-								// set Guild property, so that moduels within the guild context have quick access to it
-								Object.defineProperty(newObj, 'Guild', {value: guildObj});
-								// set config param on new obj here...
-								if (getConfigCallback)
-									Object.defineProperty(newObj, 'config', {value: getConfigCallback(guildId)});
-								return mainCtx[key].call(newObj, proxyListener, globObj);
-							})();
-							log.debug('Wrapped guild function for:', cmdObj.command);
-							guildMap.set(guildId, runFunc);
-						}
-
-						return runFunc;
-					}
-				})());
-				break;
-
-				case 'inAllGuilds':
-				addFuncs.call(cmdObj, {guild}, () => {
-					let runFunc = ctx.guilds.funcMap.get(cmdObj);
-
-					if (!runFunc) {
-						runFunc = (function () {
-							let newObj = Object.create(cmdObj), globObj = ctx.guilds.getObj(cmdObj),
-								proxyListener = proxifyListener(modListener, cmdObj);
-							// set config param on new obj here...
-							return mainCtx[key].call(newObj, proxyListener, globObj);
-						})();
-						log.debug('Wrapped guild global function for:', cmdObj.command);
-						ctx.guilds.unique.set(cmdObj, runFunc);
-					}
-
-					return runFunc;
-				});
-				break;
-
-				case 'inAllDM':
-				addFuncs.call(cmdObj, {dm}, () => {
-					let runFunc = ctx.dms.funcMap.get(cmdObj);
-
-					if (!runFunc) {
-						runFunc = (function () {
-							let newObj = Object.create(cmdObj), globObj = ctx.dms.getObj(cmdObj),
-								proxyListener = proxifyListener(modListener, cmdObj);
-							// set config param on new obj here...
-							return mainCtx[key].call(newObj, proxyListener, globObj);
-						})();
-						log.debug('Wrapped dm global function for:', cmdObj.command);
-						ctx.dms.funcMap.set(cmdObj, runFunc);
-					}
-
-					return runFunc;
-				});
-				break;
-
-				case 'inAll':
-				addFuncs.call(cmdObj, {guild, dm}, () => {
-					let runFunc = ctx.all.funcMap.get(cmdObj);
-
-					if (!runFunc) {
-						runFunc = (function () {
-							let newObj = Object.create(cmdObj), globObj = ctx.all.getObj(cmdObj),
-								proxyListener = proxifyListener(modListener, cmdObj);
-							// set config param on new obj here...
-							return mainCtx[key].call(newObj, proxyListener, globObj);
-						})();
-						log.debug('Wrapped global function for:', cmdObj.command);
-						ctx.all.funcMap.set(cmdObj, runFunc);
-					}
-
-					return runFunc;
-				});
-				break;
-			}
-		}
-		log.debug('Adding empty functions');
-		addFuncs.call(cmdObj, {guild, dm, fill}, () => {});
-		// scan for events? add to the allowable emit list?
-		// the above will only work if i add in the proxy a way to emit the events from the bot (as there is no way to emit on the proxy listener)
-		// Will i have to add a second listener? or do i add a way to emit directly on the proxy listener? maybe by extending it???
-		// Or maybe since i already register the events, i add a way to directly call them?
-		log.debug('Finished processing:', cmdObj.command);
-
-		return cmdObj;
+	create (cmdObj, mainCtx) {
+		let ctx = new ModuleContext(cmdObj, this.#proxyListener, this.#consolidated, this.#configCallback);
+		ctx.create(mainCtx);
+		this.#moduleStore.set(cmdObj, ctx);
 	}
 
-	return this;
+	getContext (cmdObj) {
+		let ctx = this.#moduleStore.get(cmdObj);
+
+		if (!ctx)
+			throw new Error('Module', cmdObj.command, 'hasn\'t been setup');
+		return ctx;
+	}
 }
 
 export default ContextHandler;
-export const GuildSymbol = sym.guilds;
-export const DMSymbol = sym.dms;
 

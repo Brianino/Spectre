@@ -7,9 +7,9 @@ addConfig('repost_galleries', Map, {default: new Map(), configurable: false});
 addConfig('repost_prefer_url', Boolean, {default: true, description: 'Prefer to post image url\'s rather than reuploading the file', configurable: true});
 addConfig('repost_formats', Set, {default: new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp']), description: 'Image formats that should be reposted', configurable: true});
 
-async function inGuild (emitter) {
-	const { GuildChannel, DiscordAPIError } = await import('discord.js');
+function inGuild (emitter) {
 	const { getChannelID, getAttachments, checkForUrl, waitFor } = Utils;
+	const { GuildChannel, DiscordAPIError } = discordjs;
 
 	// modify this so that the listener is only attached if there is a gallery set for the guild
 	let att = false, repost = async msg => {

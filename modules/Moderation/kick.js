@@ -3,8 +3,8 @@ this.arguments = '<@user> [reason]';
 this.arguments = '<user id> [reason]';
 this.permissions = 'KICK_MEMBERS'
 
-async function inGuild () {
-	const { DiscordAPIError } = await import('discord.js');
+function inGuild () {
+	const { DiscordAPIError } = discordjs;
 	const { getUserID } = Utils;
 
 	return async (msg, input, message) => {

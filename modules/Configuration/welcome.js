@@ -19,6 +19,7 @@ addConfig('welcome_image', String, {description: 'The image link to attach to an
 
 function inGuild (emitter) {
 	const { getChannelID, checkForUrl } = Utils;
+	
 	emitter.on('guildMemberAdd', async member => {
 		let guild = member.guild, replaceText = (input) => {
 			if (typeof input === 'string')
