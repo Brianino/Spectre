@@ -119,21 +119,21 @@ function inGuild (emitter, groupObj) {
 						(await msg.reply(`Unable to create the filter: ${e.message}`)).delete({timeout: 10000});
 					}
 					throw e;
-				}; break;
+				}
 			}
 
 			case 'd':
 			case 'del':
-			case 'delete': return delFilter.call(this, filterName); break;
+			case 'delete': return delFilter.call(this, filterName);
 
 			case 'l':
 			case 'li':
-			case 'list': return list.call(this, msg); break;
+			case 'list': return list.call(this, msg);
 
 			case 'c':
-			case 'common': return listCommon.call(this, msg); break;
+			case 'common': return listCommon.call(this, msg);
 
-			default: return (await msg.reply('Please pick between options add/del/list/common')).delete({timeout: 10000}); break;
+			default: return (await msg.reply('Please pick between options add/del/list/common')).delete({timeout: 10000});
 		}
 	}
 }

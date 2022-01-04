@@ -10,6 +10,7 @@ import Path from 'path';
 const log = logger('Guild-Config');
 const { prefix } = JSON.parse(readFileSync('./config.json'));
 const confDir = Path.resolve(fileURLToPath(import.meta.url), '../../data/');
+let configDirExists = false;
 
 /** The config object to interact with the configured guild properties
  * All config objects can be extended with the [config manager]{@link ConfigManager#register}
@@ -102,7 +103,7 @@ async function saveConfig (guildObj, varStore) {
 	} else {
 		let exists = true;
 
-		await fs.access(path, constants.F_OK).catch(e => exists = false);
+		await fs.access(path, constants.F_OK).catch(() => exists = false);
 
 		if (exists) {
 			log.info('Deleting config:', path);
@@ -115,13 +116,15 @@ async function saveConfig (guildObj, varStore) {
  * @private
 */
 async function createConfigDir () {
+	if (configDirExists)
+		return;
 	try {
 		await fs.stat(confDir);
 	} catch (ignore) {
 		log.warn('Config dir didn\'t exist, will create the config dir', confDir);
 		await fs.mkdir(confDir);
 	}
-	createConfigDir = () => Promise.resolve();
+	configDirExists = true;
 }
 
 /** Loads the guild config map from file
@@ -158,7 +161,7 @@ async function loadConfig (varStore) {
 */
 function proxifyMap (map, varStore) {
 	return new Proxy(map, {
-		get (target, prop, receiver) {
+		get (target, prop) {
 			let descriptor = varStore.get(prop), value = target.get(prop) ?? descriptor?.default;
 
 			if (prop === Symbol.iterator) {
@@ -179,7 +182,7 @@ function proxifyMap (map, varStore) {
 			log.debug('Returning the value of', prop, 'which is', value);
 			return value;
 		},
-		set (target, prop, value, receiver) {
+		set (target, prop, value) {
 			let descriptor = varStore.get(prop);
 			switch (typeof prop) {
 				case 'number':
@@ -224,7 +227,6 @@ function proxifyMap (map, varStore) {
 					});
 					return true;
 				}
-				break;
 
 				default: {
 					log.debug('Unable to set value due to prop type:', typeof prop, prop);
@@ -291,10 +293,8 @@ function canHaveGetters (typeName) {
 		case 'boolean':
 		case 'string':
 			return false;
-			break;
 		default:
 			return true;
-			break;
 	}
 }
 
@@ -345,7 +345,7 @@ class ConfigManager {
 				}
 			},
 		});
-	};
+	}
 
 	/** Returns the stored config object for a particular guild
 	 * @param {string} guildId - the id of the guild to get the config object for

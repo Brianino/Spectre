@@ -10,12 +10,12 @@
 function parseBool (input) {
 	switch (typeof input) {
 		case 'bigint':
-		case 'number': return Boolean(input); break;
-		case 'boolean': return input; break;
-		case 'Symbol': return true; break;
-		case 'object': return true; break;
-		case 'null': return false; break;
-		case 'undefined': return false; break;
+		case 'number': return Boolean(input);
+		case 'boolean': return input;
+		case 'Symbol': return true;
+		case 'object': return true;
+		case 'null': return false;
+		case 'undefined': return false;
 		case 'string':
 		switch (input.toLowerCase()) {
 			case '':

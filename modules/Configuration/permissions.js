@@ -11,13 +11,13 @@ function inGuild () {
 		switch (args.shift()) {
 			case 'list': // display permissions for all commands
 			return listPermission.call(this, msg);
-			break;
+
 			case 'show': // display permissions for a command
 			return showPermission.call(this, msg, args.shift());
-			break;
+			
 			case 'set': //set the permissions for a command
 			return setPermission.call(this, msg, args.shift(), args);
-			break;
+			
 			default:
 			return msg.channel.send('Unknown option, use either:\n' +
 				'`list` (to list the permissions for all the commands)\n' +

@@ -19,7 +19,7 @@ let time = (function () {
 		second: '2-digit'
 	});
 	return (date = new Date()) => {
-		return formatter.format(new Date());
+		return formatter.format(date);
 	}
 })();
 

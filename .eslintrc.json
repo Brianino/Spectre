@@ -1,0 +1,27 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": "eslint:recommended",
+    "parserOptions": {
+        "ecmaVersion": 13,
+        "sourceType": "module"
+    },
+    "globals": {
+        "process": "readonly",
+        "setImmediate": "readonly"
+    },
+    "rules": {
+        "no-fallthrough": 0,
+        "no-unused-labels": 0
+    },
+    "overrides": [{
+        "files": ["**/modules/**/*.js"],
+        "rules": {
+            "no-undef": 0,
+            "no-unused-vars": 0,
+            "no-self-assign": 0
+        }
+    }]
+}

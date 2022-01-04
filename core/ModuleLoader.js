@@ -7,7 +7,6 @@ import ConfigManager from './GuildConfig.js';
 import * as Utils from '../utils/utils.js';
 import * as discordjs from 'discord.js';
 import timespan from 'timespan-parser';
-import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import logger from './logger.js';
 import { inspect } from 'util';
@@ -132,17 +131,15 @@ class ModuleLoader {
 			let ctx = this.#context.getContext(cmd);
 			if (msg.guild) { //this creates instance, it doens't run the fun, return value needs to be run;
 				cmdlog.info(`User ${msg.author.username} (${msg.author.id}) is running command ${cmd.command} on server ${msg.guild.name} (${msg.guild.id})`);
-				log.info('Will Attempt to run:', await ctx.getGuildContext(msg.guild));
 				return (await ctx.getGuildContext(msg.guild)).call(config, msg, ...msgStr);
 			} else {
 				cmdlog.info(`User ${msg.author.username} (${msg.author.id}) is running command ${cmd.command} in direct messages`);
-				log.info('Will Attempt to run:', await ctx.getDMContext());
 				return (await ctx.getDMContext()).call(config, msg, ...msgStr);
 			}
 		}
 	}
 
-	async #loadModule ({filePath, group, mname}, inst = true) {
+	async #loadModule ({filePath, group}, inst = true) {
 		log.debug('Attempting to load module:', filePath, group);
 		try {
 			let {name, code} = await this.#loadFile(filePath), mod;
@@ -221,8 +218,8 @@ class ModuleLoader {
 
 	#proxifyModule (mod, main) {
 		return new Proxy (main, {
-			get: (target, prop, receiver) => {
-				if (Object.getPrototypeOf(mod).hasOwnProperty(prop)){
+			get: (target, prop) => {
+				if (Object.prototype.hasOwnProperty.call(Object.getPrototypeOf(mod), prop)){
 					let val = Reflect.get(mod, prop);
 					if (val instanceof Function)
 						return val.bind(mod);
@@ -232,8 +229,8 @@ class ModuleLoader {
 					return Reflect.get(target, prop);
 				}
 			},
-			set: (target, prop, value, receiver) => {
-				if (Object.getPrototypeOf(mod).hasOwnProperty(prop))
+			set: (target, prop, value) => {
+				if (Object.prototype.hasOwnProperty.call(Object.getPrototypeOf(mod), prop))
 					return Reflect.set(mod, prop, value);
 				else
 					return Reflect.set(target, prop, value);

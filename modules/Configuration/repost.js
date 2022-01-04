@@ -18,7 +18,7 @@ function inGuild (emitter) {
 		if (msg.author.id === getBot().user.id) return;
 		if (urlCount > 0) {
 			await waitFor(10000, 50, async () => {
-				try {await msg.fetch()} catch (ignore) {return false};
+				try {await msg.fetch()} catch (ignore) {return false}
 				return msg.embeds.length === urlCount;
 			});
 		}

@@ -76,7 +76,6 @@ function inGuild () {
 			if (!votes) log.warn('Undefined votes for poll', tmp.question, 'type', tmpType);
 			await postResults(msg, tmp, votes);
 			return emMsg.delete();
-			break;
 
 
 			case 2: // End a running poll
@@ -90,7 +89,6 @@ function inGuild () {
 
 			choice.forEach(({stop}) => stop());
 			return;
-			break;
 
 
 			case 3: // Add option to dynamic poll
@@ -132,13 +130,11 @@ function inGuild () {
 				log.error(e);
 				return (await msg.channel.send('An error occured whilst modifying the poll')).delete({timeout: 10000});
 			}
-			break;
 
 
 			case 5: // List Active polls
 			list = Array.from(active.values());
 			return (await pollList(list, msg.channel, msg.author)).delete({timeout: 10000});
-			break;
 
 
 			case 6: // Modify timeout on poll
@@ -156,7 +152,6 @@ function inGuild () {
 
 			default: // Unknown input
 			return (await msg.channel.send('Missing parameters, refer to help')).delete({timeout: 10000});
-			break;
 		}
 	}
 
@@ -171,10 +166,10 @@ function inGuild () {
 			res.question = options.shift();
 			break;
 
-			case 'end': res.type = 2; return res; break;
-			case 'add': return {type: 3, options: [question, ...options]}; break;
-			case 'delete_last': return {type: 4}; break;
-			case 'list': return {type: 5}; break;
+			case 'end': res.type = 2; return res;
+			case 'add': return {type: 3, options: [question, ...options]};
+			case 'delete_last': return {type: 4};
+			case 'list': return {type: 5};
 			case 'time': res.type = 6;
 			res.limit = 1;
 			res.options = ['_', Array.of(question, ...options).join(' ')];
@@ -355,7 +350,7 @@ function inGuild () {
 				time: {
 					set (input) {
 						time = input; start = Date.now();
-						return collector.resetTimer({time});
+						collector.resetTimer({time});
 					}
 				},
 				end: {get () {return start + time}},
@@ -530,9 +525,10 @@ function inGuild () {
 					}
 					break;
 
-					case 'list':
-					let votes = collector.collected.filter(tmsg => tmsg.author.id === msg.author.id).map(tmsg => Number(tmsg.content.split(' ')[1]));
-					(await msg.reply('you have voted for options: ' + votes.join(' '))).delete({timeout: 5000});
+					case 'list': {
+						let votes = collector.collected.filter(tmsg => tmsg.author.id === msg.author.id).map(tmsg => Number(tmsg.content.split(' ')[1]));
+						(await msg.reply('you have voted for options: ' + votes.join(' '))).delete({timeout: 5000});
+					}
 				}
 			}
 		});
@@ -540,7 +536,7 @@ function inGuild () {
 		return collected.reduce((acc, msg) => {
 			try {
 				acc[Number(msg.content.split(' ')[1] - 1)] += 1;
-			} catch (e) {log.warn('Invalid vote:', msg.content)};
+			} catch (e) {log.warn('Invalid vote:', msg.content)}
 			return acc;
 		}, obj.options.map(val => 0));
 	}

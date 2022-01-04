@@ -33,7 +33,7 @@ class EmojiPageController extends EmojiController {
 }
 
 class PageController {
-	constructor () {throw new Error('cannot initialise directly')};
+	constructor () {throw new Error('cannot initialise directly')}
 
 	static get emoji () {
 		return EmojiPageController;

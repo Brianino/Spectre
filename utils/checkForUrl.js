@@ -1,6 +1,6 @@
 'use strict';
 
-const urlReg = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
+const urlReg = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=+$,\w]+@)?[A-Za-z0-9.-]+|(?:www\.|[-;:&=+$,\w]+@)[A-Za-z0-9.-]+)((?:\/[+~%/.\w\-_]*)?\??(?:[-+=&;%@.\w_]*)#?(?:[.!/\\\w]*))?)/;
 /**
  * Scans the input text for urls, and returns the matches
  * @memberof utils
@@ -20,7 +20,7 @@ function checkForUrl (text, getMatches = false, flags = '') {
 
 		if (treg.global || treg.sticky) {
 			let temp;
-			while (temp = treg.exec(text)) {
+			while ((temp = treg.exec(text))) {
 				res.push(temp);
 			}
 			return res;

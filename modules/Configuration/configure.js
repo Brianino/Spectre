@@ -52,9 +52,12 @@ function inGuild () {
 
 					case 'set':
 					case 'array': this.config[setting] = input; break;
-					case 'permissions': let temp = Number(input[0]);
-					if (isNaN(temp)) temp = input;
-					this.config[setting] = temp; break;
+					case 'permissions': {
+						let temp = Number(input[0]);
+						if (isNaN(temp)) temp = input;
+						this.config[setting] = temp; 
+					}
+					break;
 				}
 				log.info('Updated', setting, 'setting to', this.config[setting], 'for guild', msg.guild.name);
 				return msg.channel.send('Updated the setting ' + setting);

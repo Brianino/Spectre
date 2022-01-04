@@ -25,23 +25,21 @@ function textSearch (sourceCollection, value, type, prop) {
 		if (typeof prop === 'string') return sourceCollection.find(item => String(item[prop]).includes(value));
 		else if (typeof prop === 'function') return sourceCollection.find(item => String(prop(item)).includes(value));
 		else return undefined;
-		break;
 
 		case 'full': log.debug('Using full match search, prop:', prop);
 		if (typeof prop === 'string') return sourceCollection.find(item => String(item[prop]) === value);
 		else if (typeof prop === 'function') return sourceCollection.find(item => String(prop(item)) === value);
 		else return undefined;
-		break;
 
 		// SMART NOT IMPLEMENTED YET BUT THIS WILL BE A COSTLY SEARCH
 		case 'smart': return undefined;
-		if (typeof prop === 'string') return sourceCollection.map(val => calculateScore(val[prop], value)).sort((a, b) => a.score - b.score)[0];
-		else if (typeof prop === 'function') return sourceCollection.map(val => calculateScore(prop(val, value))).sort((a, b) => a.score - b.score)[0];
-		else return undefined;
-		break;
+		// if (typeof prop === 'string') return sourceCollection.map(val => calculateScore(val[prop], value)).sort((a, b) => a.score - b.score)[0];
+		// else if (typeof prop === 'function') return sourceCollection.map(val => calculateScore(prop(val, value))).sort((a, b) => a.score - b.score)[0];
+		// else return undefined;
+		// break;
 	}
 
-	function calculateScore (input, value) {}
+	// function calculateScore (input, value) {}
 }
 
 /**
@@ -85,7 +83,7 @@ async function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText 
 		log.debug(temp);
 		if (manager.cache.has(temp[0]))
 			res.push(resolve? manager.cache.get(temp[0]) : temp[0]);
-		else if (fetch && Object.hasOwnProperty('fetch')) {
+		else if (fetch && Object.prototype.hasOwnProperty.call(manager, 'fetch')) {
 			// Currently only the guild user manager has a fetch method
 			try {
 				let usr = await manager.fetch({user: temp, limit: maxCount});
@@ -105,7 +103,7 @@ async function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText 
 			log.debug('Found a match:', found.id, 'is in guild cache:', manager.cache.has(found.id));
 			res.push(resolve? found : found.id);
 			if (res.length >= maxCount) break;
-		} else if (fetch && Object.hasOwnProperty('fetch')) {
+		} else if (fetch && Object.prototype.hasOwnProperty.call(manager, 'fetch')) {
 			// Currently only the guild user manager has a fetch method
 			try {
 				let usr = await manager.fetch({query: text, limit: maxCount});

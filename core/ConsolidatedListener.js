@@ -73,7 +73,6 @@ class ConsolidatedListener {
 	 * @param {string|symbol} event - new event to set up
 	*/
 	#setupEvent (event) {
-		let handlerSet;
 		if (this.#eventsToListeners.has(event))
 			return false;
 		log.debug(`Attaching new event "${String(event)}" to sources`);
@@ -206,7 +205,7 @@ class ConsolidatedListener {
 	 * @param {listener-listener}      listener  - the listener to remove
 	*/
 	removeListener (eventName, listener) {
-		let list, handlerList;
+		let list;
 		eventName = (typeof eventName === 'symbol')? eventName : String(eventName);
 		list = this.#eventsToListeners.get(eventName) || [];
 		list = list.filter(({listener:li}) => li != listener);

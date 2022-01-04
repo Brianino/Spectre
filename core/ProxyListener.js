@@ -19,7 +19,7 @@ const sym = {
 */
 class ProxyListener {
 	constructor (source, errorsFromSource = true) {
-		if (source && !source instanceof EventEmitter)
+		if (source && source instanceof EventEmitter === false)
 			throw new Error('Source emitter is not an event emitter');
 		Object.defineProperties(this, {
 			[sym.source]: {value: source, writable: true},
@@ -50,7 +50,7 @@ class ProxyListener {
 					}
 				} catch (e) {
 					if (this[sym.errors]) this[sym.source].emit('error', e);
-					else log.error('Uncaught error in', eventName, 'listener:', e);
+					else log.error('Uncaught error in', event, 'listener:', e);
 				}
 			}
 		});

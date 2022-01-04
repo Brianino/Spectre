@@ -168,6 +168,6 @@ function access (user, guild, config) {
 	if (users.size && !users.has(user.id))
 		return false;
 	return true;
-};
+}
 
 export { ModuleObject as default, access};

@@ -9,10 +9,10 @@ function inGuild () {
 			text = channels.filter(tmp => tmp.type === 'text'),
 			voice = channels.filter(tmp => tmp.type === 'voice'),
 			category = channels.filter(tmp => tmp.type === 'category'),
-		 	other = channels.filter(tmp => ['text', 'voice', 'category'].indexOf(tmp.type) < -1),
-		 	online = users.filter(tmp => tmp.presence.status === 'online'),
-		 	idle = users.filter(tmp => ['idle', 'dnd'].indexOf(tmp.presence.status) >= 0),
-		 	ping = roles.filter(tmp => tmp.mentionable);
+			other = channels.filter(tmp => ['text', 'voice', 'category'].indexOf(tmp.type) < -1),
+			online = users.filter(tmp => tmp.presence.status === 'online'),
+			idle = users.filter(tmp => ['idle', 'dnd'].indexOf(tmp.presence.status) >= 0),
+			ping = roles.filter(tmp => tmp.mentionable);
 
 		log.debug('Icon?', server.icon);
 		return msg.channel.send({

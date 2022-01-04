@@ -76,7 +76,7 @@ class GenericContext {
 
 class GuildContext extends GenericContext {
 	// If it isn't set, it will be a function to return undefined
-	#configCallback = (guildId) => undefined;
+	#configCallback = () => undefined;
 	#consolidatedListener;
 	#guild;
 	static contextKey = 'inGuild';
@@ -234,7 +234,7 @@ class ModuleContext {
 
 	#wrapListener (check) {
 		return new Proxy (this.#proxyListener, {
-			get: (target, prop, receiver) => {
+			get: (target, prop) => {
 				let func = Reflect.get(target, prop);
 				switch (prop) {
 					case 'on':
@@ -247,7 +247,6 @@ class ModuleContext {
 							return func.call(target, event, listener, check);
 						}
 					}
-					break;
 
 					case 'off':
 					case 'removeListener': {
@@ -256,11 +255,9 @@ class ModuleContext {
 							return func.call(target, event, listener);
 						}
 					}
-					break;
 
 					default:
 					return func;
-					break;
 				}
 			}
 		});
@@ -318,7 +315,7 @@ class ContextHandler {
 
 	constructor (configCallback) {
 		this.#configCallback = configCallback;
-	};
+	}
 
 	#retrieveObject (objMap) {
 		return mod => {
@@ -335,7 +332,7 @@ class ContextHandler {
 	}
 
 	setEventSource (source) {
-		if (!source instanceof Client)
+		if (source instanceof Client === false)
 			throw new Error('Emitter source needs to be a discord client');
 		log.debug('Attempting to set proxy listener source');
 		this.#proxyListener.source = source;

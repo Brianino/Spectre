@@ -290,7 +290,7 @@ class EmojiController extends events {
 	}
 
 	async #removeReaction (emoteName, msgs) {
-		let tmp = new Set(msgs ?? this.#messages.keys());
+		let tmp = new Set(msgs ?? this.#messages.keys()), promises = [];
 		for (let msg of tmp) {
 			promises.push(this.#getReaction(msg, emoteName)?.remove());
 		}
