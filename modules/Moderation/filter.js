@@ -89,7 +89,8 @@ function inGuild (emitter, groupObj) {
 	}
 
 	function list (msg) {
-		let listEmbed = new PagedEmbed(), rows = [...this.config.filter_regex.keys()];
+		const listEmbed = new PagedEmbed();
+		let rows = [...this.config.filter_regex.keys()];
 
 		if (rows.length) {
 			rows = rows.map(name => [name, this.config.filter_exempt.has(name) ? `Exempt Role: <@&${this.config.filter_exempt.get(name)}>` : 'Only Admins are exempt']);

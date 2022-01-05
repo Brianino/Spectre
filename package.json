@@ -13,7 +13,7 @@
   "scripts": {
     "start": "node spectre.js",
     "test": "TEST=true mocha --input-type=module",
-    "lint": "eslint --fix core/** modules/** spectre.js",
+    "lint": "eslint --fix core/** modules/** utils/** spectre.js",
     "docs": "jsdoc -r spectre.js etc utils"
   },
   "dependencies": {

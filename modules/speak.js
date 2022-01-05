@@ -11,7 +11,7 @@ function inGuild (emitter) {
 		}
 	});
 
-	return async (msg, ...input) => {
+	return (msg, ...input) => {
 		log.debug('Repeating:', input.join(' ').replace(/[\s\S]/g, char => {
 			const n = char.charCodeAt();
 

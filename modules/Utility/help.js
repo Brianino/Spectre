@@ -17,13 +17,14 @@ const detailedHelp = {
 function inAll () {
 	const { PagedEmbed } = Utils;
 
-	return function (msg, arg) {
+	return function main (msg, arg) {
 		if (!arg) {
 			const helpEmbed = new PagedEmbed('Options'), pages = new Map();
 
 			helpEmbed.setColor(0xBB0000);
 			for (const moduleObj of modules.values()) {
-				let page = pages.get(moduleObj.group), details = [moduleObj.command, moduleObj.description[0]];
+				const details = [moduleObj.command, moduleObj.description[0]];
+				let page = pages.get(moduleObj.group);
 
 				if (page === undefined) {
 					const desc = detailedHelp[moduleObj.group] || (`${moduleObj.group} commands`);

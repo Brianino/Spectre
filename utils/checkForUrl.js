@@ -1,4 +1,4 @@
-'use strict';
+
 
 const urlReg = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=+$,\w]+@)?[A-Za-z0-9.-]+|(?:www\.|[-;:&=+$,\w]+@)[A-Za-z0-9.-]+)((?:\/[+~%/.\w\-_]*)?\??(?:[-+=&;%@.\w_]*)#?(?:[.!/\\\w]*))?)/;
 /**
@@ -14,9 +14,11 @@ function checkForUrl (text, getMatches = false, flags = '') {
 	if (!getMatches) {
 		return urlReg.test(text);
 	} else {
-		let treg = urlReg, res = [];
+		const res = [];
+		let treg = urlReg;
 
-		if (flags) treg = new RegExp(urlReg, String(flags));
+		if (flags)
+			treg = new RegExp(urlReg, String(flags));
 
 		if (treg.global || treg.sticky) {
 			let temp;

@@ -1,4 +1,4 @@
-'use strict';
+
 
 /**
  * A timeout function to wait for a certain condition
@@ -11,27 +11,29 @@
 */
 function waitFor (time = 1000, interval = 10, checkFunc) {
 	interval =  Number(interval);
-	if (isNaN(interval) || interval === 0) interval = 10;
+	if (isNaN(interval) || interval === 0)
+		interval = 10;
 	return new Promise((resolve, reject) => {
-		let func = async (passed, tFunc) => {
-			let newTime = interval + passed - time;
+		const func = async (passed, tFunc) => {
+			const newTime = interval + passed - time;
 			try {
 				if (await tFunc()) {
 					return resolve(true);
 				} else if (newTime > 0) {
 					interval -= newTime;
-					if (interval <= 0) return resolve(false);
+					if (interval <= 0)
+						return resolve(false);
 				}
 				setTimeout(func, interval, passed + interval, tFunc);
 			} catch (e) {
 				return reject(e);
 			}
-		}
+		};
 		if (interval && typeof checkFunc === 'function')
 			setTimeout(func, interval, interval, checkFunc);
 		else
 			setTimeout(func, time, time, () => true);
-	})
+	});
 }
 
 export default waitFor;

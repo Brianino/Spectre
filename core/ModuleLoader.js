@@ -26,7 +26,7 @@ const log = logger('Module-Loader'),
 		Infinity, NaN, undefined,
 
 		// Function Globals
-		eval, isFinite, isNaN, parseFloat, parseInt, encodeURI, encodeURIComponent, decodeURI, decodeURIComponent,
+		isFinite, isNaN, parseFloat, parseInt, encodeURI, encodeURIComponent, decodeURI, decodeURIComponent,
 
 		// Fundamental Objects
 		Object, Function, Boolean, Symbol,
@@ -99,7 +99,8 @@ class ModuleLoader {
 	}
 
 	async setup () {
-		let files = await ModuleLoader.#findModules(), res;
+		const files = await ModuleLoader.#findModules();
+		let res;
 
 		res = await Promise.allSettled(files.map(file => this.#loadModule(file, false)));
 		await this.#confMan.loadConfig();
@@ -121,11 +122,11 @@ class ModuleLoader {
 	}
 
 	async runCommand (msg) {
-		let [cmdStr, ...msgStr] = msg.content.split(' '), config = this.#confMan.getGuildConfig(msg.guild?.id), cmd;
+		const [cmdStr, ...msgStr] = msg.content.split(' '), config = this.#confMan.getGuildConfig(msg.guild?.id);
 
 		if (!cmdStr.startsWith(config.prefix))
 			return;
-		cmd = this.modules.get(cmdStr.substr(config.prefix.length));
+		const cmd = this.modules.get(cmdStr.substr(config.prefix.length));
 
 		log.debug('Has guild?', msg.guild && true);
 		if (cmd && access.call(cmd, msg.author, msg.guild, config)) {
@@ -143,7 +144,8 @@ class ModuleLoader {
 	async #loadModule ({ filePath, group }, inst = true) {
 		log.debug('Attempting to load module:', filePath, group);
 		try {
-			let { name, code } = await ModuleLoader.#loadFile(filePath), mod;
+			const { name, code } = await ModuleLoader.#loadFile(filePath);
+			let mod;
 
 			if (this.modules.has(name))
 				return log.debug('Skipping over existing module', name);
@@ -217,7 +219,7 @@ class ModuleLoader {
 		}
 	}
 
-	async #setupModule (name, group, filename, code) {
+	#setupModule (name, group, filename, code) {
 		const script = new vm.Script(code, { filename }), obj = new ModuleObject(name, group),
 			temp = {}, ctx = Object.create(temp), vars = [];
 

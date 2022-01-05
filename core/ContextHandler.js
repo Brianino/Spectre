@@ -182,10 +182,6 @@ class GuildContext extends GenericContext {
 class AllGuildContext extends GenericContext {
 	static contextKey = 'inAllGuilds';
 
-	constructor (ctxObjectBundle) {
-		super(ctxObjectBundle);
-	}
-
 	setup () {
 		return super.setup(AllGuildContext.contextKey);
 	}
@@ -194,10 +190,6 @@ class AllGuildContext extends GenericContext {
 class AllDMContext extends GenericContext {
 	static contextKey = 'inAllDM';
 
-	constructor (ctxObjectBundle) {
-		super(ctxObjectBundle);
-	}
-
 	setup () {
 		return super.setup(AllDMContext.contextKey);
 	}
@@ -205,10 +197,6 @@ class AllDMContext extends GenericContext {
 
 class AllContext extends GenericContext {
 	static contextKey = 'inAll';
-
-	constructor (ctxObjectBundle) {
-		super(ctxObjectBundle);
-	}
 
 	setup () {
 		return super.setup(AllContext.contextKey);
@@ -282,9 +270,13 @@ class ModuleContext {
 		});
 	}
 
-	set globObj ({ Guild, DM }) {
-		this.#guildContext.globObj = Guild;
-		this.#dmContext.globObj = DM;
+	set globObj ({ Guild, DM, All }) {
+		if (this.#guildContext instanceof AllContext) {
+			this.#guildContext.globObj = All;
+		} else {
+			this.#guildContext.globObj = Guild;
+			this.#dmContext.globObj = DM;
+		}
 	}
 
 	cleanup () {
@@ -347,7 +339,7 @@ class ContextHandler {
 			let tmp = this.#globObjStore.get(cmdObj.objectGroup);
 
 			if (!tmp) {
-				tmp = { Guild: {}, DM: {}};
+				tmp = { Guild: {}, DM: {}, All: {}};
 				this.#globObjStore.set(cmdObj.objectGroup, tmp);
 			}
 			ctx.globObj = tmp;

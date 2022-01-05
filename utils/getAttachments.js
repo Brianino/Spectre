@@ -1,4 +1,4 @@
-'use strict';
+
 
 import logger from '../core/logger.js';
 const log = logger('Utilities');
@@ -18,19 +18,22 @@ const log = logger('Utilities');
  * @return  {imageProps[]} a list of imageProps objects
 */
 function getAttachments (msg, formats) {
-	let res = [], aformats = Array.from(formats);
-	for (let attachment of msg.attachments.values()) {
-		let name = attachment.name, url = attachment.url, temp = name.split('.').pop();
+	const res = [], aformats = Array.from(formats);
+	for (const attachment of msg.attachments.values()) {
+		const name = attachment.name, url = attachment.url, temp = name.split('.').pop();
 
-		if (aformats.find(val => val === temp)) res.push({name, url});
+		if (aformats.find(val => val === temp))
+			res.push({ name, url });
 	}
-	for (let embed of msg.embeds) {
+	for (const embed of msg.embeds) {
 		if (embed.type === 'image' || embed.type === 'gifv') {
 			try {
-				let url = embed.url, name = new URL(url).pathname.split('/').pop(), temp = name.split('.').pop();
+				const url = embed.url, name = new URL(url).pathname.split('/').pop(), temp = name.split('.').pop();
 
-				if (aformats.find(val => val === temp)) res.push({name, url});
-				else res.push({url});
+				if (aformats.find(val => val === temp))
+					res.push({ name, url });
+				else
+					res.push({ url });
 			} catch (e) {
 				log.warn('Unable to parse url embed:', e.message);
 				log.warn('url is:', embed.url);

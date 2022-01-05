@@ -1,4 +1,4 @@
-'use strict';
+
 
 import PageController from './controls/PageController.js';
 import { MessageEmbed, Message, Channel } from 'discord.js';
@@ -10,7 +10,7 @@ function trimStr (str, lim) {
 	str = String(str);
 
 	if (str.length > lim)
-		str = str.substr(0, lim - 3) + '...';
+		str = `${str.substr(0, lim - 3)}...`;
 	return str;
 }
 
@@ -18,10 +18,8 @@ class GroupManager {
 	#groups = new Map();
 	#msgs = new Map();
 
-	constructor () {}
-
 	get #group () {
-		let that = this;
+		const that = this;
 		return class Group {
 			#name;
 			#page = 0;
@@ -31,9 +29,9 @@ class GroupManager {
 				this.#name = name;
 			}
 
-			get name () {return this.#name;}
+			get name () { return this.#name; }
 
-			get page () {return this.#page;}
+			get page () { return this.#page; }
 
 			set page (page) {
 				log.debug('Page of group', this.#name, 'will update from', this.#page, 'to', page);
@@ -43,9 +41,9 @@ class GroupManager {
 					throw new Error('Page input is not a number');
 			}
 
-			*messages () {yield* this.#msgSet.values()}
+			*messages () { yield* this.#msgSet.values(); }
 
-			hasMessage (msg) {return this.#msgSet.has(msg)}
+			hasMessage (msg) { return this.#msgSet.has(msg); }
 
 			addMsg (msg) {
 				if (msg instanceof Message) {
@@ -60,12 +58,12 @@ class GroupManager {
 			kill () {
 				log.debug('Killing group', this.#name);
 				that.#groups.delete(this.#name);
-				for (let msg of this.#msgs)
+				for (const msg of this.#msgs)
 					that.#msgs.delete(msg);
 				this.#name = Symbol();
 				this.#page = -1;
 			}
-		}
+		};
 	}
 
 	get (name) {
@@ -115,16 +113,17 @@ class PagedEmbed {
 		if (controller && controller instanceof PageController)
 			this.#controller = controller;
 		else
-			this.#controller = new PageController.emoji({removeEmote: true});
+			this.#controller = new PageController.Emoji({ removeEmote: true });
 	}
 
 	addPage (title, rows = [], desc) {
-		let tmp = [...rows], hasRun = false;
+		const tmp = [...rows];
+		let hasRun = false;
 		if (this.#title)
-			title = this.#title + ': ' + title;
+			title = `${this.#title}: ${title}`;
 		while (tmp.length || !hasRun) {
 			this.#pages.push(PagedEmbed.#makeEmbed(title, tmp.splice(0, PagedEmbed.MAX_ROWS), desc));
-			if (this.#pages.length == 2)
+			if (this.#pages.length === 2)
 				this.#controller.turnOnControls();
 			else if (this.#pages.length > 2)
 				this.#controller.resumeAllControlsExcluding('prev', 'first');
@@ -135,10 +134,10 @@ class PagedEmbed {
 	}
 
 	addToPage (pageNo, rows = []) {
-		let page = this.#pages[pageNo];
+		const page = this.#pages[pageNo];
 
 		if (page) {
-			let mergedRows = rows.concat(page.fields.map(({name, value}) => [name, value]));
+			const mergedRows = rows.concat(page.fields.map(({ name, value }) => [name, value]));
 			this.#pages[pageNo] = PagedEmbed.#makeEmbed(page.title, mergedRows, page.description);
 		}
 	}
@@ -153,8 +152,8 @@ class PagedEmbed {
 		if (index >= 0) {
 			this.#pages.splice(index, 1);
 			if (this.#pages.length > 1) {
-				for (let group of this.#manager) {
-					if (group.page == index) {
+				for (const group of this.#manager) {
+					if (group.page === index) {
 						if (index)
 							this.#controller.prev(group);
 						else
@@ -211,7 +210,7 @@ class PagedEmbed {
 	}
 
 	static #makeEmbed (title, rows, desc) {
-		let embed = new MessageEmbed();
+		const embed = new MessageEmbed();
 
 		embed.setTitle(trimStr(title, PagedEmbed.MAX_TITLE_LENGTH));
 		if (desc)
@@ -238,62 +237,54 @@ class PagedEmbed {
 	}
 
 	#setupController () {
-		let manager = this.#manager;
+		const manager = this.#manager;
 		log.debug('Attaching events to controller for paged embed');
 		this.#controller.on('next', input => {
-			let group = manager.with(input);
+			const group = manager.with(input);
 			group.page++;
 			this.#controller.resumeAllControlsExcluding('next', 'last');
 			if (group.page >= this.#pages.length - 1) {
 				group.page = this.#pages.length - 1;
 				this.#controller.pauseControls('next', 'last');
 			}
-			for (let msg of group.messages()) {
-				msg.edit({
-					embed: this.#setEmbedDefaults(this.#pages[group.page])
-				}).catch(e => {
+			for (const msg of group.messages()) {
+				msg.edit({ embed: this.#setEmbedDefaults(this.#pages[group.page]) }).catch(e => {
 					log.error('Unable to modify embed', e);
 				});
 			}
 		});
 		this.#controller.on('prev', input => {
-			let group = manager.with(input);
+			const group = manager.with(input);
 			group.page--;
 			this.#controller.resumeAllControlsExcluding('prev', 'first');
 			if (group.page <= 0) {
 				group.page = 0;
 				this.#controller.pauseControls('prev', 'first');
 			}
-			for (let msg of group.messages()) {
-				msg.edit({
-					embed: this.#setEmbedDefaults(this.#pages[group.page])
-				}).catch(e => {
+			for (const msg of group.messages()) {
+				msg.edit({ embed: this.#setEmbedDefaults(this.#pages[group.page]) }).catch(e => {
 					log.error('Unable to modify embed', e);
 				});
 			}
 		});
 		this.#controller.on('first', input => {
-			let group = manager.with(input);
+			const group = manager.with(input);
 			group.page = 0;
 			this.#controller.resumeAllControlsExcluding('prev', 'first');
 			this.#controller.pauseControls('prev', 'first');
-			for (let msg of group.messages()) {
-				msg.edit({
-					embed: this.#setEmbedDefaults(this.#pages[0])
-				}).catch(e => {
+			for (const msg of group.messages()) {
+				msg.edit({ embed: this.#setEmbedDefaults(this.#pages[0]) }).catch(e => {
 					log.error('Unable to modify embed', e);
 				});
 			}
 		});
 		this.#controller.on('last', input => {
-			let group = manager.with(input);
+			const group = manager.with(input);
 			group.page = this.#pages.length - 1;
 			this.#controller.resumeAllControlsExcluding('next', 'last');
 			this.#controller.pauseControls('next', 'last');
-			for (let msg of group.messages()) {
-				msg.edit({
-					embed: this.#setEmbedDefaults(this.#pages[group.page])
-				}).catch(e => {
+			for (const msg of group.messages()) {
+				msg.edit({ embed: this.#setEmbedDefaults(this.#pages[group.page]) }).catch(e => {
 					log.error('Unable to modify embed', e);
 				});
 			}
@@ -306,7 +297,8 @@ class PagedEmbed {
 	}
 
 	async #makePagedEmbed (channel, groupName) {
-		let group = this.#manager.get(groupName), message;
+		const group = this.#manager.get(groupName);
+		let message;
 
 		if (this.#pages.length === 0)
 			throw new Error('No pages have been created');
@@ -314,15 +306,15 @@ class PagedEmbed {
 			this.#setupController();
 			this.#active = true;
 		}
-		for (let msg of group.messages()) {
+		for (const msg of group.messages()) {
 			if (msg.channel.id === channel.id) {
 				message = msg;
 				break;
 			}
 		}
 		if (!message) {
-			let embed = this.#setEmbedDefaults(this.#pages[0]);
-			message = await channel.send({embed});
+			const embed = this.#setEmbedDefaults(this.#pages[0]);
+			message = await channel.send({ embed });
 			log.debug('Associating message', message.id, 'with controller, and group', groupName);
 			group.addMsg(message);
 			// Only attach the contoller if there is more than one page, otherwise navigation is unnecessary

@@ -128,7 +128,7 @@ class ProxyListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	once (eventName, listener, check) {
-		const onceWrapper = (function (eventName, listener, ...params) {
+		const onceWrapper = (function onceWrapper (eventName, listener, ...params) {
 			this.removeListener(eventName, listener);
 			listener(...params);
 		}).bind(this, eventName, listener);
@@ -142,7 +142,6 @@ class ProxyListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	prependListener (eventName, listener, check) {
-		let lList, tmp;
 		if (!this[sym.source]) {
 			log.debug('Source not set up yet, queuing up prepend addition for', eventName);
 			this[sym.queue].push(this.prependListener.bind(this, eventName, listener, check));
@@ -150,8 +149,8 @@ class ProxyListener {
 		}
 		eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
 		this.on(eventName, listener, check);
-		[lList] = this[sym.events].get(eventName);
-		tmp = [...lList];
+		const [lList] = this[sym.events].get(eventName),
+			tmp = [...lList];
 		tmp.unshift(tmp.pop());
 		lList.clear();
 		tmp.forEach(val => lList.add(val));
@@ -164,7 +163,7 @@ class ProxyListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	prependOnceListener (eventName, listener, check) {
-		const onceWrapper = (function (eventName, listener, ...params) {
+		const onceWrapper = (function onceWrapper (eventName, listener, ...params) {
 			this.removeListener(eventName, listener);
 			listener(...params);
 		}).bind(this, eventName, listener);
@@ -177,15 +176,13 @@ class ProxyListener {
 	 * @param {listener-listener}      listener  - the listener to remove
 	*/
 	removeListener (eventName, listener) {
-		let lList, att;
-
 		if (!this[sym.source]) {
 			log.debug('Source not set up yet, queuing up removal of listener for', eventName);
 			this[sym.queue].push(this.removeListener.bind(this, eventName, listener));
 			return this;
 		}
 		eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
-		[lList, att] = this[sym.events].get(eventName) || [new Set(), () => {}];
+		const [lList, att] = this[sym.events].get(eventName) || [new Set(), () => {}];
 		if (!lList.delete(listener)) {
 			for (const temp of lList) {
 				if (temp.listener === listener) {

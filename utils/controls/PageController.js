@@ -1,4 +1,4 @@
-'use strict';
+
 
 import EmojiController from './EmojiController.js';
 
@@ -33,9 +33,9 @@ class EmojiPageController extends EmojiController {
 }
 
 class PageController {
-	constructor () {throw new Error('cannot initialise directly')}
+	constructor () { throw new Error('cannot initialise directly'); }
 
-	static get emoji () {
+	static get Emoji () {
 		return EmojiPageController;
 	}
 

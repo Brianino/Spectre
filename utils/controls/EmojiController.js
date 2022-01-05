@@ -1,4 +1,4 @@
-'use strict';
+
 
 import logger from '../../core/logger.js';
 import TwoWayMap from '../TwoWayMap.js';
@@ -32,7 +32,7 @@ class EmojiController extends events {
 	static ReservedEmoteError = class ReservedEmoteError extends Error {};
 	static ControlExistsError = class ControlExistsError extends Error {};
 
-	constructor ({removeEmote, seconds, secondsIdle = 30, allowUserStop} = {}, emoteToEvent) {
+	constructor ({ removeEmote, seconds, secondsIdle = 30, allowUserStop } = {}, emoteToEvent) {
 		super();
 
 		if (emoteToEvent instanceof Map)
@@ -53,9 +53,9 @@ class EmojiController extends events {
 	 * @return {emojiController} returns the object to allow for chaining
 	*/
 	addControl (evName, emoteName) {
-		emoteName = String(emoteName), evName = String(evName);
+		emoteName = String(emoteName); evName = String(evName);
 		if (this.#options.allowUserStop && emoteName === EmojiController.#STOP_EMOTE)
-			throw new EmojiController.ReservedEmoteError('The emote ' + emoteName + ' is reserved');
+			throw new EmojiController.ReservedEmoteError(`The emote ${emoteName} is reserved`);
 		if (this.#emoteMap.has(emoteName) || this.#paused.hasValue(emoteName))
 			throw new EmojiController.ControlExistsError(`Emote ${emoteName} exists already`);
 		if (this.#emoteMap.hasValue(evName) || this.#paused.has(evName))
@@ -70,9 +70,9 @@ class EmojiController extends events {
 	*/
 	async turnOnControls () {
 		if (!this.#controlsOn) {
-			let promises = [];
+			const promises = [];
 			this.#controlsOn = true;
-			for (let msg of this.#messages.keys())
+			for (const msg of this.#messages.keys())
 				promises.push(this.#attachReactions(msg));
 			await Promise.allSettled(promises);
 		}
@@ -83,7 +83,7 @@ class EmojiController extends events {
 	 * @return {Promise} will resolve once the emote has been removed
 	*/
 	async removeControl (evName) {
-		let emote = this.getEventEmote(evName = String(evName));
+		const emote = this.getEventEmote(evName = String(evName));
 		if (this.#emoteMap.delete(emote) || this.#paused.delete(evName)) {
 			this.#emoteOrder.delete(emote);
 			await this.#removeReaction(emote);
@@ -97,8 +97,8 @@ class EmojiController extends events {
 		if (this.#controlsOn) {
 			this.#controlsOn = false;
 			if (this.#messages.size) {
-				let promises = [];
-				for (let emote of this.emotes())
+				const promises = [];
+				for (const emote of this.emotes())
 					promises.push(this.#removeReaction(emote));
 				await Promise.allSettled(promises);
 			}
@@ -110,7 +110,7 @@ class EmojiController extends events {
 	 * @return {boolean} true if the control was paused and then enabled
 	*/
 	resumeControl (evName) {
-		let value = this.#paused.get(evName = String(evName));
+		const value = this.#paused.get(evName = String(evName));
 
 		if (value) {
 			log.debug('Control', evName, 'resumed');
@@ -126,8 +126,9 @@ class EmojiController extends events {
 	 * @return {boolean} true if any of the controls were paused and then enabled
 	*/
 	resumeControls (...names) {
-		let res = false, nameSet = new Set(names);
-		for (let evName of this.#paused.keys()) {
+		const nameSet = new Set(names);
+		let res = false;
+		for (const evName of this.#paused.keys()) {
 			if (nameSet.has(evName)) {
 				this.resumeControl(evName);
 				res = true;
@@ -143,8 +144,8 @@ class EmojiController extends events {
 	 * @return {boolean} true if any of the controls were paused and then enabled
 	*/
 	resumeAllControls () {
-		let res = this.#paused.size > 0;
-		for (let evName of this.#paused.keys())
+		const res = this.#paused.size > 0;
+		for (const evName of this.#paused.keys())
 			this.resumeControl(evName);
 		return res;
 	}
@@ -154,7 +155,7 @@ class EmojiController extends events {
 	 * @return {boolean} true if any of the controls were paused and then enabled
 	*/
 	resumeAllControlsExcluding (...names) {
-		let evNames = [...this.#paused.keys()].filter(val => !names.includes(val));
+		const evNames = [...this.#paused.keys()].filter(val => !names.includes(val));
 		return this.resumeControls(...evNames);
 	}
 
@@ -163,7 +164,7 @@ class EmojiController extends events {
 	 * @return {boolean} true if the control was enabled and then paused
 	*/
 	pauseControl (evName) {
-		let value = this.getEventEmote(evName = String(evName));
+		const value = this.getEventEmote(evName = String(evName));
 
 		if (value) {
 			log.debug('Control', evName, 'paused');
@@ -180,7 +181,7 @@ class EmojiController extends events {
 	*/
 	pauseControls (...names) {
 		let res = false;
-		for (let evName of names)
+		for (const evName of names)
 			res = this.pauseControl(evName) || res;
 		return res;
 	}
@@ -190,8 +191,9 @@ class EmojiController extends events {
 	 * @return {boolean} true if any of the controls were enabled and then paused
 	*/
 	pauseAllControlsExcluding (...names) {
-		let res = false, nameSet = new Set(names);
-		for (let evName of this.#emoteMap.values()) {
+		const nameSet = new Set(names);
+		let res = false;
+		for (const evName of this.#emoteMap.values()) {
 			if (!nameSet.has(evName))
 				res = this.pauseControl(evName) || res;
 		}
@@ -223,10 +225,10 @@ class EmojiController extends events {
 	stop (msgs) {
 		msgs = msgs ?? 'all';
 		if (msgs === 'all') {
-			for (let col of this.#messages.values())
+			for (const col of this.#messages.values())
 				col.stop();
 		} else {
-			for (let msg of msgs)
+			for (const msg of msgs)
 				this.#messages.get(msg)?.stop();
 		}
 	}
@@ -236,7 +238,7 @@ class EmojiController extends events {
 	 * @param {string}  evName - The name of the event to emit
 	 * @param {...args} args   - Extra args to pass on to the parent method
 	*/
-	emit(evName, ...args) {
+	emit (evName, ...args) {
 		if (this.getEventEmote(evName) || evName === 'end')
 			super.emit(evName, ...args);
 	}
@@ -264,7 +266,7 @@ class EmojiController extends events {
 	}
 
 	async #attachReactions (msg) {
-		for (let emote of this.#emoteOrder) {
+		for (const emote of this.#emoteOrder) {
 			try {
 				if (EmojiController.#getReaction(msg, emote)?.me)
 					continue;
@@ -286,28 +288,28 @@ class EmojiController extends events {
 	}
 
 	async #removeReaction (emoteName, msgs) {
-		let tmp = new Set(msgs ?? this.#messages.keys()), promises = [];
-		for (let msg of tmp)
+		const tmp = new Set(msgs ?? this.#messages.keys()), promises = [];
+		for (const msg of tmp)
 			promises.push(EmojiController.#getReaction(msg, emoteName)?.remove());
 		await Promise.allSettled(promises).then(res => {
-			let failed = res.filter(({status}) => status === 'rejected');
+			const failed = res.filter(({ status }) => status === 'rejected');
 			log.warn('Failed to remote emote', emoteName, 'from', failed.length, 'messages');
 		});
 	}
 
 	#controlHandler (msg) {
-		let collector, filter = (r, u) => this.#controlsOn && this.#checkReaction(r) && (u.id != u.client.user.id);
+		const filter = (r, u) => this.#controlsOn && this.#checkReaction(r) && (u.id !== u.client.user.id);
 
 		if (this.#messages.has(msg))
 			return;
 
 		if (this.#controlsOn)
 			this.#attachReactions(msg);
-		collector = msg.createReactionCollector(filter, {time: this.#options.time, idle: this.#options.idle});
+		const collector = msg.createReactionCollector(filter, { time: this.#options.time, idle: this.#options.idle });
 		this.#messages.set(msg, collector);
 
 		collector.on('collect', (reaction, user) => {
-			let evName = this.#checkReaction(reaction, true);
+			const evName = this.#checkReaction(reaction, true);
 
 			if (evName) {
 				if (this.#options.removeEmote) {

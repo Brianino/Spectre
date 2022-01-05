@@ -5,7 +5,7 @@ this.permissions = 'KICK_MEMBERS';
 
 function inGuild () {
 	const { DiscordAPIError } = discordjs,
-	 { getUserID } = Utils;
+		{ getUserID } = Utils;
 
 	return async (msg, input, message) => {
 		const user = msg.guild.member(await getUserID(input, msg.guild, { resolve: true }));

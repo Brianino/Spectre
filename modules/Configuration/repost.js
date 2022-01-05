@@ -11,8 +11,11 @@ function inGuild (emitter) {
 	const { getChannelID, getAttachments, checkForUrl, waitFor } = Utils;
 
 	// modify this so that the listener is only attached if there is a gallery set for the guild
-	let att = false, repost = async msg => {
-		let gallList = this.config.repost_galleries.get(msg.channel.id) || [], attachments = [], urlCount = checkForUrl(msg.content, true, 'g').length;
+	let att = false;
+	const repost = async msg => {
+		const gallList = this.config.repost_galleries.get(msg.channel.id) || [],
+			urlCount = checkForUrl(msg.content, true, 'g').length;
+		let attachments = [];
 
 		if (msg.author.id === getBot().user.id)
 			return;
@@ -57,7 +60,8 @@ function inGuild (emitter) {
 	}
 
 	async function parseInput (input, guild) {
-		let source = [], gallery, tSwitch = false, type = 0;
+		const source = [];
+		let gallery, tSwitch = false, type = 0;
 
 		if (!input.length) {
 			type = 2;
@@ -82,7 +86,8 @@ function inGuild (emitter) {
 	}
 
 	return async (msg, ...input) => {
-		const [type, gallery, source] = await parseInput(input, msg.guild), tmap = this.config.repost_galleries, resMsg = '';
+		const [type, gallery, source] = await parseInput(input, msg.guild), tmap = this.config.repost_galleries;
+		let resMsg = '';
 
 		log.debug('Type is:', type);
 		switch (type) {

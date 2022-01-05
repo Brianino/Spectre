@@ -1,4 +1,4 @@
-'use strict';
+
 
 /**
  * Split a string up whilst keeping anything within double quotes grouped
@@ -9,15 +9,18 @@
  * @return {string[]} the input string split by space with quoted groups kept together
 */
 function split (str, filterEmpty = true) {
-	let groups = str.split('"'), res = [];
+	const groups = str.split('"');
+	let res = [];
 
 	groups.forEach((val, i) => {
 		if (i % 2 === 0)
 			res = res.concat(val.split(' ').filter(val => val !== ''));
-		else res.push(val);
+		else
+			res.push(val);
 	});
 
-	if (filterEmpty) res = res.filter(val => val !== '');
+	if (filterEmpty)
+		res = res.filter(val => val !== '');
 	return res;
 }
 

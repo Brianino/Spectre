@@ -10,7 +10,8 @@ this.permissions = 'MANAGE_GUILD';
 function inGuild () {
 
 	return (msg, setting, ...input) => {
-		let options = getConfigurable(), type, desc;
+		const options = getConfigurable();
+		let type, desc;
 
 		if (options.has(setting)) {
 			[type, desc] = options.get(setting);

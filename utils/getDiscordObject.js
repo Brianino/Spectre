@@ -1,4 +1,4 @@
-'use strict';
+
 
 import { GuildChannel, GuildMember, Role } from 'discord.js';
 import logger from '../core/logger.js';
@@ -22,14 +22,20 @@ function textSearch (sourceCollection, value, type, prop) {
 	type = String(type).toLowerCase();
 	switch (type) {
 		case 'partial': log.debug('Using partial match search, prop:', prop);
-		if (typeof prop === 'string') return sourceCollection.find(item => String(item[prop]).includes(value));
-		else if (typeof prop === 'function') return sourceCollection.find(item => String(prop(item)).includes(value));
-		else return undefined;
+			if (typeof prop === 'string')
+				return sourceCollection.find(item => String(item[prop]).includes(value));
+			else if (typeof prop === 'function')
+				return sourceCollection.find(item => String(prop(item)).includes(value));
+			else
+				return undefined;
 
 		case 'full': log.debug('Using full match search, prop:', prop);
-		if (typeof prop === 'string') return sourceCollection.find(item => String(item[prop]) === value);
-		else if (typeof prop === 'function') return sourceCollection.find(item => String(prop(item)) === value);
-		else return undefined;
+			if (typeof prop === 'string')
+				return sourceCollection.find(item => String(item[prop]) === value);
+			else if (typeof prop === 'function')
+				return sourceCollection.find(item => String(prop(item)) === value);
+			else
+				return undefined;
 
 		// SMART NOT IMPLEMENTED YET BUT THIS WILL BE A COSTLY SEARCH
 		case 'smart': return undefined;
@@ -59,7 +65,7 @@ function textSearch (sourceCollection, value, type, prop) {
  * @prop   {boolean}           [fetch=true]    - for now this only applies to searching for users
  * @return {(string[]|object[])} list of id strings, or list of objects contained in the manager collection
 */
-async function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText = '', allowID = true, fetch = true}) {
+async function getIDs ({ input, manager, prop, reg, maxCount, resolve, allowText = '', allowID = true, fetch = true }) {
 	let temp, res = [], tempReg = new RegExp(reg, 'g');
 
 	if (!input)
@@ -73,45 +79,48 @@ async function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText 
 		log.debug('Found a match:', temp[1], 'using', tempReg.toString(), 'is in guild cache:', manager.cache.has(temp[1]));
 		log.debug(temp);
 		if (manager.cache.has(temp[1]))
-			res.push(resolve? manager.cache.get(temp[1]) : temp[1]);
+			res.push(resolve ? manager.cache.get(temp[1]) : temp[1]);
 	}
-	if (res.length) return res;
+	if (res.length)
+		return res;
 
-	log.debug(allowID? 'Searching for id\'s' : 'ID searching disabled');
-	if (allowID){
+	log.debug(allowID ? 'Searching for id\'s' : 'ID searching disabled');
+	if (allowID) {
 		while ((temp = /\d{17,19}/g.exec(input)) && res.length < maxCount) {
 			log.debug('Found a match:', temp[0], 'is in guild cache:', manager.cache.has(temp[0]));
 			log.debug(temp);
 			if (manager.cache.has(temp[0])) {
-				res.push(resolve? manager.cache.get(temp[0]) : temp[0]);
-			} else if (fetch && Object.prototype.hasOwnProperty.call(manager, 'fetch')) {
+				res.push(resolve ? manager.cache.get(temp[0]) : temp[0]);
+			} else if (fetch && Object.hasOwn(manager, 'fetch')) {
 				// Currently only the guild user manager has a fetch method
 				try {
-					let usr = await manager.fetch({user: temp, limit: maxCount});
-					res.push(resolve? usr : usr.id)
+					const usr = await manager.fetch({ user: temp, limit: maxCount });
+					res.push(resolve ? usr : usr.id);
 				} catch (e) {
-					log.error('Failed to fetch from', manager.constructor.name)
+					log.error('Failed to fetch from', manager.constructor.name);
 				}
 			}
 		}
-		if (res.length) return res;
+		if (res.length)
+			return res;
 	}
 
-	log.debug(allowText? 'Searching for text' : 'Text searching disabled');
-	for (let text of split(input)) {
-		let found = textSearch(manager.cache, text, allowText, prop);
+	log.debug(allowText ? 'Searching for text' : 'Text searching disabled');
+	for (const text of split(input)) {
+		const found = textSearch(manager.cache, text, allowText, prop);
 
 		if (found) {
 			log.debug('Found a match:', found.id, 'is in guild cache:', manager.cache.has(found.id));
-			res.push(resolve? found : found.id);
-			if (res.length >= maxCount) break;
-		} else if (fetch && Object.prototype.hasOwnProperty.call(manager, 'fetch')) {
+			res.push(resolve ? found : found.id);
+			if (res.length >= maxCount)
+				break;
+		} else if (fetch && Object.hasOwn(manager, 'fetch')) {
 			// Currently only the guild user manager has a fetch method
 			try {
-				let usr = await manager.fetch({query: text, limit: maxCount});
-				res.push(resolve? usr : usr.id)
+				const usr = await manager.fetch({ query: text, limit: maxCount });
+				res.push(resolve ? usr : usr.id);
 			} catch (e) {
-				log.error('Failed to fetch from', manager.constructor.name)
+				log.error('Failed to fetch from', manager.constructor.name);
 			}
 		}
 	}
@@ -133,20 +142,20 @@ const channelReg = /<#(\d{17,19})>/;
  * @prop   {string}                [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
  * @return {(string|string[]|GuildChannel|GuildChannel[])} either a list of channels, or the channel itself
 */
-async function getChannelID (input, guild, {maxCount = 1, resolve, ...options} = {}) {
+async function getChannelID (input, guild, { maxCount = 1, resolve, ...options } = {}) {
 	let manager = guild.channels, res;
 
 	log.debug('Looking for channel, input:', input, 'max', maxCount, 'options', options);
 	if (typeof input === 'object' && input instanceof GuildChannel) {
-		let temp = resolve? input : input.id;
+		const temp = resolve ? input : input.id;
 		if (manager.cache.has(input.id))
 			return maxCount <= 1 ? temp : [temp];
 		else
 			return maxCount <= 1 ? undefined : [];
 	}
-	res = await getIDs(Object.assign({}, options, {input, manager, maxCount, resolve}, {reg: channelReg, prop: 'name'}));
+	res = await getIDs({ ...options, input, manager, maxCount, resolve, reg: channelReg, prop: 'name' });
 	log.debug('Found channel(s):', res.map(val => val.toString()));
-	return maxCount > 1? res : res[0];
+	return maxCount > 1 ? res : res[0];
 }
 
 const roleReg = /<@&(\d{17,19})>/;
@@ -164,20 +173,20 @@ const roleReg = /<@&(\d{17,19})>/;
  * @prop   {string}                [allowText='']  - setting to partial or full will allow a text matching algorithm for the search
  * @return {(string|string[]|Role|Role[])} either a list of roles, or the role itself
 */
-async function getRoleID (input, guild, {maxCount = 1, resolve, ...options} = {}) {
+async function getRoleID (input, guild, { maxCount = 1, resolve, ...options } = {}) {
 	let manager = guild.roles, res;
 
 	log.debug('Looking for role, input:', input, 'max', maxCount, 'options', options);
 	if (typeof input === 'object' && input instanceof Role) {
-		let temp = resolve? input : input.id;
+		const temp = resolve ? input : input.id;
 		if (manager.cache.has(input.id))
 			return maxCount <= 1 ? temp : [temp];
 		else
 			return maxCount <= 1 ? undefined : [];
 	}
-	res = await getIDs(Object.assign({}, options, {input, manager, maxCount, resolve}, {reg: roleReg, prop: 'name'}));
+	res = await getIDs({ ...options, input, manager, maxCount, resolve, reg: roleReg, prop: 'name' });
 	log.debug('Found role(s):', res.map(val => val.toString()));
-	return maxCount > 1? res : res[0];
+	return maxCount > 1 ? res : res[0];
 }
 
 const userReg = /<@!?(\d{17,19})>/;
@@ -196,20 +205,20 @@ const userReg = /<@!?(\d{17,19})>/;
  * @prop   {boolean}              [fetch=true]    - when true will fetch from discord if the user isn't in cache
  * @return {(string|string[]|GuildMember)} either a list of guild members, or the member itself
 */
-async function getUserID (input, guild, {maxCount = 1, resolve, ...options} = {}) {
+async function getUserID (input, guild, { maxCount = 1, resolve, ...options } = {}) {
 	let manager = guild.members, res;
 
 	log.debug('Looking for user, input:', input, 'max', maxCount, 'options', options);
 	if (typeof input === 'object' && input instanceof GuildMember) {
-		let temp = resolve? input : input.id;
+		const temp = resolve ? input : input.id;
 		if (manager.cache.has(input.id))
 			return maxCount <= 1 ? temp : [temp];
 		else
 			return maxCount <= 1 ? undefined : [];
 	}
-	res = await getIDs(Object.assign({}, options, {input, manager, maxCount, resolve}, {reg: userReg, prop: 'displayName'}));
+	res = await getIDs({ ...options, input, manager, maxCount, resolve, reg: userReg, prop: 'displayName' });
 	log.debug('Found user(s):', res.map(val => val.toString()));
-	return maxCount > 1? res : res[0];
+	return maxCount > 1 ? res : res[0];
 }
 
 export { getUserID, getChannelID, getRoleID };

@@ -12,8 +12,6 @@ class ConsolidatedListener {
 	#eventsToListeners = new Map();
 	#eventsToInternalListener = new Map();
 
-	constructor () {}
-
 	async #forwardEvent (event, ...params) {
 		const list = this.#eventsToListeners.get(event) || [];
 		for (const { listener, check } of list) {
@@ -156,7 +154,7 @@ class ConsolidatedListener {
 	addListener (eventName, listener, check) { return this.on(eventName, listener, check); }
 
 	#getOnceWrapper (eventName, listener) {
-		const onceWrapper = (function (eventName, listener, ...params) {
+		const onceWrapper = (function onceWrapper (eventName, listener, ...params) {
 			this.removeListener(eventName, listener);
 			listener(...params);
 		}).bind(this, eventName, listener);
@@ -180,10 +178,9 @@ class ConsolidatedListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	prependListener (eventName, listener, check) {
-		let list;
 		eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
 		this.on(eventName, listener, check);
-		list = this.#eventsToListeners.get(eventName);
+		const list = this.#eventsToListeners.get(eventName);
 		list.unshift(list.pop());
 		return this;
 	}
@@ -206,7 +203,7 @@ class ConsolidatedListener {
 		let list;
 		eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
 		list = this.#eventsToListeners.get(eventName) || [];
-		list = list.filter(({ listener: li }) => li != listener);
+		list = list.filter(({ listener: li }) => li !== listener);
 		if (list.size)
 			this.#eventsToListeners.set(eventName, list);
 		else if (this.#eventsToListeners.delete(eventName))

@@ -68,7 +68,8 @@ function convert (id, obj, varStore) {
  * @returns {(string|undefined)} the json string if more than the id property is set
 */
 function stringify (map, varStore) {
-	let res = {}, moreThanId = false;
+	const res = {};
+	let moreThanId = false;
 	for (const [key, val] of map) {
 		try {
 			if (key !== 'id') {
@@ -110,10 +111,10 @@ async function createConfigDir () {
  * @param {Set} varStore - the set of all available config properties that may or may not be already configured
 */
 async function saveConfig (guildObj, varStore) {
-	let path = Path.resolve(confDir, `${guildObj.get('id')}.json`), data = stringify(guildObj, varStore), unlock;
+	const path = Path.resolve(confDir, `${guildObj.get('id')}.json`), data = stringify(guildObj, varStore);
 
 	log.debug('Awaiting lock for', path);
-	unlock = await lock(path).acquire();
+	const unlock = await lock(path).acquire();
 	log.debug('Locked', path);
 	if (data) {
 		log.info('Attempting to save config:', path, 'data:', data);
@@ -139,10 +140,10 @@ async function saveConfig (guildObj, varStore) {
  * @return {Map} the map of guild config variable names to config values
 */
 async function loadConfig (varStore) {
-	let dir, res = new Map();
+	const res = new Map();
 
 	await createConfigDir();
-	dir = await fs.readdir(confDir, { encoding: 'utf8', withFileTypes: true });
+	const dir = await fs.readdir(confDir, { encoding: 'utf8', withFileTypes: true });
 	for (const file of dir) {
 		if (file.isFile()) {
 			try {

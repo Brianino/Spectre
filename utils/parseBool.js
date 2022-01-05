@@ -1,4 +1,4 @@
-'use strict';
+
 
 /**
  * Converts an input into a boolean value
@@ -17,15 +17,15 @@ function parseBool (input) {
 		case 'null': return false;
 		case 'undefined': return false;
 		case 'string':
-		switch (input.toLowerCase()) {
-			case '':
-			case 'f':
-			case 'false': return false;
+			switch (input.toLowerCase()) {
+				case '':
+				case 'f':
+				case 'false': return false;
 
-			default:
-			case 't':
-			case 'true': return true;
-		}
+				default:
+				case 't':
+				case 'true': return true;
+			}
 	}
 }
 

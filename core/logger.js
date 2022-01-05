@@ -6,9 +6,9 @@ import fs from 'fs/promises';
 
 if (!process.env.TEST) {
 	const log = log4js.getLogger(),
-	 configFile = 'log.json',
-	 ac = new AbortController(),
-	 { signal } = ac;
+		configFile = 'log.json',
+		ac = new AbortController(),
+		{ signal } = ac;
 
 	log4js.configure(configFile);
 	(async () => {
