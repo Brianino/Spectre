@@ -9,7 +9,6 @@ addConfig('repost_formats', Set, {default: new Set(['png', 'jpg', 'jpeg', 'gif',
 
 function inGuild (emitter) {
 	const { getChannelID, getAttachments, checkForUrl, waitFor } = Utils;
-	const { GuildChannel, DiscordAPIError } = discordjs;
 
 	// modify this so that the listener is only attached if there is a gallery set for the guild
 	let att = false, repost = async msg => {
@@ -42,6 +41,7 @@ function inGuild (emitter) {
 						content: urls.join('\n'),
 						files: files,
 					}).catch(e => {
+						log.error('Failed to re-upload file', e);
 						return channel.send(urls.concat(files.map(att => att.attachment)).join('\n'));
 					});
 				}
@@ -52,6 +52,29 @@ function inGuild (emitter) {
 	if (this.config.repost_galleries.size) {
 		emitter.on('message', repost);
 		att = true;
+	}
+
+	async function parseInput (input, guild) {
+		let source = [], gallery, tSwitch = false, type = 0;
+
+		if (!input.length) {
+			type = 2;
+		} else if (input[0] === 'delete') {
+			type = 1;
+			gallery = await getChannelID(input.slice(1).shift(), guild, {allowText: 'partial'});
+		} else {
+			for (let val of input) {
+				switch (val) {
+					case 'to': tSwitch = true; break;
+
+					default:
+						if (tSwitch) gallery = await getChannelID(val, guild, {allowText: 'partial'});
+						else source.push(await getChannelID(val, guild, {allowText: 'partial'}));
+						break;
+				}
+			}
+		}
+		return [type, gallery, source];
 	}
 
 	return async (msg, ...input) => {
@@ -113,28 +136,5 @@ function inGuild (emitter) {
 			break;
 		}
 		msg.channel.send(resMsg);
-	}
-
-	async function parseInput (input, guild) {
-		let source = [], gallery, tSwitch = false, type = 0;
-
-		if (!input.length)
-			type = 2;
-		else if (input[0] === 'delete') {
-			type = 1;
-			gallery = await getChannelID(input.slice(1).shift(), guild, {allowText: 'partial'});
-		} else {
-			for (let val of input) {
-				switch (val) {
-					case 'to': tSwitch = true; break;
-
-					default:
-						if (tSwitch) gallery = await getChannelID(val, guild, {allowText: 'partial'});
-						else source.push(await getChannelID(val, guild, {allowText: 'partial'}));
-						break;
-				}
-			}
-		}
-		return [type, gallery, source];
 	}
 }

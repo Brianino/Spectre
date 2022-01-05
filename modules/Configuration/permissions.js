@@ -7,25 +7,6 @@ this.permissions = 'ADMINISTRATOR';
 function inGuild () {
 	const { Permissions } = discordjs;
 
-	return (msg, ...args) => {
-		switch (args.shift()) {
-			case 'list': // display permissions for all commands
-			return listPermission.call(this, msg);
-
-			case 'show': // display permissions for a command
-			return showPermission.call(this, msg, args.shift());
-			
-			case 'set': //set the permissions for a command
-			return setPermission.call(this, msg, args.shift(), args);
-			
-			default:
-			return msg.channel.send('Unknown option, use either:\n' +
-				'`list` (to list the permissions for all the commands)\n' +
-				'`show` (to show the permissions for a single command)\n' +
-				'`set` (to set the permissions for a command)');
-		}
-	}
-
 	function setPermission (msg, command, perms) {
 		let cmd = modules.get(command = String(command));
 
@@ -90,5 +71,24 @@ function inGuild () {
 			}
 		}
 		return msg.channel.send({embed});
+	}
+
+	return (msg, ...args) => {
+		switch (args.shift()) {
+			case 'list': // display permissions for all commands
+			return listPermission.call(this, msg);
+
+			case 'show': // display permissions for a command
+			return showPermission.call(this, msg, args.shift());
+			
+			case 'set': //set the permissions for a command
+			return setPermission.call(this, msg, args.shift(), args);
+			
+			default:
+			return msg.channel.send('Unknown option, use either:\n' +
+				'`list` (to list the permissions for all the commands)\n' +
+				'`show` (to show the permissions for a single command)\n' +
+				'`set` (to set the permissions for a command)');
+		}
 	}
 }

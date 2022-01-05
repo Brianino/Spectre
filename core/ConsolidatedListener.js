@@ -76,9 +76,8 @@ class ConsolidatedListener {
 		if (this.#eventsToListeners.has(event))
 			return false;
 		log.debug(`Attaching new event "${String(event)}" to sources`);
-		for (let source of this.#sources) {
+		for (let source of this.#sources)
 			source.on(event, this.#getEventHandler(event));
-		}
 		return true;
 	}
 
@@ -144,11 +143,10 @@ class ConsolidatedListener {
 	*/
 	on (eventName, listener, check) {
 		eventName = (typeof eventName === 'symbol')? eventName : String(eventName);
-		if (this.#setupEvent(eventName)) {
+		if (this.#setupEvent(eventName))
 			this.#eventsToListeners.set(eventName, [{listener, check}]);
-		} else {
+		else
 			this.#eventsToListeners.get(eventName).push({listener, check});
-		}
 		return this;
 	}
 
@@ -209,11 +207,10 @@ class ConsolidatedListener {
 		eventName = (typeof eventName === 'symbol')? eventName : String(eventName);
 		list = this.#eventsToListeners.get(eventName) || [];
 		list = list.filter(({listener:li}) => li != listener);
-		if (list.size) {
+		if (list.size)
 			this.#eventsToListeners.set(eventName, list);
-		} else if (this.#eventsToListeners.delete(eventName)) {
+		else if (this.#eventsToListeners.delete(eventName))
 			this.#getEventHandler(eventName).remove();
-		}
 		return this;
 	}
 

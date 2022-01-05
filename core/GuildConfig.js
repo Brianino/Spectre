@@ -5,6 +5,7 @@ import { Permissions } from 'discord.js';
 import MappingUtils from './MappingUtils.js';
 import { promises as fs, constants, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
+import lock from './namedLock.js';
 import Path from 'path';
 
 const log = logger('Guild-Config');
@@ -88,18 +89,36 @@ function stringify (map, varStore) {
 		return JSON.stringify(res);
 }
 
+/** Created the config directory if it doesn't exist already
+ * @private
+*/
+async function createConfigDir () {
+	if (configDirExists)
+		return
+	configDirExists = true;
+	try {
+		await fs.stat(confDir);
+	} catch (ignore) {
+		log.warn('Config dir didn\'t exist, will create the config dir', confDir);
+		await fs.mkdir(confDir);
+	}
+}
+
 /** Writes the guild config map to file
  * @private
  * @param {Map}	guildObj - the map of guild config variable names to config values
  * @param {Set} varStore - the set of all available config properties that may or may not be already configured
 */
 async function saveConfig (guildObj, varStore) {
-	let path = Path.resolve(confDir, guildObj.get('id') + '.json'), data = stringify(guildObj, varStore);
+	let path = Path.resolve(confDir, guildObj.get('id') + '.json'), data = stringify(guildObj, varStore), unlock;
 
+	log.debug('Awaiting lock for', path);
+	unlock = await lock(path).acquire();
+	log.debug('Locked', path);
 	if (data) {
 		log.info('Attempting to save config:', path, 'data:', data);
 		await createConfigDir();
-		return fs.writeFile(path, data, {flag: 'w'});
+		await fs.writeFile(path, data, {flag: 'w'});
 	} else {
 		let exists = true;
 
@@ -107,24 +126,11 @@ async function saveConfig (guildObj, varStore) {
 
 		if (exists) {
 			log.info('Deleting config:', path);
-			return fs.unlink(path);
+			await fs.unlink(path);
 		}
 	}
-}
-
-/** Created the config directory if it doesn't exist already
- * @private
-*/
-async function createConfigDir () {
-	if (configDirExists)
-		return;
-	try {
-		await fs.stat(confDir);
-	} catch (ignore) {
-		log.warn('Config dir didn\'t exist, will create the config dir', confDir);
-		await fs.mkdir(confDir);
-	}
-	configDirExists = true;
+	log.debug('Unlocking', path);
+	unlock();
 }
 
 /** Loads the guild config map from file
@@ -340,9 +346,8 @@ class ConfigManager {
 			default: new Set(),
 			configurable: false,
 			set (input) {
-				for (let val of input) {
+				for (let val of input)
 					this.add(val);
-				}
 			},
 		});
 	}

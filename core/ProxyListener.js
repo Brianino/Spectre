@@ -43,11 +43,10 @@ class ProxyListener {
 			for (let temp of lList) {
 				let check = this[sym.checks].get(temp);
 				try {
-					if (!check || await check(...params)) {
+					if (!check || await check(...params))
 						await temp(...params);
-					} else {
+					else
 						log.debug('Skipping listener due to failed check');
-					}
 				} catch (e) {
 					if (this[sym.errors]) this[sym.source].emit('error', e);
 					else log.error('Uncaught error in', event, 'listener:', e);

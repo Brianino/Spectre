@@ -98,9 +98,8 @@ class EmojiController extends events {
 			this.#controlsOn = false;
 			if (this.#messages.size) {
 				let promises = [];
-				for (let emote of this.emotes()) {
+				for (let emote of this.emotes())
 					promises.push(this.#removeReaction(emote));
-				}
 				await Promise.allSettled(promises);
 			}
 		}
@@ -145,9 +144,8 @@ class EmojiController extends events {
 	*/
 	resumeAllControls () {
 		let res = this.#paused.size > 0;
-		for (let evName of this.#paused.keys()) {
+		for (let evName of this.#paused.keys())
 			this.resumeControl(evName);
-		}
 		return res;
 	}
 
@@ -182,9 +180,8 @@ class EmojiController extends events {
 	*/
 	pauseControls (...names) {
 		let res = false;
-		for (let evName of names) {
+		for (let evName of names)
 			res = this.pauseControl(evName) || res;
-		}
 		return res;
 	}
 
@@ -240,9 +237,8 @@ class EmojiController extends events {
 	 * @param {...args} args   - Extra args to pass on to the parent method
 	*/
 	emit(evName, ...args) {
-		if (this.getEventEmote(evName) || evName === 'end') {
+		if (this.getEventEmote(evName) || evName === 'end')
 			super.emit(evName, ...args);
-		}
 	}
 
 	/** Cleans up function to remove the reactions and remove the message from the local store once the reaction collector ends
@@ -263,14 +259,14 @@ class EmojiController extends events {
 			return this.#emoteMap.has(reaction.emoji.toString()) || this.#paused.hasValue(reaction.emoji.toString());
 	}
 
-	#getReaction (msg, emote) {
+	static #getReaction (msg, emote) {
 		return msg.reactions.cache.find(reaction => reaction.emoji.name === emote);
 	}
 
 	async #attachReactions (msg) {
 		for (let emote of this.#emoteOrder) {
 			try {
-				if (this.#getReaction(msg, emote)?.me)
+				if (EmojiController.#getReaction(msg, emote)?.me)
 					continue;
 				await msg.react(String(emote));
 			} catch (e) {
@@ -280,7 +276,7 @@ class EmojiController extends events {
 		if (this.#options.allowUserStop) {
 			this.#emoteMap.set(EmojiController.#STOP_EMOTE, undefined);
 			try {
-				if (this.#getReaction(msg, EmojiController.#STOP_EMOTE)?.me !== true)
+				if (EmojiController.#getReaction(msg, EmojiController.#STOP_EMOTE)?.me !== true)
 					await msg.react(EmojiController.#STOP_EMOTE);
 			} catch (e) {
 				log.debug('Stop unicode:', EmojiController.#STOP_EMOTE);
@@ -291,9 +287,8 @@ class EmojiController extends events {
 
 	async #removeReaction (emoteName, msgs) {
 		let tmp = new Set(msgs ?? this.#messages.keys()), promises = [];
-		for (let msg of tmp) {
-			promises.push(this.#getReaction(msg, emoteName)?.remove());
-		}
+		for (let msg of tmp)
+			promises.push(EmojiController.#getReaction(msg, emoteName)?.remove());
 		await Promise.allSettled(promises).then(res => {
 			let failed = res.filter(({status}) => status === 'rejected');
 			log.warn('Failed to remote emote', emoteName, 'from', failed.length, 'messages');

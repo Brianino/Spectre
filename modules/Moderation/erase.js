@@ -1,4 +1,4 @@
-class lessThan extends Error {};
+class lessThan extends Error {}
 
 this.description = 'erase a number of messages from a user or from all users';
 this.arguments = '[count] [...#channel] [...@user]';
@@ -86,9 +86,8 @@ function inGuild () {
 			return (await msg.channel.send('Successfully deleted ' + number + ' messages from: ' + names.toString())).delete({timeout: 10000});
 		} else if (failed.length > 1) {
 			let names = channels.map(channel => channel.name), text = 'Failed to delete messages on some channels:';
-			for (let obj of failed) {
+			for (let obj of failed)
 				text += `\n<#${obj.channel.id}>: ${obj.message}`;
-			}
 			log.info(`${msg.author.username} (${msg.author.id}) erased ${number} messages from ${names.toString()}`);
 			log.warn(text);
 			return (await msg.channel.send(text)).delete({timeout: 10000});

@@ -5,6 +5,7 @@ import ModuleObject, { access } from './ModuleObject.js';
 import { promises as fs, readFileSync } from 'fs';
 import ConfigManager from './GuildConfig.js';
 import * as Utils from '../utils/utils.js';
+import wrapObject from './wrapObject.js';
 import * as discordjs from 'discord.js';
 import timespan from 'timespan-parser';
 import { fileURLToPath } from 'url';
@@ -98,7 +99,7 @@ class ModuleLoader {
 	}
 
 	async setup () {
-		let files = await this.#findModules(), res;
+		let files = await ModuleLoader.#findModules(), res;
 
 		res = await Promise.allSettled(files.map(file => this.#loadModule(file, false)));
 		await this.#confMan.loadConfig();
@@ -142,7 +143,7 @@ class ModuleLoader {
 	async #loadModule ({filePath, group}, inst = true) {
 		log.debug('Attempting to load module:', filePath, group);
 		try {
-			let {name, code} = await this.#loadFile(filePath), mod;
+			let {name, code} = await ModuleLoader.#loadFile(filePath), mod;
 
 			if (this.modules.has(name))
 				return log.debug('Skipping over existing module', name);
@@ -164,7 +165,7 @@ class ModuleLoader {
 		}
 	}
 
-	async #loadFile (filePath) {
+	static async #loadFile (filePath) {
 		let name = Path.basename(filePath, '.js');
 
 		if (!filePath.endsWith('.js'))
@@ -175,7 +176,7 @@ class ModuleLoader {
 		};
 	}
 
-	async #findModules () {
+	static async #findModules () {
 		let res = [], path = Path.resolve(__dirname, moduleFolder);
 		for await (let item of await fs.opendir(path)) {
 			if (item.isFile()) {
@@ -216,32 +217,6 @@ class ModuleLoader {
 		}
 	}
 
-	#proxifyModule (mod, main) {
-		return new Proxy (main, {
-			get: (target, prop) => {
-				if (Object.prototype.hasOwnProperty.call(Object.getPrototypeOf(mod), prop)){
-					let val = Reflect.get(mod, prop);
-					if (val instanceof Function)
-						return val.bind(mod);
-					else
-						return val;
-				} else {
-					return Reflect.get(target, prop);
-				}
-			},
-			set: (target, prop, value) => {
-				if (Object.prototype.hasOwnProperty.call(Object.getPrototypeOf(mod), prop))
-					return Reflect.set(mod, prop, value);
-				else
-					return Reflect.set(target, prop, value);
-			},
-			apply: (target, thisArg, args) => {
-				log.info("Apply called:");
-				return Reflect.apply(target, thisArg, args);
-			}
-		});
-	}
-
 	async #setupModule (name, group, filename, code) {
 		let script = new vm.Script(code, {filename}), obj = new ModuleObject(name, group),
 			temp = {}, ctx = Object.create(temp), vars = [];
@@ -256,7 +231,6 @@ class ModuleLoader {
 		Object.assign(temp, {
 			__filename: filename,
 			__dirname: Path.dirname(filename),
-			setupModule: this.#proxifyModule(obj, ctx),
 			modules: this.modules,
 			access: access,
 			log: logger(`Module-${group}`),
@@ -265,13 +239,12 @@ class ModuleLoader {
 			addConfig: (varName, type, {description, configurable, ...props}) => {
 				log.debug('Adding config for', name, varName);
 				this.#confMan.register(varName, type, {description, configurable, ...props});
-				if (configurable) {
+				if (configurable)
 					vars.push(varName);
-				}
 				log.debug('Config added for', name, varName);
 			},
 		}, globals);
-		script.runInNewContext(this.#proxifyModule(obj, ctx), {contextName: `Main Context: ${name}`, timeout: iniTimeout});
+		script.runInNewContext(wrapObject(obj, ctx), {contextName: `Main Context: ${name}`, timeout: iniTimeout});
 		this.#context.create(obj, ctx);
 		return obj;
 	}

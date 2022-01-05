@@ -6,14 +6,14 @@ import fs from 'fs/promises';
 
 if (!process.env.TEST) {
 	const log = log4js.getLogger();
-	const ac = new AbortController();
 	const configFile = 'log.json';
+	const ac = new AbortController();
 	const { signal } = ac;
 
 	log4js.configure(configFile);
 	(async () => {
 		try {
-			const watcher = fs.watch(configFile, {signal});
+			const watcher = fs.watch(configFile, { signal });
 			let lastEv = 0;
 			for await (const event of watcher) {
 				if (event.eventType === 'change' && Date.now() - lastEv > 10) {

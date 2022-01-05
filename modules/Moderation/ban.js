@@ -24,9 +24,9 @@ function inGuild () {
 				return msg.channel.send(`User ${user.user.username} was banned`);
 			} catch (e) {
 				log.warn(`${msg.author.username} (${msg.author.id}) tried to ban ${user.user.username} (${user.id}) - Failed because ${e.toString()}`);
-				if (e instanceof DiscordAPIError)
+				if (e instanceof DiscordAPIError) {
 					return msg.channel.send(`Unable to ban user: ${e.message}`);
-				else {
+				} else {
 					log.error(e);
 					return msg.channel.send('Internal error occured');
 				}

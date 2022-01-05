@@ -13,9 +13,11 @@
   "scripts": {
     "start": "node spectre.js",
     "test": "TEST=true mocha --input-type=module",
+    "lint": "eslint core/** modules/** spectre.js",
     "docs": "jsdoc -r spectre.js etc utils"
   },
   "dependencies": {
+    "async-mutex": "^0.3.2",
     "discord.js": "^12.5.1",
     "log4js": "^6.3.0",
     "timespan-parser": "^1.0.2",

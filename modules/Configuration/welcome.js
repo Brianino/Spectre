@@ -50,7 +50,9 @@ function inGuild (emitter) {
 							if (url && url[0] === this.config.welcome_thumbnail) {
 								if (url[0] !== this.config.welcome_thumbnail) this.config.welcome_thumbnail = url[0];
 								embed.thumbnail = {url: url[0]};
-							} else this.config.welcome_thumbnail = undefined;
+							} else {
+								this.config.welcome_thumbnail = undefined;
+							}
 						}
 						if (this.config.welcome_image) {
 							let url = checkForUrl(this.config.welcome_image, true);
@@ -58,7 +60,9 @@ function inGuild (emitter) {
 							if (url && url[0] === this.config.welcome_image) {
 								if (url[0] !== this.config.welcome_image) this.config.welcome_image = url[0];
 								embed.image = {url: url[0]};
-							} else this.config.welcome_image = undefined;
+							} else {
+								this.config.welcome_image = undefined;
+							}
 						}
 						return channel.send({embed});
 					} else {
@@ -68,7 +72,7 @@ function inGuild (emitter) {
 					log.error('Unable to find welcome text channel for server', guild.name, '<->', guild.id);
 					this.config.welcome_channel = undefined;
 				}
-			} else return;
+			}
 		}
 	});
 

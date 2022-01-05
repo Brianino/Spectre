@@ -6,9 +6,8 @@ class TwoWayMap extends Map {
 	constructor (iterable) {
 		super();
 		if (iterable) {
-			for (let [key, val] of iterable) {
+			for (let [key, val] of iterable)
 				this.set(key, val);
-			}
 		}
 	}
 	

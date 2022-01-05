@@ -20,9 +20,8 @@ function checkForUrl (text, getMatches = false, flags = '') {
 
 		if (treg.global || treg.sticky) {
 			let temp;
-			while ((temp = treg.exec(text))) {
+			while ((temp = treg.exec(text)))
 				res.push(temp);
-			}
 			return res;
 		} else {
 			return treg.exec(text);

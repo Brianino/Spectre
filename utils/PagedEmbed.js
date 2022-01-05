@@ -9,9 +9,8 @@ const log = logger('Utilities');
 function trimStr (str, lim) {
 	str = String(str);
 
-	if (str.length > lim) {
+	if (str.length > lim)
 		str = str.substr(0, lim - 3) + '...';
-	}
 	return str;
 }
 
@@ -22,7 +21,7 @@ class GroupManager {
 	constructor () {}
 
 	get #group () {
-		let manager = this;
+		let that = this;
 		return class Group {
 			#name;
 			#page = 0;
@@ -50,20 +49,19 @@ class GroupManager {
 
 			addMsg (msg) {
 				if (msg instanceof Message) {
-					if (manager.#msgs.has(msg))
+					if (that.#msgs.has(msg))
 						throw new Error('message cannot be in multiple groups');
 					this.#msgSet.add(msg);
-					manager.#msgs.set(msg, this);
+					that.#msgs.set(msg, this);
 					log.debug('Added message', msg.id, 'to group', this.#name);
 				}
 			}
 
 			kill () {
 				log.debug('Killing group', this.#name);
-				manager.#groups.delete(this.#name);
-				for (let msg of this.#msgs) {
-					manager.#msgs.delete(msg);
-				}
+				that.#groups.delete(this.#name);
+				for (let msg of this.#msgs)
+					that.#msgs.delete(msg);
 				this.#name = Symbol();
 				this.#page = -1;
 			}
@@ -125,12 +123,11 @@ class PagedEmbed {
 		if (this.#title)
 			title = this.#title + ': ' + title;
 		while (tmp.length || !hasRun) {
-			this.#pages.push(this.#makeEmbed(title, tmp.splice(0, PagedEmbed.MAX_ROWS), desc));
-			if (this.#pages.length == 2) {
+			this.#pages.push(PagedEmbed.#makeEmbed(title, tmp.splice(0, PagedEmbed.MAX_ROWS), desc));
+			if (this.#pages.length == 2)
 				this.#controller.turnOnControls();
-			} else if (this.#pages.length > 2) {
+			else if (this.#pages.length > 2)
 				this.#controller.resumeAllControlsExcluding('prev', 'first');
-			}
 			hasRun = !hasRun;
 			title += ' - Continued';
 		}
@@ -142,7 +139,7 @@ class PagedEmbed {
 
 		if (page) {
 			let mergedRows = rows.concat(page.fields.map(({name, value}) => [name, value]));
-			this.#pages[pageNo] = this.#makeEmbed(page.title, mergedRows, page.description);
+			this.#pages[pageNo] = PagedEmbed.#makeEmbed(page.title, mergedRows, page.description);
 		}
 	}
 
@@ -158,11 +155,10 @@ class PagedEmbed {
 			if (this.#pages.length > 1) {
 				for (let group of this.#manager) {
 					if (group.page == index) {
-						if (index) {
+						if (index)
 							this.#controller.prev(group);
-						} else {
+						else
 							this.#controller.first(group);
-						}
 					}
 				}
 			} else {
@@ -208,14 +204,13 @@ class PagedEmbed {
 	}
 
 	async sendTo (channel, group = Symbol()) {
-		if (typeof channel === 'object')
 		if (!channel || channel instanceof Channel === false)
 			throw new Error('Channel required');
 
 		return await this.#makePagedEmbed(channel, String(group));
 	}
 
-	#makeEmbed (title, rows, desc) {
+	static #makeEmbed (title, rows, desc) {
 		let embed = new MessageEmbed();
 
 		embed.setTitle(trimStr(title, PagedEmbed.MAX_TITLE_LENGTH));
@@ -331,11 +326,10 @@ class PagedEmbed {
 			log.debug('Associating message', message.id, 'with controller, and group', groupName);
 			group.addMsg(message);
 			// Only attach the contoller if there is more than one page, otherwise navigation is unnecessary
-			if (this.#pages.length > 1) {
+			if (this.#pages.length > 1)
 				this.#controller.pauseControls('first', 'prev');
-			} else {
+			else
 				await this.#controller.turnOffControls();
-			}
 			this.#controller.addToMessage(message);
 		}
 		return message;

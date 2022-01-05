@@ -14,9 +14,9 @@ class MappingUtilties {
 	static asJson (type, input) {
 		let typeName = String(type).toLowerCase();
 
-		if (typeName in this) {
+		if (typeName in this)
 			return this[typeName].toJson(input);
-		} else
+		else
 			throw new TypeError('no mapping function for type ' + typeName);
 	}
 
@@ -28,8 +28,9 @@ class MappingUtilties {
 				return this[typeName].from(JSON.parse(input));
 			else
 				return this[typeName].from(input);
-		} else
+		} else {
 			throw new TypeError('no mapping function for type ' + typeName);
+		}
 	}
 
 	static get auto () {

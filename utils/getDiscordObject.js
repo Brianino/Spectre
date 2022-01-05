@@ -78,22 +78,24 @@ async function getIDs ({input, manager, prop, reg, maxCount, resolve, allowText 
 	if (res.length) return res;
 
 	log.debug(allowID? 'Searching for id\'s' : 'ID searching disabled');
-	while ((temp = /\d{17,19}/g.exec(input)) && res.length < maxCount && allowID) {
-		log.debug('Found a match:', temp[0], 'is in guild cache:', manager.cache.has(temp[0]));
-		log.debug(temp);
-		if (manager.cache.has(temp[0]))
-			res.push(resolve? manager.cache.get(temp[0]) : temp[0]);
-		else if (fetch && Object.prototype.hasOwnProperty.call(manager, 'fetch')) {
-			// Currently only the guild user manager has a fetch method
-			try {
-				let usr = await manager.fetch({user: temp, limit: maxCount});
-				res.push(resolve? usr : usr.id)
-			} catch (e) {
-				log.error('Failed to fetch from', manager.constructor.name)
+	if (allowID){
+		while ((temp = /\d{17,19}/g.exec(input)) && res.length < maxCount) {
+			log.debug('Found a match:', temp[0], 'is in guild cache:', manager.cache.has(temp[0]));
+			log.debug(temp);
+			if (manager.cache.has(temp[0])) {
+				res.push(resolve? manager.cache.get(temp[0]) : temp[0]);
+			} else if (fetch && Object.prototype.hasOwnProperty.call(manager, 'fetch')) {
+				// Currently only the guild user manager has a fetch method
+				try {
+					let usr = await manager.fetch({user: temp, limit: maxCount});
+					res.push(resolve? usr : usr.id)
+				} catch (e) {
+					log.error('Failed to fetch from', manager.constructor.name)
+				}
 			}
 		}
+		if (res.length) return res;
 	}
-	if (res.length) return res;
 
 	log.debug(allowText? 'Searching for text' : 'Text searching disabled');
 	for (let text of split(input)) {

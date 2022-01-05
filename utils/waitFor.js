@@ -16,8 +16,9 @@ function waitFor (time = 1000, interval = 10, checkFunc) {
 		let func = async (passed, tFunc) => {
 			let newTime = interval + passed - time;
 			try {
-				if (await tFunc()) return resolve(true);
-				else if (newTime > 0) {
+				if (await tFunc()) {
+					return resolve(true);
+				} else if (newTime > 0) {
 					interval -= newTime;
 					if (interval <= 0) return resolve(false);
 				}
@@ -26,11 +27,10 @@ function waitFor (time = 1000, interval = 10, checkFunc) {
 				return reject(e);
 			}
 		}
-		if (interval && typeof checkFunc === 'function') {
+		if (interval && typeof checkFunc === 'function')
 			setTimeout(func, interval, interval, checkFunc);
-		} else {
+		else
 			setTimeout(func, time, time, () => true);
-		}
 	})
 }
 

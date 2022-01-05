@@ -23,12 +23,11 @@ function inAll () {
 
 			helpEmbed.setColor(0xBB0000);
 			for (let moduleObj of modules.values()) {
-				let group = moduleObj.group, page = pages.get(moduleObj.group),
-					details = [moduleObj.command, moduleObj.description[0]];
+				let page = pages.get(moduleObj.group), details = [moduleObj.command, moduleObj.description[0]];
 
 				if (page === undefined) {
 					let desc = detailedHelp[moduleObj.group] || (moduleObj.group + ' commands');
-					page = helpEmbed.addPage(moduleObj.group, [details]);
+					page = helpEmbed.addPage(moduleObj.group, [details], desc);
 					pages.set(moduleObj.group, page);
 				} else {
 					helpEmbed.addToPage(page, [details]);

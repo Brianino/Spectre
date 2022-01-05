@@ -55,12 +55,11 @@ function inGuild (emitter, groupObj) {
 				if (await checkExempt.call(this, msg.member, this.config.filter_exempt.get(name)))
 					return log.debug('User is exempt from filter due to higher role');
 				log.info('Deleting filtered message', msg.content, 'from user', msg.author.username);
-				msg.delete().catch(e => {
+				msg.delete().catch(ignore => {
 					log.error('Unable to delete filtered message', msg.content, 'from user', msg.author.username, `(${msg.author.id})`);
 				});
-				if (groupObj.autoban) {
+				if (groupObj.autoban)
 					groupObj.autoban(msg);
-				}
 			}
 		}
 	});
@@ -115,9 +114,8 @@ function inGuild (emitter, groupObj) {
 				try {
 					return await addFilter.call(this, filterName, exempt, regex)
 				} catch (e) {
-					if (e instanceof SyntaxError) {
+					if (e instanceof SyntaxError)
 						(await msg.reply(`Unable to create the filter: ${e.message}`)).delete({timeout: 10000});
-					}
 					throw e;
 				}
 			}
