@@ -1,0 +1,170 @@
+{
+	"appenders": {
+		"stdout": {
+			"type": "stdout",
+			"layout": {
+				"type": "pattern",
+				"pattern": "%c %[%p%] %m"
+			}
+		},
+		"stderr": {
+			"type": "stderr",
+			"layout": {
+				"type": "pattern",
+				"pattern": "%c %[%p %f{1}%] %m"
+			}
+		},
+		"mainFile": {
+			"type": "file",
+			"filename": "logs/main.log",
+			"maxLogSize": 536870912,
+			"backups": 5,
+			"compress": true,
+			"keepFileExt": true,
+			"layout": {
+				"type": "pattern",
+				"pattern": "%d{dd/MM/yy hh:mm:ss} %c %p %m"
+			}
+		},
+		"debugFile": {
+			"type": "file",
+			"filename": "logs/debug.log",
+			"maxLogSize": 536870912,
+			"backups": 5,
+			"compress": true,
+			"keepFileExt": true,
+			"layout": {
+				"type": "pattern",
+				"pattern": "%d{dd/MM/yy hh:mm:ss} %c %p %m"
+			}
+		},
+		"commands": {
+			"type": "file",
+			"filename": "logs/commands.log",
+			"maxLogSize": 536870912,
+			"backups": 5,
+			"compress": true,
+			"keepFileExt": true,
+			"layout": {
+				"type": "pattern",
+				"pattern": "%d{dd/MM/yy hh:mm:ss} %m"
+			}
+		},
+		"config": {
+			"type": "file",
+			"filename": "logs/Guild_Config.log",
+			"maxLogSize": 536870912,
+			"backups": 5,
+			"compress": true,
+			"keepFileExt": true,
+			"layout": {
+				"type": "pattern",
+				"pattern": "%d{dd/MM/yy hh:mm:ss} %c %p %m"
+			}
+		},
+		"module-loader": {
+			"type": "file",
+			"filename": "logs/Module_Loader.log",
+			"maxLogSize": 536870912,
+			"backups": 5,
+			"compress": true,
+			"keepFileExt": true,
+			"layout": {
+				"type": "pattern",
+				"pattern": "%d{dd/MM/yy hh:mm:ss} %c %p %m"
+			}
+		},
+		"modules": {
+			"type": "multiFile",
+			"base": "logs/",
+			"extension": ".log",
+			"property": "categoryName",
+			"maxLogSize": 536870912,
+			"backups": 5,
+			"compress": true,
+			"keepFileExt": true,
+			"layout": {
+				"type": "pattern",
+				"pattern": "%d{dd/MM/yy hh:mm:ss} %c %p %f{1} %m"
+			}
+		},
+		"out": {
+			"type": "logLevelFilter",
+			"level": "info",
+			"maxLevel": "warn",
+			"appender": "stdout"
+		},
+		"err": {
+			"type": "logLevelFilter",
+			"level": "error",
+			"appender": "stderr"
+		},
+		"main": {
+			"type": "logLevelFilter",
+			"level": "info",
+			"appender": "mainFile"
+		},
+		"debug": {
+			"type": "logLevelFilter",
+			"level": "trace",
+			"maxLevel": "debug",
+			"appender": "debugFile"
+		}
+	},
+	"categories": {
+		"default": {
+			"appenders": ["main", "out", "err", "debug"],
+			"level": "info",
+			"enableCallStack": true
+		},
+		"Main": {
+			"appenders": ["main", "out", "err", "debug"],
+			"level": "all",
+			"enableCallStack": true
+		},
+		"Commands": {
+			"appenders": ["commands"],
+			"level": "info"
+		},
+		"Context-Handler": {
+			"appenders": ["main", "out", "err", "debug"],
+			"level": "info",
+			"enableCallStack": true
+		},
+		"Module-Loader": {
+			"appenders": ["module-loader", "out", "err", "debug"],
+			"level": "info",
+			"enableCallStack": true
+		},
+		"Guild-Config": {
+			"appenders": ["config", "err", "debug"],
+			"level": "info",
+			"enableCallStack": true
+		},
+		"Utilties": {
+			"appenders": ["main", "err", "debug"],
+			"level": "info",
+			"enableCallStack": true
+		},
+		"Module-Configuration": {
+			"appenders": ["modules", "err", "debug"],
+			"level": "info",
+			"enableCallStack": true
+		},
+		"Module-Moderation": {
+			"appenders": ["modules", "err", "debug"],
+			"level": "info",
+			"enableCallStack": true
+		},
+		"Module-Utility": {
+			"appenders": ["modules", "err", "debug"],
+			"level": "info",
+			"enableCallStack": true
+		},
+		"Module-Other": {
+			"appenders": ["modules", "err", "debug"],
+			"level": "info",
+			"enableCallStack": true
+		}
+	}
+}

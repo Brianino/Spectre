@@ -47,6 +47,14 @@ jspm_packages
 .yarn-integrity
 
 #config example
-config.js
+config.json
+
+# Documentation directory
+out
+
+# Data directory
+data
 
 package-lock.json
+*.sublime-project
+*.sublime-workspace

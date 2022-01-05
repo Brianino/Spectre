@@ -1,30 +1,30 @@
 #!/usr/bin/env node
-"use strict";
-if (!process.env.DEBUG) process.env.DEBUG = '*:log,*:info,*:warn,*:error';
-const {time} = require('./etc/utilities.js');
-const log = require('./etc/logger.js')('main');
-const {run, modules} = require('./etc/moduleLoader.js');
-const {token, prefix} = require('./config.json');
-const {saved} = require('./etc/guildConfig.js');
-const Discord = require('discord.js');
-//const log2 = logFile('main');
 
-const bot = new Discord.Client();
+
+import Discord from 'discord.js';
+import logger from './core/logger.js';
+import ModuleLoader from './core/ModuleLoader.js';
+import { readFile } from 'fs/promises';
+
+const log = logger('Main'),
+	bot = new Discord.Client(),
+	modLoader = new ModuleLoader();
 
 process.on('unhandledRejection', (e, origin) => {
-	log.error(time(), 'Promise Error:', e.toString());
+	log.error('Promise Error:', e.toString());
 	log.error('At Promise:', origin);
 	log.debug(e.stack);
 });
 
-//ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
+// ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
 bot.on('ready', async () => {
-	log.info(time(), 'Connected to discord');
+	log.info('Connected to discord');
 	try {
-		await run(bot);
-		log.info(time(), 'Bot ready');
+		modLoader.source = bot;
+		await modLoader.setup();
+		log.info('Client ready');
 	} catch (e) {
-		log.error(time(), 'Something went wrong during startup for the bot');
+		log.error('Something went wrong during startup for the bot');
 		log.error(e);
 		process.exit();
 	}
@@ -32,35 +32,28 @@ bot.on('ready', async () => {
 
 bot.on('message', async (msg) => {
 	try {
-		let msgStr = msg.content.split(' '), cmd, tmp;
-
-		if (msg.guild && (tmp = saved.get(msg.guild.id))) {
-			if (!tmp) tmp = prefix;
-			cmd = modules.get(msgStr[0].substr(tmp.prefix.length));
-		} else cmd = modules.get(msgStr[0].substr(prefix.length));
-		if (cmd) return await cmd.run(msg, ...msgStr);
-		return;
+		await modLoader.runCommand(msg);
 	} catch (e) {
-		log.error(time(), 'There was an error executing a command', e.toString());
-		log.error(e.stack);
+		log.error('There was an error executing a command', e);
 	}
 });
 
 bot.on('error', e => {
-	log.error(time(), 'Bot error:', e.toString());
-	log.debug(e.stack);
-	log.file('ERROR', e);
+	log.error('Client error:', e);
 });
 
 bot.on('warn', info => {
-	log.file('WARN', info);
+	log.warn('Client warn:', info);
 });
 
 bot.on('debug', info => {
-	log.file.debug('debug', info);
+	log.debug('Client debug', info);
 });
 
-bot.login(token).catch(e => {
-	log.error(time(), 'Login error:', e.toString());
-	log.debug(e.stack);
-}); //Bot Token
+readFile(new URL('./config.json', import.meta.url)).then((data) => {
+	const { token } = JSON.parse(data);
+	bot.login(token).catch(e => {
+		log.error('Login error:', e.toString());
+		log.debug(e.stack);
+	}); // Bot Token
+});
