@@ -1,16 +1,16 @@
-'use strict';
+
 
 import logger from './logger.js';
 import EventEmitter from 'events';
 
-const log = logger('Proxy-Listener');
-const sym = {
-	source: Symbol('source listener'),
-	events: Symbol('events to listeners'),
-	checks: Symbol('listeners to check'),
-	errors: Symbol('forward errors'),
-	queue: Symbol('queue')
-}
+const log = logger('Proxy-Listener'),
+	sym = {
+		source: Symbol('source listener'),
+		events: Symbol('events to listeners'),
+		checks: Symbol('listeners to check'),
+		errors: Symbol('forward errors'),
+		queue: Symbol('queue'),
+	};
 
 /** Proxy listener
  *
@@ -22,11 +22,11 @@ class ProxyListener {
 		if (source && source instanceof EventEmitter === false)
 			throw new Error('Source emitter is not an event emitter');
 		Object.defineProperties(this, {
-			[sym.source]: {value: source, writable: true},
-			[sym.events]: {value: new Map()},
-			[sym.checks]: {value: new WeakMap()},
-			[sym.errors]: {value: errorsFromSource? true : false},
-			[sym.queue]: {value: []},
+			[sym.source]: { value: source, writable: true },
+			[sym.events]: { value: new Map() },
+			[sym.checks]: { value: new WeakMap() },
+			[sym.errors]: { value: !!errorsFromSource },
+			[sym.queue]: { value: []},
 		});
 	}
 
@@ -40,16 +40,18 @@ class ProxyListener {
 
 		log.debug('attaching new event listener to source:', event, lList);
 		this[sym.source].on(event, res = async (...params) => {
-			for (let temp of lList) {
-				let check = this[sym.checks].get(temp);
+			for (const temp of lList) {
+				const check = this[sym.checks].get(temp);
 				try {
 					if (!check || await check(...params))
 						await temp(...params);
 					else
 						log.debug('Skipping listener due to failed check');
 				} catch (e) {
-					if (this[sym.errors]) this[sym.source].emit('error', e);
-					else log.error('Uncaught error in', event, 'listener:', e);
+					if (this[sym.errors])
+						this[sym.source].emit('error', e);
+					else
+						log.error('Uncaught error in', event, 'listener:', e);
 				}
 			}
 		});
@@ -97,7 +99,7 @@ class ProxyListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	on (eventName, listener, check) {
-		let [lList] = this[sym.events].get(eventName = (typeof eventName === 'symbol')? eventName : String(eventName)) || [];
+		let [lList] = this[sym.events].get(eventName = (typeof eventName === 'symbol') ? eventName : String(eventName)) || [];
 
 		if (!this[sym.source]) {
 			log.debug('Source not set up yet, queuing up addition for', eventName);
@@ -105,7 +107,7 @@ class ProxyListener {
 			return this;
 		}
 		if (!lList) {
-			let temp = this.#attachToSource(eventName, lList = new Set());
+			const temp = this.#attachToSource(eventName, lList = new Set());
 
 			this[sym.events].set(eventName, [lList, temp]);
 		}
@@ -118,7 +120,7 @@ class ProxyListener {
 	/**
 	 * @alias listener.on
 	*/
-	addListener (eventName, listener, check) {return this.on(eventName, listener, check)}
+	addListener (eventName, listener, check) { return this.on(eventName, listener, check); }
 
 	/** Attaches a one time listener to the proxy
 	 * @param {string|symbol}          eventName - the name of the event to attach the listener to
@@ -126,7 +128,7 @@ class ProxyListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	once (eventName, listener, check) {
-		let onceWrapper = (function (eventName, listener, ...params) {
+		const onceWrapper = (function (eventName, listener, ...params) {
 			this.removeListener(eventName, listener);
 			listener(...params);
 		}).bind(this, eventName, listener);
@@ -146,7 +148,7 @@ class ProxyListener {
 			this[sym.queue].push(this.prependListener.bind(this, eventName, listener, check));
 			return this;
 		}
-		eventName = (typeof eventName === 'symbol')? eventName : String(eventName)
+		eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
 		this.on(eventName, listener, check);
 		[lList] = this[sym.events].get(eventName);
 		tmp = [...lList];
@@ -162,7 +164,7 @@ class ProxyListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	prependOnceListener (eventName, listener, check) {
-		let onceWrapper = (function (eventName, listener, ...params) {
+		const onceWrapper = (function (eventName, listener, ...params) {
 			this.removeListener(eventName, listener);
 			listener(...params);
 		}).bind(this, eventName, listener);
@@ -182,10 +184,10 @@ class ProxyListener {
 			this[sym.queue].push(this.removeListener.bind(this, eventName, listener));
 			return this;
 		}
-		eventName = (typeof eventName === 'symbol')? eventName : String(eventName);
+		eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
 		[lList, att] = this[sym.events].get(eventName) || [new Set(), () => {}];
 		if (!lList.delete(listener)) {
-			for (let temp of lList) {
+			for (const temp of lList) {
 				if (temp.listener === listener) {
 					lList.delete(temp);
 					break;
@@ -203,7 +205,7 @@ class ProxyListener {
 	/**
 	 * @alias listener.removeListener
 	*/
-	off (eventName, listener) {return this.removeListener(eventName, listener)}
+	off (eventName, listener) { return this.removeListener(eventName, listener); }
 
 	/** A list of all the event names that currently have listeners attached
 	 * @return {Array<string|symbol>}
@@ -217,10 +219,12 @@ class ProxyListener {
 	 * @return {number} count of attached listeners
 	*/
 	listenerCount (eventName) {
-		let [lList] = this[sym.events].get(eventName = (typeof eventName === 'symbol')? eventName : String(eventName)) || [];
+		const [lList] = this[sym.events].get(eventName = (typeof eventName === 'symbol') ? eventName : String(eventName)) || [];
 
-		if (lList) return lList.size;
-		else return 0;
+		if (lList)
+			return lList.size;
+		else
+			return 0;
 	}
 }
 

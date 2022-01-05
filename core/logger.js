@@ -1,14 +1,14 @@
-'use strict';
+
 
 // For compatibility, this has been modified to just return the new log4js logger, as well as configure it when it is first initialised
 import log4js from 'log4js';
 import fs from 'fs/promises';
 
 if (!process.env.TEST) {
-	const log = log4js.getLogger();
-	const configFile = 'log.json';
-	const ac = new AbortController();
-	const { signal } = ac;
+	const log = log4js.getLogger(),
+	 configFile = 'log.json',
+	 ac = new AbortController(),
+	 { signal } = ac;
 
 	log4js.configure(configFile);
 	(async () => {
@@ -34,26 +34,26 @@ if (!process.env.TEST) {
 	log4js.configure({
 		appenders: {
 			testlog: {
-				type: "multiFile",
-				base: "test/logs/",
+				type: 'multiFile',
+				base: 'test/logs/',
 				extension: '.log',
-				property: "categoryName",
+				property: 'categoryName',
 				maxLogSize: 536870912,
 				backups: 0,
-				flags: "w",
+				flags: 'w',
 				layout: {
-					type: "pattern",
-					pattern: "%d{dd/MM/yy hh:mm:ss} %c %p %f{1} %m"
-				}
+					type: 'pattern',
+					pattern: '%d{dd/MM/yy hh:mm:ss} %c %p %f{1} %m',
+				},
 			},
 		},
 		categories: {
 			default: {
-				appenders: ["testlog"],
-				level: "all",
-				enableCallStack: true
-			}
-		}
+				appenders: ['testlog'],
+				level: 'all',
+				enableCallStack: true,
+			},
+		},
 	});
 }
 

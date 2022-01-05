@@ -1,4 +1,4 @@
-'use strict';
+
 
 import logger from './logger.js';
 import EventEmitter from 'events';
@@ -15,8 +15,8 @@ class ConsolidatedListener {
 	constructor () {}
 
 	async #forwardEvent (event, ...params) {
-		let list = this.#eventsToListeners.get(event) || []
-		for (let {listener, check} of list) {
+		const list = this.#eventsToListeners.get(event) || [];
+		for (const { listener, check } of list) {
 			if (!check || await check(...params))
 				await listener(...params);
 			else
@@ -26,7 +26,7 @@ class ConsolidatedListener {
 
 	#getEventHandler (event) {
 		let res = this.#eventsToInternalListener.get(event);
-		
+
 		if (!res) {
 			res = (async (...params) => {
 				try {
@@ -38,17 +38,17 @@ class ConsolidatedListener {
 					else
 						log.error('Uncaught error:', e);
 				}
-			}).bind(this);
+			});
 			res.removeFrom = (source) => {
 				source.off(event, res);
 				if (!this.#sources.size())
 					this.#eventsToInternalListener.delete(event);
-			}
+			};
 			res.remove = () => {
-				for (let source of this.#sources)
+				for (const source of this.#sources)
 					source.off(event, res);
 				this.#eventsToInternalListener.delete(event);
-			}
+			};
 			this.#eventsToInternalListener.set(event, res);
 		}
 		return res;
@@ -62,7 +62,7 @@ class ConsolidatedListener {
 		if (this.#sources.has(source))
 			return false;
 		log.debug('Setup new source:', source.constructor.name);
-		for (let event of this.#eventsToListeners.keys())
+		for (const event of this.#eventsToListeners.keys())
 			source.on(event, this.#getEventHandler(event));
 		this.#sources.add(source);
 		return true;
@@ -76,7 +76,7 @@ class ConsolidatedListener {
 		if (this.#eventsToListeners.has(event))
 			return false;
 		log.debug(`Attaching new event "${String(event)}" to sources`);
-		for (let source of this.#sources)
+		for (const source of this.#sources)
 			source.on(event, this.#getEventHandler(event));
 		return true;
 	}
@@ -87,8 +87,8 @@ class ConsolidatedListener {
 	*/
 	addSource (input) {
 		if (input instanceof EventEmitter) {
-			this.#setupSource(input)? 
-				log.debug('Added source emitter'):
+			this.#setupSource(input) ?
+				log.debug('Added source emitter') :
 				log.debug('Emitter already added');
 			return this;
 		} else {
@@ -103,7 +103,7 @@ class ConsolidatedListener {
 	removeSource (input) {
 		if (!this.#sources.has(input))
 			return this;
-		for (let event of this.#eventsToListeners.keys())
+		for (const event of this.#eventsToListeners.keys())
 			this.#getEventHandler(event).removeFrom(input);
 		this.#sources.delete(input);
 		return this;
@@ -117,7 +117,7 @@ class ConsolidatedListener {
 		return this.#sources.has(input);
 	}
 
-	/** 
+	/**
 	 * Iterate through all the attached sources
 	 * @yields {EventEmitter}
 	*/
@@ -142,27 +142,27 @@ class ConsolidatedListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	on (eventName, listener, check) {
-		eventName = (typeof eventName === 'symbol')? eventName : String(eventName);
+		eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
 		if (this.#setupEvent(eventName))
-			this.#eventsToListeners.set(eventName, [{listener, check}]);
+			this.#eventsToListeners.set(eventName, [{ listener, check }]);
 		else
-			this.#eventsToListeners.get(eventName).push({listener, check});
+			this.#eventsToListeners.get(eventName).push({ listener, check });
 		return this;
 	}
 
 	/**
 	 * @alias ConsolidatedListener.on
 	*/
-	addListener (eventName, listener, check) {return this.on(eventName, listener, check)}
+	addListener (eventName, listener, check) { return this.on(eventName, listener, check); }
 
 	#getOnceWrapper (eventName, listener) {
-		let onceWrapper = (function (eventName, listener, ...params) {
+		const onceWrapper = (function (eventName, listener, ...params) {
 			this.removeListener(eventName, listener);
 			listener(...params);
 		}).bind(this, eventName, listener);
 		onceWrapper.listener = listener;
 		return onceWrapper;
-	} 
+	}
 
 	/** Attaches a one time listener to the proxy
 	 * @param {string|symbol}          eventName - the name of the event to attach the listener to
@@ -170,7 +170,7 @@ class ConsolidatedListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	once (eventName, listener, check) {
-		let onceWrapper = this.#getOnceWrapper(eventName, listener);
+		const onceWrapper = this.#getOnceWrapper(eventName, listener);
 		return this.on(eventName, onceWrapper, check);
 	}
 
@@ -181,7 +181,7 @@ class ConsolidatedListener {
 	*/
 	prependListener (eventName, listener, check) {
 		let list;
-		eventName = (typeof eventName === 'symbol')? eventName : String(eventName)
+		eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
 		this.on(eventName, listener, check);
 		list = this.#eventsToListeners.get(eventName);
 		list.unshift(list.pop());
@@ -194,7 +194,7 @@ class ConsolidatedListener {
 	 * @param {listener-checkCallback} check     - checks if a listener should run
 	*/
 	prependOnceListener (eventName, listener, check) {
-		let onceWrapper = this.#getOnceWrapper(eventName, listener);
+		const onceWrapper = this.#getOnceWrapper(eventName, listener);
 		return this.prependListener(eventName, onceWrapper, check);
 	}
 
@@ -204,9 +204,9 @@ class ConsolidatedListener {
 	*/
 	removeListener (eventName, listener) {
 		let list;
-		eventName = (typeof eventName === 'symbol')? eventName : String(eventName);
+		eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
 		list = this.#eventsToListeners.get(eventName) || [];
-		list = list.filter(({listener:li}) => li != listener);
+		list = list.filter(({ listener: li }) => li != listener);
 		if (list.size)
 			this.#eventsToListeners.set(eventName, list);
 		else if (this.#eventsToListeners.delete(eventName))
@@ -217,7 +217,7 @@ class ConsolidatedListener {
 	/**
 	 * @alias ConsolidatedListener.removeListener
 	*/
-	off (eventName, listener) {return this.removeListener(eventName, listener)}
+	off (eventName, listener) { return this.removeListener(eventName, listener); }
 
 	/** Get the event names
 	 * @yields {string|symbol}
@@ -232,11 +232,11 @@ class ConsolidatedListener {
 	*/
 	listenerCount (eventName) {
 		if (eventName) {
-			eventName = (typeof eventName === 'symbol')? eventName : String(eventName);
+			eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
 			return (this.#eventsToListeners.get(eventName) || []).size;
 		} else {
 			let count = 0;
-			for (let list of this.#eventsToListeners.values())
+			for (const list of this.#eventsToListeners.values())
 				count += list.size;
 			return count;
 		}

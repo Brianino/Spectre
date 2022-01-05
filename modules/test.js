@@ -4,7 +4,7 @@ this.limit('users', OwnerID);
 this.arguments = '';
 
 function inGuild (emitter) {
-	let component = Utils.PagedEmbed;
+	const component = Utils.PagedEmbed;
 	let pagedEmbed;
 
 	return async (msg, ...input) => {
@@ -17,5 +17,5 @@ function inGuild (emitter) {
 			await pagedEmbed.sendTo(msg.channel);
 			log.info('The paged embed should be setup');
 		}
-	}
+	};
 }

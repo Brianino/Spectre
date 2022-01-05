@@ -1,27 +1,27 @@
-'use strict';
+
 
 import { Permissions } from 'discord.js';
 
 class MappingUtilties {
 	static getConverter (type) {
-		let typeName = String(type).toLowerCase();
+		const typeName = String(type).toLowerCase();
 		if (typeName in this)
 			return this[typeName];
 		else
-			throw new TypeError('no mapping function for type ' + typeName);
+			throw new TypeError(`no mapping function for type ${typeName}`);
 	}
 
 	static asJson (type, input) {
-		let typeName = String(type).toLowerCase();
+		const typeName = String(type).toLowerCase();
 
 		if (typeName in this)
 			return this[typeName].toJson(input);
 		else
-			throw new TypeError('no mapping function for type ' + typeName);
+			throw new TypeError(`no mapping function for type ${typeName}`);
 	}
 
 	static asObject (type, input) {
-		let typeName = String(type).toLowerCase();
+		const typeName = String(type).toLowerCase();
 
 		if (typeName in this) {
 			if (typeof input === 'string' && type !== 'string')
@@ -29,23 +29,23 @@ class MappingUtilties {
 			else
 				return this[typeName].from(input);
 		} else {
-			throw new TypeError('no mapping function for type ' + typeName);
+			throw new TypeError(`no mapping function for type ${typeName}`);
 		}
 	}
 
 	static get auto () {
 		return {
 			toJson: (input) => {
-				let typeName = input.constructor.name.toLowerCase();
+				const typeName = input.constructor.name.toLowerCase();
 				return {
 					type: typeName,
 					value: this.getConverter(typeName).toJson(input),
-				}
+				};
 			},
-			from: ({type, value}) => {
+			from: ({ type, value }) => {
 				return this.getConverter(type).from(value);
-			}
-		}
+			},
+		};
 	}
 
 	static get string () {
@@ -55,8 +55,8 @@ class MappingUtilties {
 			},
 			from (input) {
 				return String(input);
-			}
-		}
+			},
+		};
 	}
 
 	static get boolean () {
@@ -66,8 +66,8 @@ class MappingUtilties {
 			},
 			from (input) {
 				return input;
-			}
-		}
+			},
+		};
 	}
 
 	static get number () {
@@ -77,32 +77,32 @@ class MappingUtilties {
 			},
 			from (input) {
 				return Number(input);
-			}
-		}
+			},
+		};
 	}
 
 	static get object () {
 		return {
 			toJson: (input) => {
-				let res = {};
-				for (let key in input)
+				const res = {};
+				for (const key in input)
 					res[key] = this.auto.toJson(input[key]);
 				return res;
 			},
 			from: (input) =>  {
-				let res = {};
-				for (let key in input)
+				const res = {};
+				for (const key in input)
 					res[key] = this.auto.from(input[key]);
 				return res;
-			}
-		}
+			},
+		};
 	}
 
 	static get array () {
 		return {
 			toJson: (input) => input.map(this.auto.toJson),
 			from: (input) => input.map(this.auto.from),
-		}
+		};
 	}
 
 	static get map () {
@@ -112,8 +112,8 @@ class MappingUtilties {
 			},
 			from: (input) => {
 				return new Map(input.map(([key, val]) => [key, this.auto.from(val)]));
-			}
-		}
+			},
+		};
 	}
 
 	static get set () {
@@ -123,22 +123,22 @@ class MappingUtilties {
 			},
 			from: (input) => {
 				return new Set(input.map(val => this.auto.from(val)));
-			}
-		}
+			},
+		};
 	}
 
 	static get permissions () {
 		return {
 			toJson: (input) => input.bitfield,
-			from: (input) => new Permissions(input)
-		}
+			from: (input) => new Permissions(input),
+		};
 	}
 
 	static get regexp () {
 		return {
-			toJson: (input) => ({source: input.source, flags: input.flags}),
-			from: (input) => new RegExp(input.source, input.flags)
-		}
+			toJson: (input) => ({ source: input.source, flags: input.flags }),
+			from: (input) => new RegExp(input.source, input.flags),
+		};
 	}
 }
 

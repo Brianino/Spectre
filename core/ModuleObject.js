@@ -1,4 +1,4 @@
-'use strict';
+
 
 import logger from './logger.js';
 import { Permissions } from 'discord.js';
@@ -39,14 +39,14 @@ class ModuleObject {
 	 *
 	 * @return {string} the command name
 	*/
-	get command () {return this.#name}
+	get command () { return this.#name; }
 
 	/**
 	 * Gets the name of the group this module is part of
 	 *
 	 * @return {string} the group name
 	*/
-	get group () {return this.#group}
+	get group () { return this.#group; }
 
 	/**
 	 * Sets the name of the shared group.
@@ -54,14 +54,14 @@ class ModuleObject {
 	 *
 	 * @param {string|Symbol} input - the shared group name
 	*/
-	set objectGroup (input) {this.#objectGroup = (typeof input === 'symbol')? input : String(input)}
+	set objectGroup (input) { this.#objectGroup = (typeof input === 'symbol') ? input : String(input); }
 
 	/**
 	 * Gets the name of the shared group.
 	 *
 	 * @return {string|Symbol} the shared group name
 	*/
-	get objectGroup () {return this.#objectGroup}
+	get objectGroup () { return this.#objectGroup; }
 
 	/**
 	 * Sets decription of the module, multiple calls can be made to add more lines
@@ -69,14 +69,14 @@ class ModuleObject {
 	 *
 	 * @param {string} input - the description of what the module does
 	*/
-	set description (input) {this.#description.push(String(input))}
+	set description (input) { this.#description.push(String(input)); }
 
 	/**
 	 * Gets decription of the module
 	 *
 	 * @return {string[]} the lines of description for the module
 	*/
-	get description () {return this.#description}
+	get description () { return this.#description; }
 
 	/**
 	 * Sets the command usage, multiple calls can be made to add more formats
@@ -89,28 +89,28 @@ class ModuleObject {
 	 *
 	 * @param {string} input - the description of what the module does
 	*/
-	set arguments (input) {this.#arguments.push(String(input))}
+	set arguments (input) { this.#arguments.push(String(input)); }
 
 	/**
 	 * Gets the command usage, multiple calls can be made to add more formats
 	 *
 	 * @return {string[]} input - the description of what the module does
 	*/
-	get arguments () {return this.#arguments}
+	get arguments () { return this.#arguments; }
 
 	/**
 	 * Sets the default required permission level to run the command
 	 *
 	 * @param {Permissions} input - what the default required permissions should be
 	*/
-	set permissions (input) {this.#permissions = new Permissions(input)}
+	set permissions (input) { this.#permissions = new Permissions(input); }
 
 	/**
 	 * Gets the default required permission level to run the command
 	 *
 	 * @return {Permissions} input - the default required permissions
 	*/
-	get permissions () {return this.#permissions}
+	get permissions () { return this.#permissions; }
 
 	/**
 	 * Use to limit the access of the command, or return the set of id's that apply to a limit (if no id's are provided)
@@ -149,10 +149,10 @@ class ModuleObject {
 }
 
 function access (user, guild, config) {
-	let users = this.limit('users'), guilds = this.limit('guilds');
+	const users = this.limit('users'), guilds = this.limit('guilds');
 
 	if (guild) {
-		let gUser = guild.members.cache.get(user.id);
+		const gUser = guild.members.cache.get(user.id);
 
 		if (gUser && !gUser.permissions.has(config.permissions(this.command) || this.permissions))
 			return false;
@@ -160,14 +160,11 @@ function access (user, guild, config) {
 			return false;
 		if (config.disabled.has(this.command))
 			return false;
-	} else {
-		if (guilds.length)
-			return false;
-	}
-	log.debug("users", users, "has?", users.has(user.id));
+	} else if (guilds.length) { return false; }
+	log.debug('users', users, 'has?', users.has(user.id));
 	if (users.size && !users.has(user.id))
 		return false;
 	return true;
 }
 
-export { ModuleObject as default, access};
+export { ModuleObject as default, access };

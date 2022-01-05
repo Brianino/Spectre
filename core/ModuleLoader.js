@@ -1,4 +1,4 @@
-'use strict';
+
 
 import ContextHandler from './ContextHandler.js';
 import ModuleObject, { access } from './ModuleObject.js';
@@ -14,53 +14,53 @@ import { inspect } from 'util';
 import Path from 'path';
 import vm from 'vm';
 
-const log = logger('Module-Loader');
-const cmdlog = logger('Commands');
-// move iniTimeout to config, maybe add an option for timeout running a command?
-const moduleFolder = '../modules', iniTimeout = 1000;
-const __dirname = Path.dirname(fileURLToPath(import.meta.url));
-const config = JSON.parse(readFileSync('./config.json'));
+const log = logger('Module-Loader'),
+	cmdlog = logger('Commands'),
+	// move iniTimeout to config, maybe add an option for timeout running a command?
+	moduleFolder = '../modules', iniTimeout = 1000,
+	__dirname = Path.dirname(fileURLToPath(import.meta.url)),
+	config = JSON.parse(readFileSync('./config.json')),
 
-const globals = { // TODO: Lock off objects so that they can't be modified from within the module
+	globals = { // TODO: Lock off objects so that they can't be modified from within the module
 	// Value Globals
-	Infinity, NaN, undefined,
+		Infinity, NaN, undefined,
 
-	// Function Globals
-	eval, isFinite, isNaN, parseFloat, parseInt, encodeURI, encodeURIComponent, decodeURI, decodeURIComponent,
+		// Function Globals
+		eval, isFinite, isNaN, parseFloat, parseInt, encodeURI, encodeURIComponent, decodeURI, decodeURIComponent,
 
-	// Fundamental Objects
-	Object, Function, Boolean, Symbol,
+		// Fundamental Objects
+		Object, Function, Boolean, Symbol,
 
-	// Error Objects
-	Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError,
+		// Error Objects
+		Error, EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError,
 
-	// Numbers and dates
-	Number, BigInt, Math, Date,
+		// Numbers and dates
+		Number, BigInt, Math, Date,
 
-	// Text processing
-	String, RegExp,
+		// Text processing
+		String, RegExp,
 
-	// Indexed collections
-	Array, Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
-	Int32Array, Uint32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array,
+		// Indexed collections
+		Array, Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
+		Int32Array, Uint32Array, Float32Array, Float64Array, BigInt64Array, BigUint64Array,
 
-	// Keyed collections
-	Map, Set, WeakMap, WeakSet,
+		// Keyed collections
+		Map, Set, WeakMap, WeakSet,
 
-	// Structured data
-	ArrayBuffer, SharedArrayBuffer, Atomics, DataView, JSON,
+		// Structured data
+		ArrayBuffer, SharedArrayBuffer, Atomics, DataView, JSON,
 
-	// Other
-	Promise, Reflect, Proxy, Intl, WebAssembly, TextEncoder, TextDecoder,
-	setImmediate, setInterval, setTimeout, URL, URLSearchParams, inspect,
-	timespan: timespan('msec'), discordjs,
+		// Other
+		Promise, Reflect, Proxy, Intl, WebAssembly, TextEncoder, TextDecoder,
+		setImmediate, setInterval, setTimeout, URL, URLSearchParams, inspect,
+		timespan: timespan('msec'), discordjs,
 
-	// Utils
-	Utils,
+		// Utils
+		Utils,
 
-	// Bot config
-	OwnerID: config.owner,
-}
+		// Bot config
+		OwnerID: config.owner,
+	};
 
 class ModuleLoader {
 	#modules = new Map();
@@ -83,12 +83,12 @@ class ModuleLoader {
 
 	set source (input) {
 		this.#context.setEventSource(input);
-		Object.defineProperty(this, 'source', {get () {return input}});
+		Object.defineProperty(this, 'source', { get () { return input; } });
 
 		if (this.modules.size)
 			this.modules.forEach(mod => this.#instGuildCtx(mod));
 		input.on('guildCreate', async guild => {
-			for (let mod of this.#modules.values()) {
+			for (const mod of this.#modules.values()) {
 				try {
 					await this.#context.getContext(mod).getGuildContext(guild);
 				} catch (e) {
@@ -117,7 +117,7 @@ class ModuleLoader {
 			throw new Error('Need either a module object, or a module name');
 		this.#context.cleanup(mod);
 		this.modules.delete(mod.command);
-		return this.#loadModule({filePath: this.#filePaths.get(mod), group: mod.group});
+		return this.#loadModule({ filePath: this.#filePaths.get(mod), group: mod.group });
 	}
 
 	async runCommand (msg) {
@@ -129,8 +129,8 @@ class ModuleLoader {
 
 		log.debug('Has guild?', msg.guild && true);
 		if (cmd && access.call(cmd, msg.author, msg.guild, config)) {
-			let ctx = this.#context.getContext(cmd);
-			if (msg.guild) { //this creates instance, it doens't run the fun, return value needs to be run;
+			const ctx = this.#context.getContext(cmd);
+			if (msg.guild) { // this creates instance, it doens't run the fun, return value needs to be run;
 				cmdlog.info(`User ${msg.author.username} (${msg.author.id}) is running command ${cmd.command} on server ${msg.guild.name} (${msg.guild.id})`);
 				return (await ctx.getGuildContext(msg.guild)).call(config, msg, ...msgStr);
 			} else {
@@ -140,10 +140,10 @@ class ModuleLoader {
 		}
 	}
 
-	async #loadModule ({filePath, group}, inst = true) {
+	async #loadModule ({ filePath, group }, inst = true) {
 		log.debug('Attempting to load module:', filePath, group);
 		try {
-			let {name, code} = await ModuleLoader.#loadFile(filePath), mod;
+			let { name, code } = await ModuleLoader.#loadFile(filePath), mod;
 
 			if (this.modules.has(name))
 				return log.debug('Skipping over existing module', name);
@@ -166,32 +166,32 @@ class ModuleLoader {
 	}
 
 	static async #loadFile (filePath) {
-		let name = Path.basename(filePath, '.js');
+		const name = Path.basename(filePath, '.js');
 
 		if (!filePath.endsWith('.js'))
 			throw new Error('Unknown file type');
 		return {
 			name: name,
-			code: await fs.readFile(filePath, {encoding: 'utf8'})
+			code: await fs.readFile(filePath, { encoding: 'utf8' }),
 		};
 	}
 
 	static async #findModules () {
-		let res = [], path = Path.resolve(__dirname, moduleFolder);
-		for await (let item of await fs.opendir(path)) {
+		const res = [], path = Path.resolve(__dirname, moduleFolder);
+		for await (const item of await fs.opendir(path)) {
 			if (item.isFile()) {
 				res.push({
 					filePath: Path.resolve(path, item.name),
-					group: 'Other'
+					group: 'Other',
 				});
 			} else if (item.isDirectory()) {
-				let group = item.name, newPath = Path.resolve(path, item.name);
+				const group = item.name, newPath = Path.resolve(path, item.name);
 
-				for await (let modItem of await fs.opendir(newPath)) {
+				for await (const modItem of await fs.opendir(newPath)) {
 					if (modItem.isFile()) {
 						res.push({
 							filePath: Path.resolve(newPath, modItem.name),
-							group: group
+							group: group,
 						});
 					}
 				}
@@ -201,7 +201,7 @@ class ModuleLoader {
 	}
 
 	async #instGuildCtx (mod) {
-		for (let guild of this.source.guilds.cache.values()) {
+		for (const guild of this.source.guilds.cache.values()) {
 			try {
 				await this.#context.getContext(mod).getGuildContext(guild);
 			} catch (e) {
@@ -218,16 +218,14 @@ class ModuleLoader {
 	}
 
 	async #setupModule (name, group, filename, code) {
-		let script = new vm.Script(code, {filename}), obj = new ModuleObject(name, group),
+		const script = new vm.Script(code, { filename }), obj = new ModuleObject(name, group),
 			temp = {}, ctx = Object.create(temp), vars = [];
 
 		if (name === 'reload') {
 			temp.loadNew = this.setup.bind(this);
 			temp.reload = this.reload.bind(this);
 		}
-		Object.defineProperties(obj, {
-			'vars': {get () {return [...vars]}}
-		});
+		Object.defineProperties(obj, { 'vars': { get () { return [...vars]; } }});
 		Object.assign(temp, {
 			__filename: filename,
 			__dirname: Path.dirname(filename),
@@ -236,15 +234,15 @@ class ModuleLoader {
 			log: logger(`Module-${group}`),
 			getBot: () => this.source,
 			getConfigurable: () => this.#confMan.getConfigurable(),
-			addConfig: (varName, type, {description, configurable, ...props}) => {
+			addConfig: (varName, type, { description, configurable, ...props }) => {
 				log.debug('Adding config for', name, varName);
-				this.#confMan.register(varName, type, {description, configurable, ...props});
+				this.#confMan.register(varName, type, { description, configurable, ...props });
 				if (configurable)
 					vars.push(varName);
 				log.debug('Config added for', name, varName);
 			},
 		}, globals);
-		script.runInNewContext(wrapObject(obj, ctx), {contextName: `Main Context: ${name}`, timeout: iniTimeout});
+		script.runInNewContext(wrapObject(obj, ctx), { contextName: `Main Context: ${name}`, timeout: iniTimeout });
 		this.#context.create(obj, ctx);
 		return obj;
 	}

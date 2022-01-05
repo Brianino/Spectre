@@ -5,7 +5,7 @@ this.arguments = '';
 
 function inGuild () {
 	return msg => {
-		let server = msg.guild, channels = server.channels.cache, users = server.members.cache, roles = server.roles.cache,
+		const server = msg.guild, channels = server.channels.cache, users = server.members.cache, roles = server.roles.cache,
 			text = channels.filter(tmp => tmp.type === 'text'),
 			voice = channels.filter(tmp => tmp.type === 'voice'),
 			category = channels.filter(tmp => tmp.type === 'category'),
@@ -20,8 +20,8 @@ function inGuild () {
 				title: server.name,
 				description: [
 					server.description,
-					'ID: ' + server.id,
-					//'Shard: ' + server.shardID, //shard is currently not in use
+					`ID: ${server.id}`,
+					// 'Shard: ' + server.shardID, //shard is currently not in use
 				].join('\n'),
 				color: 0xBB0000,
 				thumbnail: {
@@ -31,46 +31,46 @@ function inGuild () {
 					}),
 				},
 				fields: [{
-					name: 'Server: ' + server.region,
+					name: `Server: ${server.region}`,
 					value: [
-						'Created: ' + server.createdAt.toDateString(),
-						'at ' + server.createdAt.toTimeString(),
+						`Created: ${server.createdAt.toDateString()}`,
+						`at ${server.createdAt.toTimeString()}`,
 					].join('\n'),
 				}, {
-					name: 'Channels: ' + channels.size,
+					name: `Channels: ${channels.size}`,
 					value: [
-						'Category: ' + category.size,
-						'Text: ' + text.size,
-						'Voice: ' + voice.size,
-						'Other: ' + other.size,
+						`Category: ${category.size}`,
+						`Text: ${text.size}`,
+						`Voice: ${voice.size}`,
+						`Other: ${other.size}`,
 					].join('\n'),
 					inline: true,
 				}, {
-					name: 'Members: ' + server.memberCount,
+					name: `Members: ${server.memberCount}`,
 					value: [
-						'Online: ' + online.size,
-						'Idle/DND: ' + idle.size,
+						`Online: ${online.size}`,
+						`Idle/DND: ${idle.size}`,
 					],
 					inline: true,
 				}, {
 					name: 'Nitro Boosting',
 					value: [
-						'Boost level: ' + server.premiumTier,
-						'Boosters: ' + server.premiumSubscriptionCount
+						`Boost level: ${server.premiumTier}`,
+						`Boosters: ${server.premiumSubscriptionCount}`,
 					].join('\n'),
 					inline: true,
 				}, {
-					name: 'Roles: ' + roles.size,
-					value: 'Pingable: ' + ping.size,
+					name: `Roles: ${roles.size}`,
+					value: `Pingable: ${ping.size}`,
 				}],
 				footer: {
-					text: 'Owner: ' + server.owner.user.tag,
+					text: `Owner: ${server.owner.user.tag}`,
 					icon_url: server.owner.user.displayAvatarURL({
 						format: 'png',
 						dynamic: true,
 					}),
-				}
-			}
+				},
+			},
 		});
-	}
+	};
 }

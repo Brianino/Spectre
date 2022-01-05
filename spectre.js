@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-"use strict";
+
 
 import Discord from 'discord.js';
 import logger from './core/logger.js';
 import ModuleLoader from './core/ModuleLoader.js';
 import { readFile } from 'fs/promises';
 
-const log = logger('Main');
-const bot = new Discord.Client();
-const modLoader = new ModuleLoader();
+const log = logger('Main'),
+	bot = new Discord.Client(),
+	modLoader = new ModuleLoader();
 
 process.on('unhandledRejection', (e, origin) => {
 	log.error('Promise Error:', e.toString());
@@ -16,7 +16,7 @@ process.on('unhandledRejection', (e, origin) => {
 	log.debug(e.stack);
 });
 
-//ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
+// ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
 bot.on('ready', async () => {
 	log.info('Connected to discord');
 	try {
@@ -51,9 +51,9 @@ bot.on('debug', info => {
 });
 
 readFile(new URL('./config.json', import.meta.url)).then((data) => {
-	let { token } = JSON.parse(data);
+	const { token } = JSON.parse(data);
 	bot.login(token).catch(e => {
 		log.error('Login error:', e.toString());
 		log.debug(e.stack);
-	}); //Bot Token
+	}); // Bot Token
 });

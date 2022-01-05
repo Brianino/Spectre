@@ -1,21 +1,21 @@
 this.description = 'Kick a user';
 this.arguments = '<@user> [reason]';
 this.arguments = '<user id> [reason]';
-this.permissions = 'KICK_MEMBERS'
+this.permissions = 'KICK_MEMBERS';
 
 function inGuild () {
-	const { DiscordAPIError } = discordjs;
-	const { getUserID } = Utils;
+	const { DiscordAPIError } = discordjs,
+	 { getUserID } = Utils;
 
 	return async (msg, input, message) => {
-		let user = msg.guild.member(await getUserID(input, msg.guild, {resolve: true}));
+		const user = msg.guild.member(await getUserID(input, msg.guild, { resolve: true }));
 
 		if (user && user.manageable) {
-			let r1 = msg.member.roles.highest, r2 = user.roles.highest, otemp = msg.guild.owner.id;
+			const r1 = msg.member.roles.highest, r2 = user.roles.highest, otemp = msg.guild.owner.id;
 
 			if (user.id === msg.author.id)
 				return msg.channel.send('You can\'t kick yourself');
-			else if (msg.author.id !== otemp && r1.comparePositionTo(r2) <=0)
+			else if (msg.author.id !== otemp && r1.comparePositionTo(r2) <= 0)
 				return msg.channel.send('Target user has a higher role');
 
 			try {
@@ -37,5 +37,5 @@ function inGuild () {
 			log.debug('Search for:', user?.toString(), 'or', input);
 			msg.channel.send('Unable to find user');
 		}
-	}
+	};
 }

@@ -9,24 +9,24 @@ this.arguments = '[command]';
 this.arguments = '';
 
 const detailedHelp = {
-	"Configuration": 'These commands are used to change how the bot will operate on this server',
-	"Moderation": 'These commands are to assist with server moderation tasks',
-	"Utility": 'Utility commands'
-}
+	'Configuration': 'These commands are used to change how the bot will operate on this server',
+	'Moderation': 'These commands are to assist with server moderation tasks',
+	'Utility': 'Utility commands',
+};
 
 function inAll () {
 	const { PagedEmbed } = Utils;
 
 	return function (msg, arg) {
 		if (!arg) {
-			let helpEmbed = new PagedEmbed('Options'), pages = new Map();
+			const helpEmbed = new PagedEmbed('Options'), pages = new Map();
 
 			helpEmbed.setColor(0xBB0000);
-			for (let moduleObj of modules.values()) {
+			for (const moduleObj of modules.values()) {
 				let page = pages.get(moduleObj.group), details = [moduleObj.command, moduleObj.description[0]];
 
 				if (page === undefined) {
-					let desc = detailedHelp[moduleObj.group] || (moduleObj.group + ' commands');
+					const desc = detailedHelp[moduleObj.group] || (`${moduleObj.group} commands`);
 					page = helpEmbed.addPage(moduleObj.group, [details], desc);
 					pages.set(moduleObj.group, page);
 				} else {
@@ -36,12 +36,13 @@ function inAll () {
 			log.debug('Posting help (no args)');
 			return helpEmbed.sendTo(msg.channel);
 		} else {
-			let cmd = modules.get(arg = String(arg));
+			const cmd = modules.get(arg = String(arg));
 
 			arg = arg.replace(/`/g, '');
-			if (arg === '') arg = ' ';
+			if (arg === '')
+				arg = ' ';
 			if (cmd && access.call(cmd, msg.author, msg.guild, this)) {
-				let comStr = this.prefix + cmd.command + ' ', embed = {
+				const comStr = `${this.prefix + cmd.command} `, embed = {
 					title: arg,
 					description: cmd.description.join('\n'),
 					color: 0xBB0000,
@@ -57,14 +58,14 @@ function inAll () {
 				if (cmd.vars.length) {
 					embed.fields.push({
 						name: 'Configurable Settings:',
-						value: '`' + cmd.vars.join('` `') + '`',
+						value: `\`${cmd.vars.join('` `')}\``,
 					});
 				}
 				log.debug('Posting help (args)');
-				return msg.channel.send({embed});
+				return msg.channel.send({ embed });
 			} else {
 				return msg.channel.send(`Could not find command \`${arg}\``);
 			}
 		}
-	}
+	};
 }

@@ -13,31 +13,32 @@ function inGuild () {
 		let options = getConfigurable(), type, desc;
 
 		if (options.has(setting)) {
-			[type, desc] = options.get(setting)
+			[type, desc] = options.get(setting);
 		} else {
-			let embed = {
+			const embed = {
 				title: 'Settings:',
 				color: 0xBB0000,
 				description: 'Arrays and sets should be a space separated list\n' +
 					'To revert to the default value enter the value `undefined`',
-				fields: []
+				fields: [],
 			};
 
-			for (let [setting, [type, desc]] of options) {
-				let val = {
+			for (const [setting, [type, desc]] of options) {
+				const val = {
 					name: setting,
 					value: type,
-					inline: false
-				}
-				if (desc) val.value += ': ' + desc;
+					inline: false,
+				};
+				if (desc)
+					val.value += `: ${desc}`;
 				embed.fields.push(val);
 			}
 			log.debug('Posting settings info');
-			return msg.channel.send({embed});
+			return msg.channel.send({ embed });
 		}
 
 		if (input.length > 0) {
-			//set value
+			// set value
 			if (input[0] === 'undefined') {
 				this.config[setting] = undefined;
 				log.info('Setting', setting, 'for guild', msg.guild.name, 'reverted to default');
@@ -54,31 +55,33 @@ function inGuild () {
 					case 'array': this.config[setting] = input; break;
 					case 'permissions': {
 						let temp = Number(input[0]);
-						if (isNaN(temp)) temp = input;
-						this.config[setting] = temp; 
+						if (isNaN(temp))
+							temp = input;
+						this.config[setting] = temp;
 					}
-					break;
+						break;
 				}
 				log.info('Updated', setting, 'setting to', this.config[setting], 'for guild', msg.guild.name);
-				return msg.channel.send('Updated the setting ' + setting);
+				return msg.channel.send(`Updated the setting ${setting}`);
 			} catch (e) {
 				log.warn('Issue updating config variable:', e);
-				return msg.channel.send('Unable to update setting: ' + e.message);
+				return msg.channel.send(`Unable to update setting: ${e.message}`);
 			}
 		} else {
-			//show setting info
-			let embed = {
+			// show setting info
+			const embed = {
 				title: setting,
 				color: 0xBB0000,
-				description: ''
-			}
+				description: '',
+			};
 
-			if (desc) embed.description = desc + '\n';
+			if (desc)
+				embed.description = `${desc}\n`;
 			log.debug('Option', String(this.config[setting]));
-			embed.description += 'Type: ' + type + '\n';
-			embed.description += 'Current: ' + inspect(this.config[setting]);
+			embed.description += `Type: ${type}\n`;
+			embed.description += `Current: ${inspect(this.config[setting])}`;
 
-			return msg.channel.send({embed});
+			return msg.channel.send({ embed });
 		}
-	}
+	};
 }

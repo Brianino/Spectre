@@ -9,14 +9,14 @@ this.arguments = 'del <filter_name>';
 this.arguments = 'list';
 this.arguments = 'common';
 
-this.permissions = 'MANAGE_GUILD'
+this.permissions = 'MANAGE_GUILD';
 this.objectGroup = 'auto_mod';
 
-addConfig('filter_regex', Map, {default: new Map(), configurable: false});
-addConfig('filter_exempt', Map, {default: new Map(), configurable: false});
-addConfig('filter_automod', Boolean, {default: true, configurable: true});
+addConfig('filter_regex', Map, { default: new Map(), configurable: false });
+addConfig('filter_exempt', Map, { default: new Map(), configurable: false });
+addConfig('filter_automod', Boolean, { default: true, configurable: true });
 
-let common = {
+const common = {
 	links: '([hH][tT]{2}[pP][sS]?://|www\\.)[^/:\\s]+(:\\d+)?(/\\S+)?',
 	uri: '[^:\\s]+://([^\\s@]+@)?[^:\\s]+(:\\d+)?(/\\S+)?',
 };
@@ -26,7 +26,7 @@ function inGuild (emitter, groupObj) {
 
 	UpdateCommonReg: {
 		let updated = false;
-		for (let name of this.config.filter_regex.keys()) {
+		for (const name of this.config.filter_regex.keys()) {
 			if (name in common) {
 				this.config.filter_regex.set(name, new RegExp(common[name]));
 				updated = true;
@@ -41,13 +41,13 @@ function inGuild (emitter, groupObj) {
 			return true;
 		else if (!exemptRole)
 			return false;
-		else if (member.roles.highest.comparePositionTo(await getRoleID(exemptRole, this.Guild, {resolve: true})) >= 0)
+		else if (member.roles.highest.comparePositionTo(await getRoleID(exemptRole, this.Guild, { resolve: true })) >= 0)
 			return true;
 		else
 			return false;
 	}
 	emitter.on('message', async msg => {
-		for (let [name, reg] of this.config.filter_regex) {
+		for (const [name, reg] of this.config.filter_regex) {
 			log.debug('Will check', msg.content, ' against', reg.toString());
 			if (msg.content.match(reg)) {
 				log.debug('Message has a match');
@@ -64,7 +64,7 @@ function inGuild (emitter, groupObj) {
 		}
 	});
 
-	async function addFilter(filterName, exempt, regex) {
+	async function addFilter (filterName, exempt, regex) {
 		if (filterName in common) {
 			regex = common[filterName];
 		} else if (!regex && exempt) {
@@ -81,7 +81,7 @@ function inGuild (emitter, groupObj) {
 		return this.config.filter_regex = this.config.filter_regex;
 	}
 
-	function delFilter(filterName) {
+	function delFilter (filterName) {
 		this.config.filter_exempt.delete(filterName);
 		this.config.filter_regex.delete(filterName);
 		this.config.filter_exempt = this.config.filter_exempt;
@@ -92,7 +92,7 @@ function inGuild (emitter, groupObj) {
 		let listEmbed = new PagedEmbed(), rows = [...this.config.filter_regex.keys()];
 
 		if (rows.length) {
-			rows = rows.map(name => [name, this.config.filter_exempt.has(name) ? `Exempt Role: <@&${this.config.filter_exempt.get(name)}>`: 'Only Admins are exempt']);
+			rows = rows.map(name => [name, this.config.filter_exempt.has(name) ? `Exempt Role: <@&${this.config.filter_exempt.get(name)}>` : 'Only Admins are exempt']);
 			listEmbed.addPage('Active Filters', rows, 'The filter name and the lowest exempt role');
 		} else {
 			listEmbed.addPage('No Active Filters', undefined, 'Set up a filter with the filter add command');
@@ -101,7 +101,7 @@ function inGuild (emitter, groupObj) {
 	}
 
 	function listCommon (msg) {
-		let listEmbed = new PagedEmbed(), rows = Object.entries(common);
+		const listEmbed = new PagedEmbed(), rows = Object.entries(common);
 
 		listEmbed.addPage('Common Filters', rows, 'Regex filters for common filters that may be applied');
 		return listEmbed.sendTo(msg.channel);
@@ -112,10 +112,10 @@ function inGuild (emitter, groupObj) {
 			case 'a':
 			case 'add': {
 				try {
-					return await addFilter.call(this, filterName, exempt, regex)
+					return await addFilter.call(this, filterName, exempt, regex);
 				} catch (e) {
 					if (e instanceof SyntaxError)
-						(await msg.reply(`Unable to create the filter: ${e.message}`)).delete({timeout: 10000});
+						(await msg.reply(`Unable to create the filter: ${e.message}`)).delete({ timeout: 10000 });
 					throw e;
 				}
 			}
@@ -131,7 +131,7 @@ function inGuild (emitter, groupObj) {
 			case 'c':
 			case 'common': return listCommon.call(this, msg);
 
-			default: return (await msg.reply('Please pick between options add/del/list/common')).delete({timeout: 10000});
+			default: return (await msg.reply('Please pick between options add/del/list/common')).delete({ timeout: 10000 });
 		}
-	}
+	};
 }

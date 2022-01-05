@@ -8,7 +8,7 @@ function inGuild () {
 	const { getUserID } = Utils;
 
 	return async (msg, ...input) => {
-		let user = await getUserID(input.join(' '), msg.guild, {allowText: 'partial', resolve: true}) || msg.member, embed;
+		let user = await getUserID(input.join(' '), msg.guild, { allowText: 'partial', resolve: true }) || msg.member, embed;
 
 		embed = {
 			title: user.displayName,
@@ -24,39 +24,39 @@ function inGuild () {
 				name: 'Created',
 				value: [
 					user.user.createdAt.toDateString(),
-					'at ' + user.user.createdAt.toTimeString(),
+					`at ${user.user.createdAt.toTimeString()}`,
 				].join('\n'),
 			}, {
 				name: 'Joined',
 				value: [
 					user.joinedAt.toDateString(),
-					'at ' + user.joinedAt.toTimeString(),
+					`at ${user.joinedAt.toTimeString()}`,
 				].join('\n'),
 			}, {
 				name: 'Roles',
-				value: '`' + user.roles.cache.map(role => role.name).join('` `') + '`',
+				value: `\`${user.roles.cache.map(role => role.name).join('` `')}\``,
 			}, {
 				name: 'Permissions',
-				value: '`' + user.permissions.toArray(false).join('` `') + '`',
+				value: `\`${user.permissions.toArray(false).join('` `')}\``,
 			}],
 			footer: {
-				text: user.presence.status + ' - ' + user.id,
+				text: `${user.presence.status} - ${user.id}`,
 				icon_url: user.user.displayAvatarURL({
 					format: 'png',
 					dynamic: true,
 				}),
-			}
-		}
+			},
+		};
 
 		if (user.premiumSince) {
 			embed.fields.push({
 				name: 'Server Boost',
 				value: [
 					user.premiumSince.toDateString(),
-					'at ' + user.premiumSince.toTimeString(),
+					`at ${user.premiumSince.toTimeString()}`,
 				].join('\n'),
 			});
 		}
-		return msg.channel.send({embed});
-	}
+		return msg.channel.send({ embed });
+	};
 }

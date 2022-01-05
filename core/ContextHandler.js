@@ -1,4 +1,4 @@
-'use strict';
+
 /** @module ContextHandler */
 import logger from './logger.js';
 import { Client, Guild, Collection } from 'discord.js';
@@ -52,26 +52,26 @@ class GenericContext {
 		this.#globObj = obj;
 	}
 
-	get command () {return this.#moduleObject.command}
+	get command () { return this.#moduleObject.command; }
 
 	#wrapModuleObject () {
 		if (!this.#moduleChild) {
-			let props = this._setupContextSpecificProperties();
-	
+			const props = this._setupContextSpecificProperties();
+
 			this.#moduleChild = wrapObject(this.#moduleObject, props);
 		}
 		return this.#moduleChild;
 	}
 
 	_setupContextSpecificProperties () {
-		let keys = ['on', 'addListener', 'once', 'prependListener', 'prependOnceListener', 'off', 'removeListener'], res = {};
+		const keys = ['on', 'addListener', 'once', 'prependListener', 'prependOnceListener', 'off', 'removeListener'], res = {};
 
-		for (let key of keys) {
+		for (const key of keys) {
 			log.debug(`[${this.command}] Binding ${key} of consolidated listener to module object property`);
-			Object.defineProperty(res, key, { 
+			Object.defineProperty(res, key, {
 				value: (event, listener) => {
 					this.#consolidatedListener[key](event, listener);
-				}
+				},
 			});
 		}
 		return res;
@@ -79,7 +79,7 @@ class GenericContext {
 
 	async setup (ctxKey) {
 		if (!ctxKey)
-			throw new Error ('Need a context key');
+			throw new Error('Need a context key');
 		if (!this.#runFunc)
 			this.#runFunc = await this.#mainCtx[ctxKey].call(this.#wrapModuleObject(), this.#proxyListener, this.#globObj);
 		log.debug(`[${this.command}] Setting up ${ctxKey}`);
@@ -110,7 +110,7 @@ class GuildContext extends GenericContext {
 	}
 
 	#checkGuild () {
-		let guildId = this.#guild.id;
+		const guildId = this.#guild.id;
 		return obj => {
 			let guild;
 
@@ -121,21 +121,22 @@ class GuildContext extends GenericContext {
 			} else if (obj.message) {
 				guild = obj.message.guild;
 			} else if (obj instanceof Collection) {
-				let temp = obj.first();
+				const temp = obj.first();
 
-				if ('guild' in temp) guild = temp.guild;
+				if ('guild' in temp)
+					guild = temp.guild;
 			}
 
 			log.debug('Guild id found is:', guild?.id, 'against', guildId);
 			return guild?.id === guildId;
-		}
+		};
 	}
 
 	_setupContextSpecificProperties () {
-		let res = super._setupContextSpecificProperties();
+		const res = super._setupContextSpecificProperties();
 		Object.defineProperties(res, {
-			Guild: {value: this.#guild},
-			config: {get: () => this.#configCallback(this.#guild.id)},
+			Guild: { value: this.#guild },
+			config: { get: () => this.#configCallback(this.#guild.id) },
 		});
 		log.debug(`[${this.command}] Properties for ${this.#guild.name} setup`);
 		return res;
@@ -175,7 +176,7 @@ class GuildContext extends GenericContext {
 			ctx.globObj = this.#globObj;
 			return ctx.setup();
 		}
-	}
+	};
 }
 
 class AllGuildContext extends GenericContext {
@@ -233,7 +234,7 @@ class ModuleContext {
 		cmdObj.setAsSourceOf(consolidatedListener);
 	}
 
-	#register(event, listener) {
+	#register (event, listener) {
 		let evSet = this.#listeners.get(event);
 
 		if (!evSet)
@@ -242,7 +243,7 @@ class ModuleContext {
 	}
 
 	#unregister (event, listener) {
-		let evSet = this.#listeners.get(event);
+		const evSet = this.#listeners.get(event);
 
 		if (evSet?.size > 1)
 			evSet.delete(listener);
@@ -251,9 +252,9 @@ class ModuleContext {
 	}
 
 	#wrapListener (check) {
-		return new Proxy (this.#proxyListener, {
+		return new Proxy(this.#proxyListener, {
 			get: (target, prop) => {
-				let func = Reflect.get(target, prop);
+				const func = Reflect.get(target, prop);
 				switch (prop) {
 					case 'on':
 					case 'once':
@@ -263,7 +264,7 @@ class ModuleContext {
 						return (event, listener) => {
 							this.#register(event, listener);
 							return func.call(target, event, listener, check);
-						}
+						};
 					}
 
 					case 'off':
@@ -271,24 +272,24 @@ class ModuleContext {
 						return (event, listener) => {
 							this.#unregister(event, listener);
 							return func.call(target, event, listener);
-						}
+						};
 					}
 
 					default:
-					return func;
+						return func;
 				}
-			}
+			},
 		});
 	}
 
-	set globObj ({Guild, DM}) {
+	set globObj ({ Guild, DM }) {
 		this.#guildContext.globObj = Guild;
 		this.#dmContext.globObj = DM;
 	}
 
 	cleanup () {
-		for (let [event, listeners] of this.#listeners) {
-			for (let listener of listeners)
+		for (const [event, listeners] of this.#listeners) {
+			for (const listener of listeners)
 				this.#proxyListener.removeListener(event, listener);
 		}
 		this.#moduleObject.removeFrom(this.#consolidatedListener);
@@ -300,10 +301,10 @@ class ModuleContext {
 
 	create (mainCtx) {
 		if (AllContext.contextKey in mainCtx) {
-			let context = new AllContext(this.#createCtxBundle(mainCtx));
+			const context = new AllContext(this.#createCtxBundle(mainCtx));
 			this.#guildContext = context;
 			this.#dmContext = context;
-			return
+			return;
 		}
 
 		if (GuildContext.contextKey in mainCtx) {
@@ -312,7 +313,7 @@ class ModuleContext {
 		} else if (AllGuildContext.contextKey in mainCtx) {
 			this.#guildContext = new AllGuildContext(this.#createCtxBundle(mainCtx));
 		}
-		
+
 		if (AllDMContext.contextKey in mainCtx)
 			this.#dmContext = new AllDMContext(this.#createCtxBundle(mainCtx));
 	}
@@ -346,7 +347,7 @@ class ContextHandler {
 			let tmp = this.#globObjStore.get(cmdObj.objectGroup);
 
 			if (!tmp) {
-				tmp = {Guild: {}, DM: {}};
+				tmp = { Guild: {}, DM: {}};
 				this.#globObjStore.set(cmdObj.objectGroup, tmp);
 			}
 			ctx.globObj = tmp;
@@ -361,7 +362,7 @@ class ContextHandler {
 	}
 
 	cleanup (cmdObj) {
-		let modContext = this.#moduleStore.get(cmdObj);
+		const modContext = this.#moduleStore.get(cmdObj);
 
 		if (modContext) {
 			log.info('Cleaning up module', cmdObj.command, 'context');
@@ -373,14 +374,14 @@ class ContextHandler {
 	}
 
 	create (cmdObj, mainCtx) {
-		let ctx = new ModuleContext(cmdObj, this.#proxyListener, this.#consolidated, this.#configCallback);
+		const ctx = new ModuleContext(cmdObj, this.#proxyListener, this.#consolidated, this.#configCallback);
 		ctx.create(mainCtx);
 		this.#moduleStore.set(cmdObj, ctx);
 		this.#setupGlobalObject(cmdObj, ctx);
 	}
 
 	getContext (cmdObj) {
-		let ctx = this.#moduleStore.get(cmdObj);
+		const ctx = this.#moduleStore.get(cmdObj);
 
 		if (!ctx)
 			throw new Error('Module', cmdObj.command, 'hasn\'t been setup');

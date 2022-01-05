@@ -12,5 +12,5 @@ function inAll () {
 			log.error('unable to leave server:', e.toString());
 			return msg.channel.send('Unable to leave server, check logs');
 		}
-	}
+	};
 }

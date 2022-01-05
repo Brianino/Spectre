@@ -101,7 +101,6 @@
         "computed-property-spacing": "error",
         "dot-location": ["error", "property"],
         "space-before-function-paren": "error",
-        "lines-between-class-members": "error",
         "no-unmodified-loop-condition": "error",
         "no-whitespace-before-property": "error",
         "comma-dangle": ["error", "always-multiline"],
@@ -112,6 +111,7 @@
         "brace-style": ["error", "1tbs", {"allowSingleLine": true}],
         "one-var": ["error", {"let": "always", "const": "consecutive"}],
         "no-unused-vars": ["error", {"varsIgnorePattern": "[iI]gnore"}],
+        "lines-between-class-members": ["error", "always", {"exceptAfterSingleLine": true}],
         "object-curly-spacing": ["error", "always", {"objectsInObjects": false, "arraysInObjects": false }]
     },
     "overrides": [{

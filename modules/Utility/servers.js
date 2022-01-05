@@ -5,20 +5,20 @@ this.arguments = '';
 
 function inAll () {
 	return msg => {
-		let guilds = getBot().guilds.cache, embed = {
+		const guilds = getBot().guilds.cache, embed = {
 			title: 'Guilds',
 			color: 0xBB0000,
-			fields: []
-		}
+			fields: [],
+		};
 
-		for (let guild of guilds.values()) {
-			let clientGuildAcc = guild.members.resolve(getBot().user.id);
+		for (const guild of guilds.values()) {
+			const clientGuildAcc = guild.members.resolve(getBot().user.id);
 			embed.fields.push({
 				name: `${guild.name} - ${clientGuildAcc.joinedAt.toDateString()}`,
-				value: guild.id
+				value: guild.id,
 			});
 		}
 
-		return msg.channel.send({embed});
-	}
+		return msg.channel.send({ embed });
+	};
 }

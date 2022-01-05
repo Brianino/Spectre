@@ -1,4 +1,4 @@
-'use strict';
+
 
 import logger from './logger.js';
 import { Permissions } from 'discord.js';
@@ -8,9 +8,9 @@ import { fileURLToPath } from 'url';
 import lock from './namedLock.js';
 import Path from 'path';
 
-const log = logger('Guild-Config');
-const { prefix } = JSON.parse(readFileSync('./config.json'));
-const confDir = Path.resolve(fileURLToPath(import.meta.url), '../../data/');
+const log = logger('Guild-Config'),
+	{ prefix } = JSON.parse(readFileSync('./config.json')),
+	confDir = Path.resolve(fileURLToPath(import.meta.url), '../../data/');
 let configDirExists = false;
 
 /** The config object to interact with the configured guild properties
@@ -44,13 +44,13 @@ let configDirExists = false;
  * @returns {Map} property key to property value map
 */
 function convert (id, obj, varStore) {
-	let res = new Map([['id', String(id)]]);
+	const res = new Map([['id', String(id)]]);
 
-	for (let key in obj) {
+	for (const key in obj) {
 		try {
 			log.debug('Processing Key', key);
 			if (key !== 'id') {
-				let {type} = varStore.get(key);
+				const { type } = varStore.get(key);
 				res.set(key, MappingUtils.asObject(type, obj[key]));
 			}
 		} catch (e) {
@@ -69,10 +69,10 @@ function convert (id, obj, varStore) {
 */
 function stringify (map, varStore) {
 	let res = {}, moreThanId = false;
-	for (let [key, val] of map) {
+	for (const [key, val] of map) {
 		try {
 			if (key !== 'id') {
-				let {type} = varStore.get(key);
+				const { type } = varStore.get(key);
 				res[key] = MappingUtils.asJson(type, val);
 				if (res[key] instanceof Array && !res[key].length)
 					delete res[key];
@@ -94,7 +94,7 @@ function stringify (map, varStore) {
 */
 async function createConfigDir () {
 	if (configDirExists)
-		return
+		return;
 	configDirExists = true;
 	try {
 		await fs.stat(confDir);
@@ -110,7 +110,7 @@ async function createConfigDir () {
  * @param {Set} varStore - the set of all available config properties that may or may not be already configured
 */
 async function saveConfig (guildObj, varStore) {
-	let path = Path.resolve(confDir, guildObj.get('id') + '.json'), data = stringify(guildObj, varStore), unlock;
+	let path = Path.resolve(confDir, `${guildObj.get('id')}.json`), data = stringify(guildObj, varStore), unlock;
 
 	log.debug('Awaiting lock for', path);
 	unlock = await lock(path).acquire();
@@ -118,7 +118,7 @@ async function saveConfig (guildObj, varStore) {
 	if (data) {
 		log.info('Attempting to save config:', path, 'data:', data);
 		await createConfigDir();
-		await fs.writeFile(path, data, {flag: 'w'});
+		await fs.writeFile(path, data, { flag: 'w' });
 	} else {
 		let exists = true;
 
@@ -142,11 +142,11 @@ async function loadConfig (varStore) {
 	let dir, res = new Map();
 
 	await createConfigDir();
-	dir = await fs.readdir(confDir, {encoding: 'utf8', withFileTypes: true});
-	for (let file of dir) {
+	dir = await fs.readdir(confDir, { encoding: 'utf8', withFileTypes: true });
+	for (const file of dir) {
 		if (file.isFile()) {
 			try {
-				let conf = JSON.parse(await fs.readFile(Path.join(confDir, file.name))), 
+				const conf = JSON.parse(await fs.readFile(Path.join(confDir, file.name))),
 					id = Path.basename(file.name, '.json');
 
 				log.debug('File name is', file.name, 'id', id, varStore);
@@ -168,7 +168,7 @@ async function loadConfig (varStore) {
 function proxifyMap (map, varStore) {
 	return new Proxy(map, {
 		get (target, prop) {
-			let descriptor = varStore.get(prop), value = target.get(prop) ?? descriptor?.default;
+			const descriptor = varStore.get(prop), value = target.get(prop) ?? descriptor?.default;
 
 			if (prop === Symbol.iterator) {
 				log.info('Returning config iterator on', target.get('id'));
@@ -177,7 +177,7 @@ function proxifyMap (map, varStore) {
 				log.info('Returning config string value (id) on', target.get('id'));
 				return () => {
 					return map.get('id');
-				}
+				};
 			} else if (descriptor?.get) {
 				log.info('Using custom getter for', prop, 'on', target.get('id'));
 				if (typeof value === 'object')
@@ -189,7 +189,7 @@ function proxifyMap (map, varStore) {
 			return value;
 		},
 		set (target, prop, value) {
-			let descriptor = varStore.get(prop);
+			const descriptor = varStore.get(prop);
 			switch (typeof prop) {
 				case 'number':
 				case 'bigint': {
@@ -204,11 +204,11 @@ function proxifyMap (map, varStore) {
 
 					if (!varStore.has(prop)) {
 						log.warn('Blocking set to unknown variable:', prop, 'on', target.get('id'));
-						throw new Error('Property ' + prop + ' does not exist');
+						throw new Error(`Property ${prop} does not exist`);
 					}
 
 					if (descriptor.set) {
-						let propVal = target.get(prop) ?? descriptor.default;
+						const propVal = target.get(prop) ?? descriptor.default;
 
 						log.debug('Using custom setter for', prop, 'with value', value, 'on', target.get('id'));
 						if (typeof propVal === 'object') {
@@ -224,7 +224,7 @@ function proxifyMap (map, varStore) {
 						return true;
 					} else if (value.constructor.name.toLowerCase() !== descriptor.type) {
 						log.debug('Unable to set value due to type mismatch:', value.constructor.name, 'instead of', descriptor.type);
-						throw new Error('Value does not match expected type of ' + descriptor.type);
+						throw new Error(`Value does not match expected type of ${descriptor.type}`);
 					}
 					log.info('Updating value of', prop, 'to', value);
 					target.set(prop, value);
@@ -245,20 +245,20 @@ function proxifyMap (map, varStore) {
 			return varStore.has(prop);
 		},
 		getOwnPropertyDescriptor (target, prop) {
-			let value = target.get(prop);
+			const value = target.get(prop);
 
 			if (value)
-				return {configurable: false, writable: true, value: value};
+				return { configurable: false, writable: true, value: value };
 		},
 		ownKeys (target) {
 			return [...target.keys()];
 		},
-		preventExtensions () {return true; },
-		defineProperty () {return false; },
-		deleteProperty () {return false; },
-		setPrototypeOf () {return false; },
-		getPrototypeOf () {return null; },
-		isExtensible () {return false; },
+		preventExtensions () { return true; },
+		defineProperty () { return false; },
+		deleteProperty () { return false; },
+		setPrototypeOf () { return false; },
+		getPrototypeOf () { return null; },
+		isExtensible () { return false; },
 	});
 }
 
@@ -319,7 +319,7 @@ class ConfigManager {
 				if (String(input).startsWith('/'))
 					throw new Error('Prefix cannot start with /');
 				return String(input);
-			}
+			},
 		});
 		this.#confVars.set('permissions', {
 			type: 'map',
@@ -339,14 +339,14 @@ class ConfigManager {
 					this.set(cmd, new Permissions(permissions));
 				else
 					this.delete(cmd);
-			}
+			},
 		});
 		this.#confVars.set('disabled', {
 			type: 'set',
 			default: new Set(),
 			configurable: false,
 			set (input) {
-				for (let val of input)
+				for (const val of input)
 					this.add(val);
 			},
 		});
@@ -374,7 +374,7 @@ class ConfigManager {
 	 * @return {boolean} true if there was a config object to delete
 	*/
 	async deleteGuildConfig (guildId) {
-		let deleted = this.#guildStore.delete(guildId = String(guildId));
+		const deleted = this.#guildStore.delete(guildId = String(guildId));
 
 		if (deleted)
 			await saveConfig(new Map([['id', guildId]]));
@@ -385,9 +385,9 @@ class ConfigManager {
 	 * @return {Map} a map of property names, to an array with the property type and desc
 	*/
 	getConfigurable () {
-		let res = new Map();
+		const res = new Map();
 
-		for (let [key, {type, desc, configurable}] of this.#confVars) {
+		for (const [key, { type, desc, configurable }] of this.#confVars) {
 			if (configurable)
 				res.set(key, [type, desc]);
 		}
@@ -411,19 +411,21 @@ class ConfigManager {
 	 * @param {extraProperties} param - extra modifiable properties
 	}
 	*/
-	register (name, type, {default:defaultVal, configurable, description, get, set, toJson, from}) {
+	register (name, type, { default: defaultVal, configurable, description, get, set, toJson, from }) {
 		let temp;
 
 		name = String(name);
 		type = getTypeName(type);
 		log.debug('Type for', name, 'is', type);
-		if (!type) return;
-		if (this.#confVars.has(name)) return;
+		if (!type)
+			return;
+		if (this.#confVars.has(name))
+			return;
 		this.#confVars.set(name, temp = {
 			type: type,
 			default: defaultVal,
 			desc: description,
-			configurable: (typeof configurable === 'boolean')? configurable : !!description,
+			configurable: (typeof configurable === 'boolean') ? configurable : !!description,
 		});
 		if (canHaveGetters(type)) {
 			log.debug('Setting getters/setters for', name);
@@ -431,7 +433,7 @@ class ConfigManager {
 			temp.set = set;
 		}
 		if (toJson && from) {
-			Object.defineProperty(MappingUtils, type, {value: {toJson, from}});
+			Object.defineProperty(MappingUtils, type, { value: { toJson, from }});
 			log.info('Set up json conversion functions for property', name);
 		}
 		log.info('Finished registering config property', name);
