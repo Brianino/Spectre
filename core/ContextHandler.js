@@ -1,5 +1,3 @@
-
-/** @module ContextHandler */
 import logger from './logger.js';
 import { Client, Guild, Collection } from 'discord.js';
 import ConsolidatedListener from './ConsolidatedListener.js';

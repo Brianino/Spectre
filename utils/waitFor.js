@@ -1,5 +1,3 @@
-
-
 /**
  * A timeout function to wait for a certain condition
  * @memberof utils

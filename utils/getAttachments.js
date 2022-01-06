@@ -1,5 +1,3 @@
-
-
 import logger from '../core/logger.js';
 const log = logger('Utilities');
 

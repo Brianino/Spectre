@@ -1,5 +1,3 @@
-
-
 import ContextHandler from './ContextHandler.js';
 import ModuleObject, { access } from './ModuleObject.js';
 import { promises as fs, readFileSync } from 'fs';

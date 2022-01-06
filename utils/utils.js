@@ -1,4 +1,3 @@
-
 /** A collection of utilities (the namespace is )
  *@namespace utils
  */

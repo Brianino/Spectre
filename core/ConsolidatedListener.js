@@ -1,5 +1,3 @@
-
-
 import logger from './logger.js';
 import EventEmitter from 'events';
 const log = logger('Consolidated-Listener');

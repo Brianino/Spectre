@@ -1,5 +1,3 @@
-
-
 import logger from './logger.js';
 import { Permissions } from 'discord.js';
 import EventEmitter from 'events';

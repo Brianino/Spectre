@@ -1,5 +1,3 @@
-
-
 import PageController from './controls/PageController.js';
 import { MessageEmbed, Message, Channel } from 'discord.js';
 import logger from '../core/logger.js';

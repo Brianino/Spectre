@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-
 import Discord from 'discord.js';
 import logger from './core/logger.js';
 import ModuleLoader from './core/ModuleLoader.js';

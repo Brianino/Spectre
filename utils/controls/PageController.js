@@ -1,5 +1,3 @@
-
-
 import EmojiController from './EmojiController.js';
 
 class EmojiPageController extends EmojiController {

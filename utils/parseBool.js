@@ -1,5 +1,3 @@
-
-
 /**
  * Converts an input into a boolean value
  * @memberof utils

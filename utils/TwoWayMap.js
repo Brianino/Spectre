@@ -1,5 +1,3 @@
-
-
 class TwoWayMap extends Map {
 	#reverseMap = new Map();
 
@@ -43,7 +41,7 @@ class TwoWayMap extends Map {
 		return super.set(key, value);
 	}
 
-	*entriesByValue () {
+	*reverseEntries () {
 		yield* this.#reverseMap;
 	}
 }

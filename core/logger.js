@@ -1,10 +1,8 @@
-
-
-// For compatibility, this has been modified to just return the new log4js logger, as well as configure it when it is first initialised
 import log4js from 'log4js';
 import fs from 'fs/promises';
 
 if (!process.env.TEST) {
+	// Setup config file watcher
 	const log = log4js.getLogger(),
 		configFile = 'log.json',
 		ac = new AbortController(),
@@ -31,6 +29,7 @@ if (!process.env.TEST) {
 		}
 	})();
 } else {
+	// Setup default log rules when running tests
 	log4js.configure({
 		appenders: {
 			testlog: {

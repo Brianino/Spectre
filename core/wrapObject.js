@@ -1,5 +1,3 @@
-
-
 function wrapObject (obj, wrapper) {
 	return new Proxy(wrapper, {
 		get: (target, prop) => {

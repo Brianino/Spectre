@@ -1,5 +1,3 @@
-
-
 /**
  * Gets the current time nicely formatted
  * @function time

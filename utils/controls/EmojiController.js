@@ -1,5 +1,3 @@
-
-
 import logger from '../../core/logger.js';
 import TwoWayMap from '../TwoWayMap.js';
 import { Message } from 'discord.js';
@@ -360,7 +358,7 @@ class EmojiController extends events {
 	}
 
 	*[Symbol.iterator] () {
-		yield* this.#emoteMap.entriesByValue();
+		yield* this.#emoteMap.reverseEntries();
 		yield* this.#paused;
 	}
 }

@@ -1,5 +1,3 @@
-
-
 import { Permissions } from 'discord.js';
 
 class MappingUtilties {
