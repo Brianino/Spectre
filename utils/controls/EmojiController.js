@@ -1,9 +1,30 @@
+import AbstractController from './AbstractController.js';
 import logger from '../../core/logger.js';
 import TwoWayMap from '../TwoWayMap.js';
-import { Message } from 'discord.js';
-import events from 'events';
 
 const log = logger('Utilities');
+
+// Eslint file specific config
+/*
+eslint
+no-unused-vars: ["error", { "args": "all", "argsIgnorePattern": "^_" }]
+class-methods-use-this: ["warn", {
+	"exceptMethods": [
+		"_onAdd",
+		"_onRemove",
+		"_onEnable",
+		"_onDisable",
+		"_onResume",
+		"_onPause",
+		"_onPausedEvent",
+		"_setupMessage",
+		"_onEvent",
+		"_onEnd",
+		"_getCollector",
+		"_fetchValue",
+		"_checkStop"
+	]
+}] */
 
 /** Extra properties object
  * @typedef {Object} emojiControllerProperties
@@ -18,348 +39,167 @@ const log = logger('Utilities');
  * @param {emojiControllerProperties} [param]        - options to change the behaviour of the controller
  * @param {Map}                       [emoteToEvent] - map of emote names to event names to start with
 */
-class EmojiController extends events {
-	#options = {};
-	#emoteOrder = new Set();
-	#emoteMap = new TwoWayMap();
-	#paused = new TwoWayMap();
-	#messages = new Map();
-	#controlsOn = true;
+class EmojiController extends AbstractController {
+	#removeEmote = true;
+	#allowUserStop = true;
+	#attached = false;
 
-	static #STOP_EMOTE = '\u23F9\uFE0F';
+	static STOP_EMOTE = '\u23F9\uFE0F';
 	static ReservedEmoteError = class ReservedEmoteError extends Error {};
-	static ControlExistsError = class ControlExistsError extends Error {};
 
-	constructor ({ removeEmote, seconds, secondsIdle = 30, allowUserStop } = {}, emoteToEvent) {
-		super();
-
-		if (emoteToEvent instanceof Map)
-			this.#emoteMap = new TwoWayMap(emoteToEvent);
-		if (typeof seconds === 'number')
-			this.#options.time = seconds * 1000;
-
-		this.#emoteMap.forEach((val, key) => this.#emoteOrder.add(key));
-		this.#options.idle = Number(secondsIdle) * 1000;
-		this.#options.removeEmote = removeEmote ?? true;
-		this.#options.allowUserStop = allowUserStop ?? true;
-	}
-
-	/** Adds a new control to the controller
-	 *
-	 * @param {string} evName    - the name of the control, will also be the name of the emitted event
-	 * @param {string} emoteName - the name of the emote that will trigger the control.
-	 * @return {emojiController} returns the object to allow for chaining
-	*/
-	addControl (evName, emoteName) {
-		emoteName = String(emoteName); evName = String(evName);
-		if (this.#options.allowUserStop && emoteName === EmojiController.#STOP_EMOTE)
-			throw new EmojiController.ReservedEmoteError(`The emote ${emoteName} is reserved`);
-		if (this.#emoteMap.has(emoteName) || this.#paused.hasValue(emoteName))
-			throw new EmojiController.ControlExistsError(`Emote ${emoteName} exists already`);
-		if (this.#emoteMap.hasValue(evName) || this.#paused.has(evName))
-			throw new EmojiController.ControlExistsError(`Control for ${evName} exists already`);
-		this.#emoteMap.set(emoteName, evName);
-		this.#emoteOrder.add(emoteName);
-		return this;
-	}
-
-	/** Adds all the emoji as well as enabling all the controls
-	 * @return {Promise} will resolve once all the controls have been paused
-	*/
-	async turnOnControls () {
-		if (!this.#controlsOn) {
-			const promises = [];
-			this.#controlsOn = true;
-			for (const msg of this.#messages.keys())
-				promises.push(this.#attachReactions(msg));
-			await Promise.allSettled(promises);
-		}
-	}
-
-	/** Removes a control from the controller
-	 * @param {string} evName - the name of the control to remove
-	 * @return {Promise} will resolve once the emote has been removed
-	*/
-	async removeControl (evName) {
-		const emote = this.getEventEmote(evName = String(evName));
-		if (this.#emoteMap.delete(emote) || this.#paused.delete(evName)) {
-			this.#emoteOrder.delete(emote);
-			await this.#removeReaction(emote);
-		}
-	}
-
-	/** Removes all the emoji as well as disabling all but the stop control
-	 * @return {Promise} will resolve once all the controls have been paused
-	*/
-	async turnOffControls () {
-		if (this.#controlsOn) {
-			this.#controlsOn = false;
-			if (this.#messages.size) {
-				const promises = [];
-				for (const emote of this.emotes())
-					promises.push(this.#removeReaction(emote));
-				await Promise.allSettled(promises);
-			}
-		}
-	}
-
-	/** Re-enables a paused control
-	 * @param {string} evName - the name of the control to enable
-	 * @return {boolean} true if the control was paused and then enabled
-	*/
-	resumeControl (evName) {
-		const value = this.#paused.get(evName = String(evName));
-
-		if (value) {
-			log.debug('Control', evName, 'resumed');
-			this.#paused.delete(evName);
-			this.#emoteMap.set(value, evName);
-			return true;
-		}
-		return false;
-	}
-
-	/** Re-enables paused controls
-	 * @param {...string} names - the names of the controls to enable
-	 * @return {boolean} true if any of the controls were paused and then enabled
-	*/
-	resumeControls (...names) {
-		const nameSet = new Set(names);
-		let res = false;
-		for (const evName of this.#paused.keys()) {
-			if (nameSet.has(evName)) {
-				this.resumeControl(evName);
-				res = true;
-				nameSet.delete(evName);
-				if (!nameSet.size)
-					break;
-			}
-		}
-		return res;
-	}
-
-	/** Re-enables all paused controls
-	 * @return {boolean} true if any of the controls were paused and then enabled
-	*/
-	resumeAllControls () {
-		const res = this.#paused.size > 0;
-		for (const evName of this.#paused.keys())
-			this.resumeControl(evName);
-		return res;
-	}
-
-	/** Re-enables all (excluding the specified) paused controls
-	 * @param {...string} names - the names of the controls to not update
-	 * @return {boolean} true if any of the controls were paused and then enabled
-	*/
-	resumeAllControlsExcluding (...names) {
-		const evNames = [...this.#paused.keys()].filter(val => !names.includes(val));
-		return this.resumeControls(...evNames);
-	}
-
-	/** Temporarily disables a control
-	 * @param {string} evName - the name of the control to disable
-	 * @return {boolean} true if the control was enabled and then paused
-	*/
-	pauseControl (evName) {
-		const value = this.getEventEmote(evName = String(evName));
-
-		if (value) {
-			log.debug('Control', evName, 'paused');
-			this.#emoteMap.delete(value);
-			this.#paused.set(evName, value);
-			return true;
-		}
-		return false;
-	}
-
-	/** Temporarily disables controls
-	 * @param {...string} names - the names of the controls to disable
-	 * @return {boolean} true if any of the controls were enabled and then paused
-	*/
-	pauseControls (...names) {
-		let res = false;
-		for (const evName of names)
-			res = this.pauseControl(evName) || res;
-		return res;
-	}
-
-	/** Temporarily disables all (excluding the specified) controls
-	 * @param {...string} names - the names of the controls to not update
-	 * @return {boolean} true if any of the controls were enabled and then paused
-	*/
-	pauseAllControlsExcluding (...names) {
-		const nameSet = new Set(names);
-		let res = false;
-		for (const evName of this.#emoteMap.values()) {
-			if (!nameSet.has(evName))
-				res = this.pauseControl(evName) || res;
-		}
-		return res;
-	}
-
-	/** Returns the name of the emote that triggers a control
-	 * @param {string} evName - the name of the control
-	 * @return {string} the name of the emote
-	*/
-	getEventEmote (evName) {
-		return this.#emoteMap.getByValue(evName);
-	}
-
-	/** Adds the controller to the specified discord message
-	 * @param {Message} msg - the discord.js message object
-	 * @return {emojiController} returns the object to allow for chaining
-	*/
-	addToMessage (msg) {
-		if (msg instanceof Message === false)
-			throw new Error('A discord message object is required');
-		this.#controlHandler(msg);
-		return this;
-	}
-
-	/** Stops the contoller on the specified messages, If msgs is not provided it will default to 'all'
-	 * @param {(string|Message[])} msgs - the list of message objects, or 'all' for all of them, where the controller will stop on the specified messages
-	*/
-	stop (msgs) {
-		msgs = msgs ?? 'all';
-		if (msgs === 'all') {
-			for (const col of this.#messages.values())
-				col.stop();
-		} else {
-			for (const msg of msgs)
-				this.#messages.get(msg)?.stop();
-		}
-	}
-
-	/** Overrides this emit method to check if a control exists/is enabled, otherwise it won't emit
-	 * @Override
-	 * @param {string}  evName - The name of the event to emit
-	 * @param {...args} args   - Extra args to pass on to the parent method
-	*/
-	emit (evName, ...args) {
-		if (this.getEventEmote(evName) || evName === 'end')
-			super.emit(evName, ...args);
-	}
-
-	/** Cleans up function to remove the reactions and remove the message from the local store once the reaction collector ends
-	 * @private
-	 * @param {Message} msg - the message object
-	*/
-	#cleanUp (msg) {
-		msg.reactions.removeAll().catch(e => {
-			log.warn('Unable to remove reaction:', e);
-		});
-		this.#messages.delete(msg);
-	}
-
-	#checkReaction (reaction, getControl = false) {
-		if (getControl)
-			return this.#emoteMap.get(reaction.emoji.toString()) || this.#paused.getByValue(reaction.emoji.toString());
-		else
-			return this.#emoteMap.has(reaction.emoji.toString()) || this.#paused.hasValue(reaction.emoji.toString());
+	constructor ({ removeEmote, allowUserStop, ...other } = {}, eventToEmote) {
+		super(other, eventToEmote ? eventToEmote = new TwoWayMap(eventToEmote) : undefined);
+		if (eventToEmote && eventToEmote.hasValue(EmojiController.STOP_EMOTE))
+			throw new EmojiController.ReservedEmoteError(`${EmojiController.STOP_EMOTE} is reserved`);
+		if (removeEmote !== undefined)
+			this.#removeEmote = removeEmote;
+		if (allowUserStop !== undefined)
+			this.#allowUserStop = allowUserStop;
 	}
 
 	static #getReaction (msg, emote) {
 		return msg.reactions.cache.find(reaction => reaction.emoji.name === emote);
 	}
 
-	async #attachReactions (msg) {
-		for (const emote of this.#emoteOrder) {
-			try {
+	#addReaction (emote, msgs = this._messages.keys())  {
+		const promises = [];
+		for (const msg of msgs) {
+			promises.push((async () => {
+				log.debug(`Adding emote ${emote} to message ${msg.id}`);
 				if (EmojiController.#getReaction(msg, emote)?.me)
-					continue;
+					return log.debug(`Emote ${emote} already present on ${msg.id}`);
 				await msg.react(String(emote));
+				return emote;
+			})());
+		}
+		return Promise.allSettled(promises);
+	}
+
+	#removeReaction (emote, msgs = this._messages.keys()) {
+		const promises = [];
+		for (const msg of msgs) {
+			promises.push((async () => {
+				const reaction = EmojiController.#getReaction(msg, emote);
+				if (reaction) {
+					try {
+						await reaction.remove();
+					} catch (e) {
+						log.warn('Unable to remove all users on reaction', emote);
+						await reaction.users.remove();
+					}
+					return emote;
+				}
+			})());
+		}
+		return Promise.allSettled(promises);
+	}
+
+	async _onAdd (emote) {
+		for (const { status, reason } of await this.#addReaction(emote)) {
+			if (status === 'rejected')
+				log.warn('Unable to add emote', emote, 'because', reason);
+		}
+	}
+
+	async _onRemove (emote) {
+		for (const { status, reason } of await this.#removeReaction(emote)) {
+			if (status === 'rejected')
+				log.warn('Unable to remove emote', emote, 'because', reason);
+		}
+	}
+
+	async _onEnable (emotes) {
+		const promises = [];
+		for (const emote of emotes)
+			promises.push(this._onAdd(emote));
+		await Promise.all(promises);
+	}
+
+	async _onDisable (emotes) {
+		const promises = [];
+		for (const emote of emotes)
+			promises.push(this._onRemove(emote));
+		await Promise.all(promises);
+	}
+
+	async _setupMessage (msg, emotes) {
+		let promises = [];
+		log.debug('Setting up message', msg.id);
+		for (const emote of emotes)
+			promises.push(this.#addReaction(emote, [msg]));
+		if (this.#allowUserStop)
+			promises.push(this.#addReaction(EmojiController.STOP_EMOTE, [msg]));
+		promises = await Promise.all(promises);
+		for (const { status, reason } of promises.flat()) {
+			if (status === 'rejected')
+				log.warn('Unable to setup msg because', reason);
+		}
+	}
+
+	async _onEvent (reaction, user) {
+		if (this.#removeEmote) {
+			try {
+				await reaction.users.remove(user);
 			} catch (e) {
-				log.warn('Unable to add emote', String(emote), 'to message:', e);
+				if (e.message === 'Missing Permissions') {
+					log.warn('Turning off reaction removal due to missing permissions');
+					this.#removeEmote = false;
+				} else {
+					log.error('Unable to remove reaction', e);
+				}
 			}
 		}
-		if (this.#options.allowUserStop) {
-			this.#emoteMap.set(EmojiController.#STOP_EMOTE, undefined);
-			try {
-				if (EmojiController.#getReaction(msg, EmojiController.#STOP_EMOTE)?.me !== true)
-					await msg.react(EmojiController.#STOP_EMOTE);
-			} catch (e) {
-				log.debug('Stop unicode:', EmojiController.#STOP_EMOTE);
-				log.warn('Unable to add stop emote to message:', e);
-			}
+	}
+
+	async _onPausedEvent (reaction, user) {
+		await this._onEvent(reaction, user);
+	}
+
+	async _onEnd (msg, emotes) {
+		let promises = [];
+		for (const emote of emotes)
+			promises.push(this.#removeReaction(emote, [msg]));
+		if (this.#allowUserStop)
+			promises.push(this.#removeReaction(EmojiController.STOP_EMOTE, [msg]));
+		promises = await Promise.all(promises);
+		for (const { status, reason } of promises.flat()) {
+			if (status === 'rejected')
+				log.warn('Unable to cleanup msg because', reason);
 		}
 	}
 
-	async #removeReaction (emoteName, msgs) {
-		const tmp = new Set(msgs ?? this.#messages.keys()), promises = [];
-		for (const msg of tmp)
-			promises.push(EmojiController.#getReaction(msg, emoteName)?.remove());
-		await Promise.allSettled(promises).then(res => {
-			const failed = res.filter(({ status }) => status === 'rejected');
-			log.warn('Failed to remote emote', emoteName, 'from', failed.length, 'messages');
-		});
+	_getCollector ({ message, time, idle }) {
+		const filter = (_r, u) => (u.id !== u.client.user.id);
+		return message.createReactionCollector(filter, { time, idle });
 	}
 
-	#controlHandler (msg) {
-		const filter = (r, u) => this.#controlsOn && this.#checkReaction(r) && (u.id !== u.client.user.id);
-
-		if (this.#messages.has(msg))
-			return;
-
-		if (this.#controlsOn)
-			this.#attachReactions(msg);
-		const collector = msg.createReactionCollector(filter, { time: this.#options.time, idle: this.#options.idle });
-		this.#messages.set(msg, collector);
-
-		collector.on('collect', (reaction, user) => {
-			const evName = this.#checkReaction(reaction, true);
-
-			if (evName) {
-				if (this.#options.removeEmote) {
-					reaction.users.remove(user).catch(e => {
-						if (e.message === 'Missing Permissions') {
-							log.warn('Turning off reaction removal due to missing permissions');
-							this.#options.removeEmote = false;
-						} else {
-							log.error('Unable to remove reaction', e);
-						}
-					});
-				}
-				try {
-					this.emit(evName, msg);
-				} catch (e) {
-					log.warn('Control event failed:', e);
-				}
-			} else if (this.#options.allowUserStop && reaction.emoji.toString() === EmojiController.#STOP_EMOTE) {
-				collector.stop();
-			}
-		});
-		collector.on('end', () => {
-			try {
-				this.#cleanUp(msg);
-				this.emit('end', msg);
-			} catch (e) {
-				log.warn('Control end event failed:', e);
-			}
-		});
+	_fetchValue (reaction, _user) {
+		return reaction.emoji.toString();
 	}
 
-	*allControls () {
-		yield* this.#emoteMap.values();
-		yield* this.#paused.keys();
+	_checkStop (reaction, _user) {
+		if (this.#allowUserStop) {
+			if (this._fetchValue(reaction) === EmojiController.STOP_EMOTE)
+				return true;
+		}
+		return false;
+		// check if the event triggers a stop;
 	}
 
-	*activeControls () {
-		yield* this.#emoteMap.values();
-	}
-
-	*pausedControls () {
-		yield* this.#paused.keys();
+	/** Adds a new control to the controller
+	 * @override
+	 * @param {string|symbol} event - the name of the control/emitted event
+	 * @param {string}        assoc - value used to trigger the control in the collector
+	 * @return {EmojiController} returns the object to allow for chaining
+	*/
+	addControl (event, assoc) {
+		if (assoc === EmojiController.STOP_EMOTE)
+			throw new EmojiController.ReservedEmoteError(`${EmojiController.STOP_EMOTE} is reserved`);
+		return super.addControl(event, assoc);
 	}
 
 	*emotes () {
-		yield* this.#emoteMap.keys();
-		yield* this.#paused.values();
-	}
-
-	*[Symbol.iterator] () {
-		yield* this.#emoteMap.reverseEntries();
-		yield* this.#paused;
+		yield* this.assoc();
 	}
 }
 

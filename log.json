@@ -141,7 +141,7 @@
 			"level": "info",
 			"enableCallStack": true
 		},
-		"Utilties": {
+		"Utilities": {
 			"appenders": ["main", "err", "debug"],
 			"level": "info",
 			"enableCallStack": true

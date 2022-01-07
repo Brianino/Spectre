@@ -4,12 +4,12 @@ class EmojiPageController extends EmojiController {
 
 	constructor (options = {}) {
 		super(options, new Map([
-			['\u23EE\uFE0F', 'first'],
+			['first', '\u23EE\uFE0F'],
 			// left arrow \U2B05\UFE0F
-			['\u25C0\uFE0F', 'prev'],
+			['prev', '\u25C0\uFE0F'],
 			// left arrow \U27A1\UFE0F
-			['\u25B6\uFE0F', 'next'],
-			['\u23ED\uFE0F', 'last'],
+			['next', '\u25B6\uFE0F'],
+			['last', '\u23ED\uFE0F'],
 		]));
 	}
 
