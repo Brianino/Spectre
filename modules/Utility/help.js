@@ -17,54 +17,71 @@ const detailedHelp = {
 function inAll () {
 	const { PagedEmbed } = Utils;
 
+	function textSort (a, b) {
+		a = String(a).toUpperCase();
+		b = String(b).toUpperCase();
+		if (a < b)
+			return -1;
+		if (a > b)
+			return 1;
+		return 0;
+	}
+
+	function handleModules (config, msg) {
+		const main = [], other = [];
+		for (const mod of modules.values()) {
+			if (access.call(mod, msg.author, msg.guild, config)) {
+				const tmp = (mod.group === 'Other') ? other : main;
+				tmp.push([ mod.group, mod.command, mod.description[0]]);
+			}
+		}
+		main.sort(([ g1, c1 ], [ g2, c2 ]) => textSort(g1, g2) || textSort(c1, c2));
+		return main.concat(other);
+	}
+
+	function makePagedHelp (config, msg) {
+		const data = handleModules(config, msg), helpEmbed = new PagedEmbed('Options');
+		let lastGroup, pageNo = 0;
+
+		for (const [group, ...details] of data) {
+			if (group !== lastGroup) {
+				const desc = detailedHelp[group] ?? `${group} commands`;
+				lastGroup = group;
+				pageNo = helpEmbed.addPage(group, [details], desc);
+			} else {
+				helpEmbed.addToPage(pageNo, details);
+			}
+		}
+		return helpEmbed;
+	}
+
+	function makeSinglePageHelp (cmd) {
+		const helpEmbed = new PagedEmbed(), tmp = this.prefix.concat(cmd.command);
+
+		helpEmbed.addPage(cmd.command, [], cmd.description.join('\n'));
+		if (cmd.arguments.length)
+			helpEmbed.addToPage(0, ['Command Usage:', cmd.arguments.map(val => `${tmp} ${val}`).join('\n')]);
+		if (cmd.vars.length)
+			helpEmbed.addToPage(0, ['Configurable Settings:', `\`${cmd.vars.join('` `')}\``]);
+		return helpEmbed;
+	}
+
 	return function main (msg, arg) {
 		if (!arg) {
-			const helpEmbed = new PagedEmbed('Options'), pages = new Map();
-
-			helpEmbed.setColor(0xBB0000);
-			for (const moduleObj of modules.values()) {
-				const details = [moduleObj.command, moduleObj.description[0]];
-				let page = pages.get(moduleObj.group);
-
-				if (page === undefined) {
-					const desc = detailedHelp[moduleObj.group] || (`${moduleObj.group} commands`);
-					page = helpEmbed.addPage(moduleObj.group, [details], desc);
-					pages.set(moduleObj.group, page);
-				} else {
-					helpEmbed.addToPage(page, [details]);
-				}
-			}
+			const helpEmbed = makePagedHelp(this, msg);
 			log.debug('Posting help (no args)');
 			return helpEmbed.sendTo(msg.channel);
 		} else {
 			const cmd = modules.get(arg = String(arg));
 
-			arg = arg.replace(/`/g, '');
-			if (arg === '')
-				arg = ' ';
 			if (cmd && access.call(cmd, msg.author, msg.guild, this)) {
-				const comStr = `${this.prefix + cmd.command} `, embed = {
-					title: arg,
-					description: cmd.description.join('\n'),
-					color: 0xBB0000,
-					fields: [],
-				};
-
-				if (cmd.arguments.length) {
-					embed.fields.push({
-						name: 'Command Usage:',
-						value: cmd.arguments.map(val => comStr + val).join('\n'),
-					});
-				}
-				if (cmd.vars.length) {
-					embed.fields.push({
-						name: 'Configurable Settings:',
-						value: `\`${cmd.vars.join('` `')}\``,
-					});
-				}
+				const helpEmbed = makeSinglePageHelp(cmd);
 				log.debug('Posting help (args)');
-				return msg.channel.send({ embed });
+				return helpEmbed.sendTo(msg.channel);
 			} else {
+				arg = arg.replace(/`/g, '');
+				if (arg === '')
+					arg = ' ';
 				return msg.channel.send(`Could not find command \`${arg}\``);
 			}
 		}

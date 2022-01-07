@@ -131,13 +131,15 @@ class PagedEmbed {
 		return this.#pages.length - 1;
 	}
 
-	addToPage (pageNo, rows = []) {
+	addToPage (pageNo, row = []) {
 		const page = this.#pages[pageNo];
 
-		if (page) {
-			const mergedRows = rows.concat(page.fields.map(({ name, value }) => [name, value]));
+		if (page && row.length === 2) {
+			const mergedRows = page.fields.map(({ name, value }) => [name, value]);
+			mergedRows.push(row);
 			this.#pages[pageNo] = PagedEmbed.#makeEmbed(page.title, mergedRows, page.description);
 		}
+		return this;
 	}
 
 	removePage (input) {
