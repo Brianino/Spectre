@@ -138,7 +138,7 @@ class ModuleObject {
 		}
 	}
 
-	revemoveFrom (consolidatedListener) {
+	removeFrom (consolidatedListener) {
 		if (consolidatedListener instanceof ConsolidatedListener) {
 			consolidatedListener.removeSource(this.#events);
 			this.#consolidated.delete(consolidatedListener);

@@ -75,11 +75,16 @@ class GenericContext {
 		return res;
 	}
 
+	_getCheck () {
+		log.debug(`[${this.command}] No check function (${this.constructor.name})`);
+		return undefined;
+	}
+
 	async setup (ctxKey) {
 		if (!ctxKey)
 			throw new Error('Need a context key');
 		if (!this.#runFunc)
-			this.#runFunc = await this.#mainCtx[ctxKey].call(this.#wrapModuleObject(), this.#proxyListener, this.#globObj);
+			this.#runFunc = await this.#mainCtx[ctxKey].call(this.#wrapModuleObject(), this.#proxyListener(this._getCheck()), this.#globObj);
 		log.debug(`[${this.command}] Setting up ${ctxKey}`);
 		return this.#runFunc;
 
@@ -138,6 +143,11 @@ class GuildContext extends GenericContext {
 		});
 		log.debug(`[${this.command}] Properties for ${this.#guild.name} setup`);
 		return res;
+	}
+
+	_getCheck () {
+		log.debug(`[${this.command}] Returning bound check for guild ${this.#guild.name} (${this.constructor.name})`);
+		return this.#checkGuild();
 	}
 
 	setup () {
@@ -238,6 +248,7 @@ class ModuleContext {
 	}
 
 	#wrapListener (check) {
+		log.debug(`[${this.#moduleObject.command}] Wrapped Listener (${typeof check})`);
 		return new Proxy(this.#proxyListener, {
 			get: (target, prop) => {
 				const func = Reflect.get(target, prop);
@@ -286,7 +297,7 @@ class ModuleContext {
 	}
 
 	#createCtxBundle (mainCtx) {
-		return new CtxObjectBundle(mainCtx, this.#moduleObject, this.#proxyListener, this.#consolidatedListener);
+		return new CtxObjectBundle(mainCtx, this.#moduleObject, this.#wrapListener.bind(this), this.#consolidatedListener);
 	}
 
 	create (mainCtx) {
