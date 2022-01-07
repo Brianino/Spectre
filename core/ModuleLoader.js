@@ -71,7 +71,7 @@ class ModuleLoader {
 	}
 
 	get modules () {
-		// change this to return a bunch of proxies that can be used to indirectly read the properties on the commands
+		// TODO: change this to return a bunch of proxies that can be used to indirectly read the properties on the commands
 		return this.#modules;
 	}
 
