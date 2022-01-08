@@ -15,7 +15,7 @@ async function autoCleanup () {
 					locks.delete(key);
 				}
 			}
-			if (!locks.size())
+			if (!locks.size)
 				break;
 		}
 		cleanupRunning = false;

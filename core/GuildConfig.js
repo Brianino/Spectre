@@ -208,11 +208,17 @@ function proxifyMap (map, varStore) {
 
 					if (descriptor.set) {
 						const propVal = target.get(prop) ?? descriptor.default;
-
 						log.debug('Using custom setter for', prop, 'with value', value, 'on', target.get('id'));
 						if (typeof propVal === 'object') {
-							descriptor.set.call(propVal, value);
-							return true;
+							if (propVal === descriptor.default) {
+								// Stringify then parse the value to clone it
+								// This is to avoid the default instance being modified (and then propogating changes to other servers)
+								const converter = MappingUtils.getConverter(descriptor.type);
+								value = converter.from(converter.toJson(descriptor.default));
+							} else {
+								value = propVal;
+							}
+							descriptor.set.call(value, value);
 						} else {
 							value = descriptor.set(value);
 						}
@@ -220,16 +226,18 @@ function proxifyMap (map, varStore) {
 					if (value === undefined) {
 						log.info('Removing value of', prop);
 						target.delete(prop);
-						return true;
 					} else if (value.constructor.name.toLowerCase() !== descriptor.type) {
 						log.debug('Unable to set value due to type mismatch:', value.constructor.name, 'instead of', descriptor.type);
 						throw new Error(`Value does not match expected type of ${descriptor.type}`);
+					} else {
+						log.info('Updating value of', prop, 'to', value);
+						target.set(prop, value);
 					}
-					log.info('Updating value of', prop, 'to', value);
-					target.set(prop, value);
-					saveConfig(target, varStore).catch(e => {
-						log.error('Unable to save config for', target.get('id'), e);
-					});
+					if (target.get('id')) {
+						saveConfig(target, varStore).catch(e => {
+							log.error('Unable to save config for', target.get('id'), e);
+						});
+					}
 					return true;
 				}
 

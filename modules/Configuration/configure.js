@@ -1,4 +1,4 @@
-this.description = 'set server configuration';
+this.description = 'Use to set command config options';
 this.description = 'Adding no arguments will display the available settings to configure';
 this.description = 'using the setting with no value will display more info on the setting.';
 
@@ -8,6 +8,7 @@ this.arguments = '';
 this.permissions = 'MANAGE_GUILD';
 
 function inGuild () {
+	const { Permissions } = discordjs;
 
 	return (msg, setting, ...input) => {
 		const options = getConfigurable();
@@ -52,15 +53,16 @@ function inGuild () {
 					case 'boolean': this.config[setting] = parseBool(input.shift()); break;
 					case 'number': this.config[setting] = input.shift(); break;
 
-					case 'set':
+					case 'set': input = new Set(input);
 					case 'array': this.config[setting] = input; break;
 					case 'permissions': {
 						let temp = Number(input[0]);
 						if (isNaN(temp))
 							temp = input;
-						this.config[setting] = temp;
-					}
+						this.config[setting] = new Permissions(temp);
 						break;
+					}
+					default: this.config[setting] = input; break;
 				}
 				log.info('Updated', setting, 'setting to', this.config[setting], 'for guild', msg.guild.name);
 				return msg.channel.send(`Updated the setting ${setting}`);

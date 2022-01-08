@@ -8,7 +8,7 @@ function inGuild () {
 		{ getUserID } = Utils;
 
 	return async (msg, input, message) => {
-		const user = msg.guild.member(await getUserID(input, msg.guild, { resolve: true }));
+		const user = await getUserID(input, msg.guild, { resolve: true });
 
 		if (user && user.manageable) {
 			const r1 = msg.member.roles.highest, r2 = user.roles.highest, otemp = msg.guild.owner.id;

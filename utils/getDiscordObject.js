@@ -11,37 +11,33 @@ const log = logger('Utilities');
  *
  * @param  {Collection}        sourceCollection - the source to scan for a match
  * @param  {string}            value            - the value to search for
- * @param  {string}            type             - the type of matching to perform (partial|full)
+ * @param  {string}            type             - the type of matching to perform (partial|full), append _checkcase to make the search case sensative
  * @param  {(string|function)} prop             - how to objtain the value to match against from the collection object
  * @return {object} the object in the collection that best matches the value according the the search type used
 */
 function textSearch (sourceCollection, value, type, prop) {
+	const getProp = (input) => typeof prop === 'function' ? String(prop(input)) : String(input[String(prop)]);
+	let tmp;
 	value = String(value);
 	type = String(type).toLowerCase();
 	switch (type) {
-		case 'partial': log.debug('Using partial match search, prop:', prop);
-			if (typeof prop === 'string')
-				return sourceCollection.find(item => String(item[prop]).includes(value));
-			else if (typeof prop === 'function')
-				return sourceCollection.find(item => String(prop(item)).includes(value));
-			else
-				return undefined;
-
-		case 'full': log.debug('Using full match search, prop:', prop);
-			if (typeof prop === 'string')
-				return sourceCollection.find(item => String(item[prop]) === value);
-			else if (typeof prop === 'function')
-				return sourceCollection.find(item => String(prop(item)) === value);
-			else
-				return undefined;
+		case 'partial': tmp = (item) => {
+			return getProp(item)
+				.toLowerCase()
+				.includes(value.toLowerCase());
+		}; break;
+		case 'partial_checkcase': tmp = (item) => getProp(item).includes(value); break;
+		case 'full': tmp = (item) => getProp(item).toLowerCase() === value.toLowerCase(); break;
+		case 'full_checkcase': tmp = (item) => getProp(item) === value; break;
 
 		// SMART NOT IMPLEMENTED YET BUT THIS WILL BE A COSTLY SEARCH
 		case 'smart': return undefined;
-		// if (typeof prop === 'string') return sourceCollection.map(val => calculateScore(val[prop], value)).sort((a, b) => a.score - b.score)[0];
-		// else if (typeof prop === 'function') return sourceCollection.map(val => calculateScore(prop(val, value))).sort((a, b) => a.score - b.score)[0];
-		// else return undefined;
+		// if (typeof prop === 'string') return sourceCollection.map(val => calculateScore(getProp(val), value)).sort((a, b) => a.score - b.score)[0];
 		// break;
 	}
+	log.debug('Performing check', type);
+	return sourceCollection.find(tmp);
+
 
 	// function calculateScore (input, value) {}
 }
@@ -107,10 +103,12 @@ async function getIDs ({ input, manager, prop, reg, maxCount, resolve, Type, all
 	// Setup defaults
 	if (!input)
 		return [];
+	else if (typeof input[Symbol.iterator] === 'function')
+		input = [...input].join(' ');
 	else
 		input = String(input);
-	if (maxCount < 1)
-		maxCount = 1;
+	if (maxCount <= 0)
+		maxCount = Infinity;
 
 	Mentions: {
 		log.debug('Searching for mentions');
@@ -160,12 +158,11 @@ async function getChannelID (input, guild, { maxCount = 1, resolve, ...options }
 	const manager = guild.channels;
 
 	log.debug('Looking for channel, input:', input, 'max', maxCount, 'options', options);
-	if (typeof input === 'object' && input instanceof GuildChannel) {
-		const temp = resolve ? input : input.id;
-		if (manager.cache.has(input.id))
-			return maxCount <= 1 ? temp : [temp];
-		else
-			return maxCount <= 1 ? undefined : [];
+	if (input instanceof GuildChannel) {
+		let temp = resolve ? input : input.id;
+		if (!manager.cache.has(input.id))
+			temp = undefined;
+		return maxCount === 1 ? temp : [temp];
 	}
 	const res = await getIDs({ ...options, input, manager, maxCount, resolve, reg: channelReg, prop: 'name', Type: GuildChannel });
 	log.debug('Found channel(s):', res.map(val => val.toString()));
@@ -191,12 +188,11 @@ async function getRoleID (input, guild, { maxCount = 1, resolve, ...options } = 
 	const manager = guild.roles;
 
 	log.debug('Looking for role, input:', input, 'max', maxCount, 'options', options);
-	if (typeof input === 'object' && input instanceof Role) {
-		const temp = resolve ? input : input.id;
-		if (manager.cache.has(input.id))
-			return maxCount <= 1 ? temp : [temp];
-		else
-			return maxCount <= 1 ? undefined : [];
+	if (input instanceof Role) {
+		let temp = resolve ? input : input.id;
+		if (!manager.cache.has(input.id))
+			temp = undefined;
+		return maxCount === 1 ? temp : [temp];
 	}
 	const res = await getIDs({ ...options, input, manager, maxCount, resolve, reg: roleReg, prop: 'name', Type: Role });
 	log.debug('Found role(s):', res.map(val => val.toString()));
@@ -223,12 +219,11 @@ async function getUserID (input, guild, { maxCount = 1, resolve, ...options } = 
 	const manager = guild.members;
 
 	log.debug('Looking for user, input:', input, 'max', maxCount, 'options', options);
-	if (typeof input === 'object' && input instanceof GuildMember) {
-		const temp = resolve ? input : input.id;
-		if (manager.cache.has(input.id))
-			return maxCount <= 1 ? temp : [temp];
-		else
-			return maxCount <= 1 ? undefined : [];
+	if (input instanceof GuildMember) {
+		let temp = resolve ? input : input.id;
+		if (!manager.cache.has(input.id))
+			temp = undefined;
+		return maxCount === 1 ? temp : [temp];
 	}
 	const res = await getIDs({ ...options, input, manager, maxCount, resolve, reg: userReg, prop: 'displayName', Type: GuildMember });
 	log.debug('Found user(s):', res.map(val => val.toString()));
