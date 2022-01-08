@@ -88,19 +88,30 @@ async function getIDs ({ input, manager, prop, reg, maxCount, resolve, Type, all
 		else
 			return inCache.map(val => val.id);
 	}
+	function removeResult (result, index) {
+		if (!index)
+			index = result.indexOf(result);
+		if (index < 0)
+			return;
+		input = input.substring(0, index) + input.substring(index + result.length);
+		input = input.trim();
+	}
 
 	function regSearch (inputReg) {
 		const res = [];
 		let temp;
 
-		while ((temp = inputReg.exec(input)) && res.length < maxCount)
+		while ((temp = inputReg.exec(input)) && res.length < maxCount) {
 			res.push(temp[0]);
+			removeResult(temp[0], temp.index);
+		}
 		return handleResult(res, (toFetch) => {
 			return manager.fetch({ user: toFetch, limit: maxCount });
 		});
 	}
 
 	// Setup defaults
+	const res = [];
 	if (!input)
 		return [];
 	else if (typeof input[Symbol.iterator] === 'function')
@@ -110,33 +121,38 @@ async function getIDs ({ input, manager, prop, reg, maxCount, resolve, Type, all
 	if (maxCount <= 0)
 		maxCount = Infinity;
 
-	Mentions: {
+	if (input) {
 		log.debug('Searching for mentions');
-		const res = await regSearch(new RegExp(reg, 'g'));
-		if (res.length)
-			return res;
+		const tmp = await regSearch(new RegExp(reg, 'g'));
+		res.push(...tmp);
 	}
 
-	if (allowID) {
+	if (allowID && input) {
 		log.debug('Searching for id\'s');
-		const res = await regSearch(/\d{17,19}/g);
-		if (res.length)
-			return res;
+		const tmp = await regSearch(/\d{17,19}/g);
+		res.push(...tmp);
 	}
 
-	log.debug(allowText ? 'Searching for text' : 'Text searching disabled');
-	if (allowText) {
+	if (allowText && input) {
+		log.debug('Searching for text');
 		const found = [];
 		for (const text of split(input))
 			found.push(textSearch(manager.cache, text, allowText, prop));
-		const res = await handleResult(found.filter(val => val), async (toFetch) => {
-			let res = [];
+		const tmp = await handleResult(found.filter(val => val), async (toFetch) => {
+			const promises = [], fetched = [];
 			for (const tmp of toFetch)
-				res = res.concat(await manager.fetch({ query: tmp, limit: maxCount }));
-			return res;
+				promises.push(manager.fetch({ query: tmp, limit: maxCount }));
+			for (const { status, value, reason } of await promises.allSettled) {
+				if (status === 'rejected')
+					log.error('Unable to fetch from manager', reason);
+				else
+					fetched.push(value);
+			}
+			return fetched;
 		});
-		return res;
+		res.push(...tmp);
 	}
+	return res;
 }
 
 const channelReg = /<#(\d{17,19})>/;

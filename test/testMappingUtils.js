@@ -24,12 +24,15 @@ describe('Mapping Utils', function () {
 	//types.push({type: 'bigint', value: 9007199254740992n, converted: "9007199254740992"})
 
 	// Simple objects test data
+	types.push({type: 'object', value: {}, converted: {}, label: 'empty object'});
 	types.push({type: 'object', value: {a: 1, b: 2}, converted: {a: {type: 'number', value: 1}, b: {type: 'number', value: 2}}});
+	types.push({type: 'array', value: [], converted: [].map(val => Mapper.auto.toJson(val)), label: 'empty array'});
 	types.push({type: 'array', value: [1, 2], converted: [1, 2].map(val => Mapper.auto.toJson(val)), label: 'array of numbers'});
 	types.push({type: 'array', value: ['one', 'two'], converted: ['one', 'two'].map(val => Mapper.auto.toJson(val)), label: 'array of strings'});
 	types.push({type: 'array', value: [1, 'two', true], converted: [1, 'two', true].map(val => Mapper.auto.toJson(val)), label: 'array of multiple types'});
 
 	// Map object test data
+	types.push({type: 'map', value: new Map(), converted: objmap({}, mFunc), label: 'empty map'});
 	types.push({type: 'map', value: new Map([['key1', 'val1'], ['key2', 'val2']]), converted: objmap({key1: 'val1', key2: 'val2'}, mFunc), label: 'map of strings'});
 	types.push({type: 'map', value: new Map([['key1', 1], ['key2', 2]]), converted: objmap({key1: 1, key2: 2}, mFunc), label: 'map of numbers'});
 	types.push({type: 'map', value: new Map([['key1', {p1: 1, p2: 2}], ['key2', {t1: 1, t2: 2}]]), converted: objmap({key1: {p1: 1, p2: 2}, key2: {t1: 1, t2: 2}}, mFunc), label: 'map of objects'});
@@ -86,4 +89,22 @@ describe('Mapping Utils', function () {
 			});
 		});
 	}
+
+	describe('Unique tests', function () {
+		it('Can clone an object using auto', function () {
+			const source = {},
+				clone = Mapper.auto.toJson(source);
+			assert.deepEqual(Mapper.auto.from(clone), source);
+		});
+
+		it('Can get object from empty object', function () {
+			assert.ok(Mapper.object.from({}));
+		});
+
+		it('Can manually clone an object', function () {
+			const source = {}, json = Mapper.asJson('object', source);
+
+			assert.deepEqual(Mapper.asObject('object', json), source);
+		})
+	});
 });

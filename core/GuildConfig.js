@@ -70,6 +70,7 @@ function stringify (map, varStore) {
 	let moreThanId = false;
 	for (const [key, val] of map) {
 		try {
+			log.debug('Key', key, 'value', typeof val, val, 'store', varStore.get(key));
 			if (key !== 'id') {
 				const { type } = varStore.get(key);
 				res[key] = MappingUtils.asJson(type, val);
@@ -207,18 +208,20 @@ function proxifyMap (map, varStore) {
 					}
 
 					if (descriptor.set) {
-						const propVal = target.get(prop) ?? descriptor.default;
+						let propVal = target.get(prop) ?? descriptor.default;
 						log.debug('Using custom setter for', prop, 'with value', value, 'on', target.get('id'));
 						if (typeof propVal === 'object') {
 							if (propVal === descriptor.default) {
 								// Stringify then parse the value to clone it
 								// This is to avoid the default instance being modified (and then propogating changes to other servers)
-								const converter = MappingUtils.getConverter(descriptor.type);
-								value = converter.from(converter.toJson(descriptor.default));
-							} else {
-								value = propVal;
+								const json  = MappingUtils.asJson(descriptor.type, descriptor.default);
+								log.debug('Stringifiable object:', json, 'default', descriptor.default, 'type', descriptor.type);
+								const clone = MappingUtils.asObject(descriptor.type, json);
+								log.debug('Clone is?', clone);
+								propVal = clone;
 							}
-							descriptor.set.call(value, value);
+							descriptor.set.call(propVal, value);
+							value = propVal;
 						} else {
 							value = descriptor.set(value);
 						}

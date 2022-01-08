@@ -12,6 +12,15 @@ const __dirname = Path.resolve(fileURLToPath(import.meta.url), '../');
 describe('Guild Config', function () {
 	let guildConfig, testGuild;
 
+	beforeEach (function () {
+		guildConfig = new GuildConfig();
+		testGuild = guildConfig.getGuildConfig('test');
+	});
+
+	after (function () {
+		guildConfig.deleteGuildConfig('test');
+	});
+
 	describe('Generic', function () {
 		let savedValue = 'new';
 
@@ -70,7 +79,7 @@ describe('Guild Config', function () {
 
 		it('can delete the guild config and the related file', async function () {
 			await guildConfig.deleteGuildConfig('savetest');
-			await assert.rejects(fs.access(Path.resolve(__dirname, '../data/savetest.json')));
+			assert.rejects(await fs.access(Path.resolve(__dirname, '../data/savetest.json')));
 		});
 
 		after(function () {
@@ -164,22 +173,23 @@ describe('Guild Config', function () {
 		let typeName = type.name, prop = count++ + 'test' + typeName, prop2 = prop + '2';
 
 		describe('Custom ' + typeName + ' Property', function () {
-			it('can register a new property of type ' + typeName, function () {
+			beforeEach(function () {
 				guildConfig.register(prop, type, {
 					default: defVal,
 					userEditable: false,
 					description: 'A test variable of type ' + typeName,
 				});
-
-				return assert.ok(prop in testGuild, 'missing new property in config object');
-			});
-
-			it('can register a new property of type ' + typeName + ' without a default', function () {
 				guildConfig.register(prop2, type, {
 					userEditable: false,
 					description: 'A test variable of type ' + typeName,
 				});
+			});
 
+			it('can register a new property of type ' + typeName, function () {
+				return assert.ok(prop in testGuild, 'missing new property in config object');
+			});
+
+			it('can register a new property of type ' + typeName + ' without a default', function () {
 				return assert.ok(prop2 in testGuild, 'missing new property in config object');
 			});
 
@@ -230,13 +240,9 @@ describe('Guild Config', function () {
 	}
 
 	describe('Custom Property (Not type specific)', function () {
-		let propCount = 0, base = 'test', prop = base + propCount;
-
-		afterEach(function () {
-			prop = base + ++propCount;
-		});
 
 		it('can set the type as configurable', function () {
+			const prop = 'test_configurable';
 			guildConfig.register(prop, String, {
 				configurable: true,
 			});
@@ -245,6 +251,7 @@ describe('Guild Config', function () {
 		});
 
 		it('can set the type as non configurable', function () {
+			const prop = 'test_non_configurable';
 			guildConfig.register(prop, String, {
 				configurable: false,
 			});
@@ -253,7 +260,7 @@ describe('Guild Config', function () {
 		});
 
 		it('can set the type description', function () {
-			let desc = 'A test description';
+			const prop = 'test_description', desc = 'A test description';
 
 			guildConfig.register(prop, String, {
 				description: desc,
@@ -264,7 +271,7 @@ describe('Guild Config', function () {
 		});
 
 		it('can set a custom setter (object)', function () {
-			let testObj = {}, testVal = 'A test value';
+			const prop = 'test_setter', testObj = {}, testVal = 'A test value';
 
 			guildConfig.register(prop, Object, {
 				default: testObj,
@@ -283,13 +290,13 @@ describe('Guild Config', function () {
 			testGuild['arrow' + prop] = testVal;
 
 			assert.equal(testObj.arrow, testVal, testVal + ' was not assigned to the object (arrow setter)');
-			assert.equal(testObj.normal, testVal, testVal + ' was not assigned to the object (normal setter)');
-			assert.equal(testGuild['arrow' + prop].arrow, testVal, testVal + ' was not assigned to the object (arrow setter)');
+			assert.notEqual(testObj.normal, testVal, testVal + ' should not assigned to the object but was (normal setter)');
+			assert.notEqual(testGuild['arrow' + prop].arrow, testVal, testVal + ' should not assigned to the object but was (arrow setter)');
 			assert.equal(testGuild[prop].normal, testVal, testVal + ' was not assigned to the object (normal setter)');
 		});
 
 		it('can set a custom getter (object)', function () {
-			let testObj = {test: 'First:'}, append = 'Second';
+			const prop = 'test_getter', testObj = {test: 'First:'}, append = 'Second';
 
 			guildConfig.register(prop, Object, {
 				default: testObj,
