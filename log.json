@@ -17,7 +17,7 @@
 		"mainFile": {
 			"type": "dateFile",
 			"filename": "logs/main.log",
-			"pattern": "(yyyy-MM-dd)",
+			"pattern": "yy-MM-dd",
 			"maxLogSize": 1048576,
 			"daysToKeep": 7,
 			"compress": true,
@@ -30,7 +30,7 @@
 		"debugFile": {
 			"type": "dateFile",
 			"filename": "logs/debug.log",
-			"pattern": "(yyyy-MM-dd)",
+			"pattern": "yy-MM-dd",
 			"maxLogSize": 1048576,
 			"daysToKeep": 1,
 			"compress": true,
@@ -43,7 +43,7 @@
 		"config": {
 			"type": "dateFile",
 			"filename": "logs/Guild_Config.log",
-			"pattern": "(yyyy-MM-dd)",
+			"pattern": "yy-MM-dd",
 			"maxLogSize": 1048576,
 			"daysToKeep": 7,
 			"compress": true,
@@ -56,7 +56,7 @@
 		"module-loader": {
 			"type": "dateFile",
 			"filename": "logs/Module_Loader.log",
-			"pattern": "(yyyy-MM-dd)",
+			"pattern": "yy-MM-dd",
 			"maxLogSize": 1048576,
 			"daysToKeep": 7,
 			"compress": true,
@@ -83,7 +83,7 @@
 			"base": "logs/",
 			"extension": ".log",
 			"property": "categoryName",
-			"pattern": "(yyyy-MM-dd)",
+			"pattern": "yy-MM-dd",
 			"maxLogSize": 1048576,
 			"daysToKeep": 7,
 			"compress": true,
