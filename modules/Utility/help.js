@@ -55,8 +55,8 @@ function inAll () {
 		return helpEmbed;
 	}
 
-	function makeSinglePageHelp (cmd) {
-		const helpEmbed = new PagedEmbed(), tmp = this.prefix.concat(cmd.command);
+	function makeSinglePageHelp (config, cmd) {
+		const helpEmbed = new PagedEmbed(), tmp = config.prefix.concat(cmd.command);
 
 		helpEmbed.addPage(cmd.command, [], cmd.description.join('\n'));
 		if (cmd.arguments.length)
@@ -75,7 +75,7 @@ function inAll () {
 			const cmd = modules.get(arg = String(arg));
 
 			if (cmd && access.call(cmd, msg.author, msg.guild, this)) {
-				const helpEmbed = makeSinglePageHelp(cmd);
+				const helpEmbed = makeSinglePageHelp(this, cmd);
 				log.debug('Posting help (args)');
 				return helpEmbed.sendTo(msg.channel);
 			} else {

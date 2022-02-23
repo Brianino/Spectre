@@ -218,6 +218,10 @@ class AbstractController extends events {
 		}
 	}
 
+	isEnabled () {
+		return this.#controlsOn;
+	}
+
 	/** Re-enables a paused control
 	 * @param {string} event - the name of the control to enable
 	 * @return {boolean} true if the control was paused and then enabled

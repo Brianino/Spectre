@@ -125,8 +125,10 @@ class EmojiController extends AbstractController {
 	async _setupMessage (msg, emotes) {
 		let promises = [];
 		log.debug('Setting up message', msg.id);
-		for (const emote of emotes)
-			promises.push(this.#addReaction(emote, [msg]));
+		if (this.isEnabled()) {
+			for (const emote of emotes)
+				promises.push(this.#addReaction(emote, [msg]));
+		}
 		if (this.#allowUserStop)
 			promises.push(this.#addReaction(EmojiController.STOP_EMOTE, [msg]));
 		promises = await Promise.all(promises);

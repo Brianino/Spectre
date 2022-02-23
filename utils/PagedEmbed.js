@@ -121,13 +121,13 @@ class PagedEmbed {
 			title = `${this.#title}: ${title}`;
 		while (tmp.length || !hasRun) {
 			this.#pages.push(PagedEmbed.#makeEmbed(title, tmp.splice(0, PagedEmbed.MAX_ROWS), desc));
-			if (this.#pages.length === 2)
-				this.#controller.turnOnControls();
-			else if (this.#pages.length > 2)
-				this.#controller.resumeAllControlsExcluding('prev', 'first');
-			hasRun = !hasRun;
 			title += ' - Continued';
+			hasRun = !hasRun;
 		}
+		if (this.#pages.length === 2)
+			this.#controller.turnOnControls();
+		else if (this.#pages.length > 2)
+			this.#controller.resumeAllControlsExcluding('prev', 'first');
 		return this.#pages.length - 1;
 	}
 
