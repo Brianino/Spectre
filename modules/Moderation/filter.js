@@ -41,7 +41,7 @@ function inGuild (emitter, groupObj) {
 			return true;
 		else if (!exemptRole)
 			return false;
-		else if (member.roles.highest.comparePositionTo(await getRoleID(exemptRole, this.Guild, { resolve: true })) >= 0)
+		else if (member.roles.highest.comparePositionTo(await getRoleID(exemptRole, this.guild, { resolve: true })) >= 0)
 			return true;
 		else
 			return false;
@@ -74,7 +74,7 @@ function inGuild (emitter, groupObj) {
 			throw new SyntaxError('Missing regex');
 		}
 		if (exempt)
-			this.config.filter_exempt.set(filterName, await getRoleID(exempt, this.Guild));
+			this.config.filter_exempt.set(filterName, await getRoleID(exempt, this.guild));
 		this.config.filter_regex.set(filterName, new RegExp(regex));
 		// Work around to enable saving of config varibales, as using object methods doesn't trigger the config variable setter
 		this.config.filter_exempt = this.config.filter_exempt;

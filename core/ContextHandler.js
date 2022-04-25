@@ -138,7 +138,7 @@ class GuildContext extends GenericContext {
 	_setupContextSpecificProperties () {
 		const res = super._setupContextSpecificProperties();
 		Object.defineProperties(res, {
-			Guild: { value: this.#guild },
+			guild: { value: this.#guild },
 			config: { get: () => this.#configCallback(this.#guild.id) },
 		});
 		log.debug(`[${this.command}] Properties for ${this.#guild.name} setup`);
