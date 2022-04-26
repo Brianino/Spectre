@@ -14,7 +14,8 @@
     "start": "node spectre.js",
     "test": "TEST=true mocha --input-type=module",
     "lint": "eslint --fix core/** modules/** utils/** spectre.js",
-    "docs": "jsdoc -r spectre.js etc utils"
+    "docs": "jsdoc -r spectre.js etc utils",
+    "postinstall": "node setup.js"
   },
   "dependencies": {
     "async-mutex": "^0.3.2",

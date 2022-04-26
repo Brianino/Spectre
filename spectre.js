@@ -7,7 +7,9 @@ import { readFile } from 'fs/promises';
 
 const log = logger('Main'),
 	bot = new Discord.Client(),
-	modLoader = new ModuleLoader();
+	modLoader = new ModuleLoader(),
+	data = await readFile(new URL('./config.json', import.meta.url)),
+	{ token, login_retries } = JSON.parse(data);
 
 process.on('unhandledRejection', (e, origin) => {
 	log.error('Promise Error:', e.toString());
@@ -49,10 +51,18 @@ bot.on('debug', info => {
 	log.debug('Client debug', info);
 });
 
-readFile(new URL('./config.json', import.meta.url)).then((data) => {
-	const { token } = JSON.parse(data);
-	bot.login(token).catch(e => {
+for (let count = 0; count < login_retries; count++) {
+	try {
+		log.info('Attempting login');
+		await bot.login(token);
+		break;
+	} catch (e) {
 		log.error('Login error:', e.toString());
 		log.debug(e.stack);
-	}); // Bot Token
-});
+	}
+}
+
+if (bot.user == null) {
+	log.error('Failed to start bot, shutting down process');
+	process.exit(1);
+}

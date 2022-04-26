@@ -19,7 +19,7 @@
 			"filename": "logs/main.log",
 			"pattern": "yy-MM-dd",
 			"maxLogSize": 1048576,
-			"daysToKeep": 7,
+			"numBackups": 7,
 			"compress": true,
 			"keepFileExt": true,
 			"layout": {
@@ -32,7 +32,7 @@
 			"filename": "logs/debug.log",
 			"pattern": "yy-MM-dd",
 			"maxLogSize": 1048576,
-			"daysToKeep": 1,
+			"numBackups": 1,
 			"compress": true,
 			"keepFileExt": true,
 			"layout": {
@@ -45,7 +45,7 @@
 			"filename": "logs/Guild_Config.log",
 			"pattern": "yy-MM-dd",
 			"maxLogSize": 1048576,
-			"daysToKeep": 7,
+			"numBackups": 7,
 			"compress": true,
 			"keepFileExt": true,
 			"layout": {
@@ -58,7 +58,7 @@
 			"filename": "logs/Module_Loader.log",
 			"pattern": "yy-MM-dd",
 			"maxLogSize": 1048576,
-			"daysToKeep": 7,
+			"numBackups": 7,
 			"compress": true,
 			"keepFileExt": true,
 			"layout": {
