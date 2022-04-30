@@ -124,7 +124,7 @@
 		},
 		"Main": {
 			"appenders": ["main", "out", "err", "debug"],
-			"level": "all",
+			"level": "info",
 			"enableCallStack": true
 		},
 		"Commands": {
