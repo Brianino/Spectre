@@ -19,6 +19,6 @@ function inAll () {
 			});
 		}
 
-		return msg.channel.send({ embeds: [embed] });
+		return msg.channel.send({ embeds: [embed]});
 	};
 }

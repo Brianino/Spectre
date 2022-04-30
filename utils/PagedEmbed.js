@@ -226,7 +226,7 @@ class PagedEmbed {
 	#setEmbedDefaults (embed) {
 		embed.setFooter({
 			text: `${this.#pages.indexOf(embed) + 1}/${this.#pages.length}`,
-			iconURL: embed.footer?.iconURL || this.#icon
+			iconURL: embed.footer?.iconURL || this.#icon,
 		});
 		if (!embed.image && this.#image)
 			embed.setImage(this.#image);
@@ -243,7 +243,7 @@ class PagedEmbed {
 		const manager = this.#manager,
 			updateMsg = (msg, page) => {
 				const embed = this.#setEmbedDefaults(this.#pages[page]);
-				msg.edit({ embeds: [embed] }).catch(e => {
+				msg.edit({ embeds: [embed]}).catch(e => {
 					log.error('Unable to modify embed', e);
 				});
 			};
@@ -311,7 +311,7 @@ class PagedEmbed {
 		}
 		if (!message) {
 			const embed = this.#setEmbedDefaults(this.#pages[0]);
-			message = await channel.send({ embeds: [embed] });
+			message = await channel.send({ embeds: [embed]});
 			log.debug('Associating message', message.id, 'with controller, and group', groupName);
 			group.addMsg(message);
 			// Only attach the contoller if there is more than one page, otherwise navigation is unnecessary

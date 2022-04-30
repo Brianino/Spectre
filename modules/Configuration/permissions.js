@@ -74,7 +74,7 @@ function inGuild () {
 				});
 			}
 		}
-		return msg.channel.send({ embeds: [embed] });
+		return msg.channel.send({ embeds: [embed]});
 	}
 
 	return (msg, ...args) => {
@@ -89,11 +89,12 @@ function inGuild () {
 				return setPermission.call(this, msg, args.shift(), args);
 
 			default:
-				return msg.channel.send({ content:
+				return msg.channel.send({
+					content:
 					'Unknown option, use either:\n' +
 					'`list` (to list the permissions for all the commands)\n' +
 					'`show` (to show the permissions for a single command)\n' +
-					'`set` (to set the permissions for a command)'
+					'`set` (to set the permissions for a command)',
 				});
 		}
 	};

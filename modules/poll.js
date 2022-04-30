@@ -234,7 +234,7 @@ function inGuild () {
 			embed.image = { url: `attachment://${temp.name}` };
 			return msg.channel.send({ embeds: [embed], files: [{ attachment: temp.url, name: temp.name }]});
 		} else {
-			return msg.channel.send({ embeds: [embed] });
+			return msg.channel.send({ embeds: [embed]});
 		}
 	}
 
@@ -263,7 +263,7 @@ function inGuild () {
 			embed.image = { url: `attachment://${temp.name}` };
 			return msg.edit({ embeds: [embed], files: [{ attachment: temp.url, name: temp.name }]});
 		} else {
-			return msg.edit({ embeds: [embed] });
+			return msg.edit({ embeds: [embed]});
 		}
 	}
 
@@ -291,7 +291,7 @@ function inGuild () {
 			embed.image = { url: `attachment://${temp.name}` };
 			return msg.channel.send({ embeds: [embed], files: [{ attachment: temp.url, name: temp.name }]});
 		} else {
-			return msg.channel.send({ embeds: [embed] });
+			return msg.channel.send({ embeds: [embed]});
 		}
 	}
 
@@ -317,7 +317,7 @@ function inGuild () {
 			});
 		});
 
-		return channel.send({ embeds: [embed] });
+		return channel.send({ embeds: [embed]});
 	}
 
 	async function menu (list, channel, author, allAllowed) {
@@ -335,7 +335,7 @@ function inGuild () {
 				return false;
 			},
 			max: 1,
-			time: 30000
+			time: 30000,
 		});
 		await menu.delete().catch(e => log.warn('Unable to delete menu message', e.toString()));
 		if (choice.first()) {
@@ -551,17 +551,17 @@ function inGuild () {
 							const existing = collector.collected.find(tmsg => tmsg.author.id === msg.author.id && Number(tmsg.content.split(' ')[1]) === i);
 							if (existing) {
 								collector.collected.delete(existing.id);
-								sendMessage(msg.channel,'removed specified vote', { cleanAfter: 5000, reply: msg });
+								sendMessage(msg.channel, 'removed specified vote', { cleanAfter: 5000, reply: msg });
 							}
 						} else {
 							collector.collector.filter(tmsg => tmsg.author.id === msg.author.id).forEach(tmsg => collector.collected.delete(tmsg.id));
-								sendMessage(msg.channel,'removed all votes', { cleanAfter: 5000, reply: msg });
+							sendMessage(msg.channel, 'removed all votes', { cleanAfter: 5000, reply: msg });
 						}
 						break;
 
 					case 'list': {
 						const votes = collector.collected.filter(tmsg => tmsg.author.id === msg.author.id).map(tmsg => Number(tmsg.content.split(' ')[1]));
-						sendMessage(msg.channel,`you have voted for options: ${votes.join(' ')}`, { cleanAfter: 5000, reply: msg });
+						sendMessage(msg.channel, `you have voted for options: ${votes.join(' ')}`, { cleanAfter: 5000, reply: msg });
 					}
 				}
 			}

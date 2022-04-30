@@ -26,7 +26,7 @@ function getIntents () {
 	res |= Intents.FLAGS.GUILD_MESSAGE_REACTIONS;
 	res |= Intents.FLAGS.DIRECT_MESSAGES;
 	res |= Intents.FLAGS.DIRECT_MESSAGE_REACTIONS;
-	log.info(`Using intents: ${res}`)
+	log.info(`Using intents: ${res}`);
 	return res;
 }
 

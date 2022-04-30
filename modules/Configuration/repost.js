@@ -16,9 +16,8 @@ function inGuild (emitter) {
 	let att = false;
 	const repost = async msg => {
 		const gallList = this.config.repost_galleries.get(msg.channel.id) || [],
-			urlCount = checkForUrl(msg.content, true, 'g').length;
-
-		let attachments = [], urls, files, promises = [];
+			urlCount = checkForUrl(msg.content, true, 'g').length,
+			promises = [];
 
 		if (msg.author.id === getBot().user.id)
 			return;
@@ -30,18 +29,18 @@ function inGuild (emitter) {
 			});
 		}
 
-		attachments = getAttachments(msg, this.config.repost_formats);
-		urls = attachments
-			.filter(att => !att.name)
-			.map(att => att.url);
-		files = attachments
-			.filter(att => att.name)
-			.map(att => {
-				return {
-					attachment: att.url,
-					name: att.name,
-				};
-			});
+		const attachments = getAttachments(msg, this.config.repost_formats),
+			urls = attachments
+				.filter(att => !att.name)
+				.map(att => att.url),
+			files = attachments
+				.filter(att => att.name)
+				.map(att => {
+					return {
+						attachment: att.url,
+						name: att.name,
+					};
+				});
 
 		if (!attachments.length)
 			return;
@@ -53,18 +52,16 @@ function inGuild (emitter) {
 				continue;
 
 			if (!this.config.repost_prefer_url)
-				promises.push( sendFiles(channel, urls, files) );
+				promises.push(sendFiles(channel, urls, files));
 			else
-				promises.push( sendUrls(channel, urls, files) );
+				promises.push(sendUrls(channel, urls, files));
 		}
 		return Promise.allSettled(promises);
 	};
 
 	async function sendUrls (channel, urls, files) {
 		try {
-			await channel.send({
-				content: urls.concat(files.map(att => att.attachment)).join('\n')
-			});
+			await channel.send({ content: urls.concat(files.map(att => att.attachment)).join('\n') });
 		} catch (e) {
 			log.error(`Unable to repost to channel ${channel.id} due to:`, e);
 		}
@@ -74,7 +71,7 @@ function inGuild (emitter) {
 		try {
 			await channel.send({
 				content: urls.join('\n'),
-				files: files
+				files: files,
 			});
 		} catch (e) {
 			log.error('Failed to re-upload file', e);

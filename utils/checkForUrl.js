@@ -12,7 +12,7 @@ function checkForUrl (text, getMatches = false, flags = '') {
 	if (!getMatches)
 		return urlReg.test(text);
 
-	const treg = flags? new RegExp(urlReg, String(flags)) : urlReg;
+	const treg = flags ? new RegExp(urlReg, String(flags)) : urlReg;
 
 	if (treg.global || treg.sticky) {
 		const res = [];

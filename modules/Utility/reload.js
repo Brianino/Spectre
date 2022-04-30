@@ -8,7 +8,7 @@ function inAll () {
 
 	return async (msg, moduleStr) => {
 		const moduleObj = modules.get(moduleStr),
-			send = async content => sendMessage(msg.channel, content, { cleanAfter: 10000 });
+			send = content => sendMessage(msg.channel, content, { cleanAfter: 10000 });
 		let action = () => undefined, successMsg, failMsg;
 
 		msg.delete();

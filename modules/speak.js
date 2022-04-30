@@ -35,7 +35,7 @@ function inGuild (emitter) {
 				}),
 			});
 		} else {
-			return msg.channel.send({ content: input.join(' '), allowedMentions: { parse: [] } });
+			return msg.channel.send({ content: input.join(' '), allowedMentions: { parse: []}});
 		}
 	};
 }

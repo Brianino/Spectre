@@ -19,7 +19,7 @@ addConfig('welcome_image', String, { description: 'The image link to attach to a
 
 function inGuild (emitter) {
 	const { getChannelID, checkForUrl } = Utils,
-		{ chunk, memoize } = _,
+		{ memoize } = _,
 		messageParts = memoize(getMessageParts),
 		config = this.config;
 
@@ -56,7 +56,7 @@ function inGuild (emitter) {
 			footer: config.welcome_embed ? replaceText(config.welcome_footer) : null,
 			thumbnail: config.welcome_embed ? getUrlFrom('welcome_thumbnail') : null,
 			image: config.welcome_embed ? getUrlFrom('welcome_image') : null,
-		}
+		};
 	}
 
 	async function sendMessage (member, obj) {
@@ -71,14 +71,14 @@ function inGuild (emitter) {
 		}
 		if (!obj)
 			obj = { content: msg };
-		obj.allowedMentions = { parse: ['users'] };
+		obj.allowedMentions = { parse: ['users']};
 		messageParts.cache.clear();
 		return channel.send(obj);
 	}
 
 	async function sendEmbed (member) {
 		const { title, footer, thumbnail, image, msg } = await messageParts(member),
-			embed = {};
+			embed = { description: msg };
 
 		if (title)
 			embed.title = title;
@@ -88,7 +88,7 @@ function inGuild (emitter) {
 			embed.thumbnail = { url: thumbnail };
 		if (image)
 			embed.image = { url: image };
-		return sendMessage(member, { embeds: [embed] });
+		return sendMessage(member, { embeds: [embed]});
 	}
 
 	emitter.on('guildMemberAdd', member => {

@@ -1,7 +1,9 @@
+import waitFor from './waitFor.js';
+
 /**
  * Send a message to the specified channel
  * @memberof utils
- * 
+ *
  * @param  {Channel}                channel    - the channel to send the message to
  * @param  {string|Object|Object[]} content    - the content to send, either an embed object, or multiple embeds
  * @param  {Object}
@@ -11,21 +13,21 @@
 */
 async function sendMessage (channel, content, { wait, cleanAfter, reply } = {}) {
 	const tmpObj = {};
-	if (content instanceof String) {
+	if (content instanceof String)
 		tmpObj.content = content;
-	} else if (content instanceof Array) {
+	else if (content instanceof Array)
 		tmpObj.embeds = content;
-	} else {
+	else
 		tmpObj.embeds = [content];
-	}
-	
+
+
 	if (reply)
 		tmpObj.reply = { messageReference: reply };
 
 	if (wait)
 		await waitFor(wait);
 	const msg = channel.send(tmpObj);
-	
+
 	if (cleanAfter) {
 		await waitFor(cleanAfter);
 		await msg.delete();

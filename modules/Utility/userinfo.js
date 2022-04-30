@@ -56,6 +56,6 @@ function inGuild () {
 				].join('\n'),
 			});
 		}
-		return msg.channel.send({ embeds: [embed] });
+		return msg.channel.send({ embeds: [embed]});
 	};
 }

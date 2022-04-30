@@ -86,8 +86,8 @@ class MappingUtilties {
 			},
 			from (input) {
 				return BigInt(input);
-			}
-		}
+			},
+		};
 	}
 
 	static get object () {

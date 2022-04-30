@@ -24,9 +24,9 @@ function inGuild () {
 				}
 				if (resolvedRole === requestedRole) {
 					// assign role to user
-					return msg.member.roles.add(resolvedRole).catch(async e => {
+					return msg.member.roles.add(resolvedRole).catch(e => {
 						log.error('Unable to assign role', e);
-						return sendMessage(msg.channel, 'can\'t assign role', { cleanAfter: 10000 })
+						return sendMessage(msg.channel, 'can\'t assign role', { cleanAfter: 10000 });
 					});
 				}
 			})());

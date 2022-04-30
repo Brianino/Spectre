@@ -17,13 +17,13 @@ function waitFor (time = 1000, interval = 10, checkFunc) {
 		const func = async (passed) => {
 			const timeRemaining = time - passed;
 			try {
-				if (await checkFunc()) {
+				if (await checkFunc())
 					return resolve(true);
-				} else if (timeRemaining <= 0) {
+				else if (timeRemaining <= 0)
 					return resolve(false);
-				} else if (timeRemaining < interval) {
+				else if (timeRemaining < interval)
 					interval = timeRemaining;
-				}
+
 				setTimeout(func, interval, passed + interval);
 			} catch (e) {
 				return reject(e);

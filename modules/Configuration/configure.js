@@ -36,7 +36,7 @@ function inGuild () {
 				embed.fields.push(val);
 			}
 			log.debug('Posting settings info');
-			return msg.channel.send({ embeds: [embed] });
+			return msg.channel.send({ embeds: [embed]});
 		}
 
 		if (input.length > 0) {
@@ -90,7 +90,7 @@ function inGuild () {
 			embed.description += `Type: ${type}\n`;
 			embed.description += `Current: ${inspect(this.config[setting])}`;
 
-			return msg.channel.send({ embeds: [embed] });
+			return msg.channel.send({ embeds: [embed]});
 		}
 	};
 }

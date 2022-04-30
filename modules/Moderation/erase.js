@@ -1,5 +1,5 @@
 /* eslint no-undef: "warn" */
-/* global addConfig, log, discordjs */
+/* global addConfig, log, discordjs, Utils */
 
 class LessThan extends Error {}
 
@@ -89,7 +89,7 @@ function inGuild () {
 		return failed;
 	}
 
-	async function handleFailiures ({ failed, msg, number, channels, users }) {
+	function handleFailiures ({ failed, msg, number, channels, users }) {
 		const send = content => sendMessage(msg.channel, content, { cleanAfter: 10000 });
 		if (failed.length === 0) {
 			const names = channels.map(channel => channel.name);
