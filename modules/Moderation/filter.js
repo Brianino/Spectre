@@ -22,7 +22,8 @@ const common = {
 };
 
 function inGuild (emitter, groupObj) {
-	const { getRoleID, PagedEmbed } = Utils;
+	const { getRoleID, PagedEmbed, sendMessage } = Utils,
+		{ Permissions } = discordjs;
 
 	UpdateCommonReg: {
 		let updated = false;
@@ -37,7 +38,7 @@ function inGuild (emitter, groupObj) {
 	}
 
 	async function checkExempt (member, exemptRole) {
-		if (member.permissions.has('ADMINISTRATOR'))
+		if (member.permissions.has(Permissions.FLAGS.ADMINISTRATOR))
 			return true;
 		else if (!exemptRole)
 			return false;
@@ -46,7 +47,8 @@ function inGuild (emitter, groupObj) {
 		else
 			return false;
 	}
-	emitter.on('message', async msg => {
+
+	emitter.on('messageCreate', async msg => {
 		for (const [name, reg] of this.config.filter_regex) {
 			log.debug('Will check', msg.content, ' against', reg.toString());
 			if (msg.content.match(reg)) {
@@ -116,7 +118,7 @@ function inGuild (emitter, groupObj) {
 					return await addFilter.call(this, filterName, exempt, regex);
 				} catch (e) {
 					if (e instanceof SyntaxError)
-						(await msg.reply(`Unable to create the filter: ${e.message}`)).delete({ timeout: 10000 });
+						sendMessage(msg.channel, `Unable to create the filter: ${e.message}`, { cleanAfter: 10000 });
 					throw e;
 				}
 			}
@@ -132,7 +134,7 @@ function inGuild (emitter, groupObj) {
 			case 'c':
 			case 'common': return listCommon.call(this, msg);
 
-			default: return (await msg.reply('Please pick between options add/del/list/common')).delete({ timeout: 10000 });
+			default: return sendMessage(msg.channel, 'Please pick between options add/del/list/common', { cleanAfter: 10000 });
 		}
 	};
 }

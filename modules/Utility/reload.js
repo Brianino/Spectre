@@ -4,28 +4,32 @@ this.arguments = '<command>';
 this.limit('users', OwnerID);
 
 function inAll () {
+	const { sendMessage } = Utils;
+
 	return async (msg, moduleStr) => {
-		const moduleObj = modules.get(moduleStr);
+		const moduleObj = modules.get(moduleStr),
+			send = async content => sendMessage(msg.channel, content, { cleanAfter: 10000 });
+		let action = () => undefined, successMsg, failMsg;
 
 		msg.delete();
 		if (moduleObj) {
-			try {
-				await reload(moduleObj);
-				return (await msg.channel.send(`Reloaded: ${moduleStr}`)).delete({ timeout: 10000 });
-			} catch (e) {
-				log.error('Unable to reload module');
-				log.error(e);
-			}
+			action = reload.bind(moduleObj);
+			successMsg = `Reloaded: ${moduleStr}`;
+			failMsg = 'Unable to reload module';
 		} else if (!moduleStr) {
-			try {
-				await loadNew();
-				return (await msg.channel.send('Loaded new modules')).delete({ timeout: 10000 });
-			} catch (e) {
-				log.error('Unable to load new moduleStr');
-				log.error(e);
-			}
+			action = reload;
+			successMsg = 'Loaded new modules';
+			failMsg = 'Unable to load new modules';
 		} else {
-			return (await msg.channel.send(`Unknown module \`${moduleStr}\``)).delete({ timeout: 100000 });
+			return send(`Unknown module \`${moduleStr}\``);
+		}
+
+		try {
+			await action();
+			return send(successMsg);
+		} catch (e) {
+			log.error(failMsg, e);
+			return send(failMsg);
 		}
 	};
 }

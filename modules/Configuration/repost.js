@@ -13,52 +13,77 @@ addConfig('repost_formats', Set, { default: new Set(['png', 'jpg', 'jpeg', 'gif'
 function inGuild (emitter) {
 	const { getChannelID, getAttachments, checkForUrl, waitFor } = Utils, guild = this.guild;
 
-	// modify this so that the listener is only attached if there is a gallery set for the guild
 	let att = false;
 	const repost = async msg => {
 		const gallList = this.config.repost_galleries.get(msg.channel.id) || [],
 			urlCount = checkForUrl(msg.content, true, 'g').length;
-		let attachments = [];
+
+		let attachments = [], urls, files, promises = [];
 
 		if (msg.author.id === getBot().user.id)
 			return;
+
 		if (urlCount > 0) {
 			await waitFor(10000, 50, async () => {
 				try { await msg.fetch(); } catch (ignore) { return false; }
 				return msg.embeds.length === urlCount;
 			});
 		}
+
 		attachments = getAttachments(msg, this.config.repost_formats);
+		urls = attachments
+			.filter(att => !att.name)
+			.map(att => att.url);
+		files = attachments
+			.filter(att => att.name)
+			.map(att => {
+				return {
+					attachment: att.url,
+					name: att.name,
+				};
+			});
+
 		if (!attachments.length)
 			return;
+
 		for (const cid of gallList) {
 			const channel = msg.guild.channels.resolve(cid);
 
-			if (channel) {
-				const urls = attachments.filter(att => !att.name).map(att => att.url), files = attachments.filter(att => att.name).map(att => {
-					return {
-						attachment: att.url,
-						name: att.name,
-					};
-				});
+			if (!channel)
+				continue;
 
-				if (this.config.repost_prefer_url) {
-					await channel.send(urls.concat(files.map(att => att.attachment)).join('\n'));
-				} else {
-					await channel.send({
-						content: urls.join('\n'),
-						files: files,
-					}).catch(e => {
-						log.error('Failed to re-upload file', e);
-						return channel.send(urls.concat(files.map(att => att.attachment)).join('\n'));
-					});
-				}
-			}
+			if (!this.config.repost_prefer_url)
+				promises.push( sendFiles(channel, urls, files) );
+			else
+				promises.push( sendUrls(channel, urls, files) );
 		}
+		return Promise.allSettled(promises);
 	};
 
+	async function sendUrls (channel, urls, files) {
+		try {
+			await channel.send({
+				content: urls.concat(files.map(att => att.attachment)).join('\n')
+			});
+		} catch (e) {
+			log.error(`Unable to repost to channel ${channel.id} due to:`, e);
+		}
+	}
+
+	async function sendFiles (channel, urls, files) {
+		try {
+			await channel.send({
+				content: urls.join('\n'),
+				files: files
+			});
+		} catch (e) {
+			log.error('Failed to re-upload file', e);
+			return sendUrls(channel, urls, files);
+		}
+	}
+
 	if (this.config.repost_galleries.size) {
-		emitter.on('message', repost);
+		emitter.on('messageCreate', repost);
 		att = true;
 	}
 
@@ -109,7 +134,7 @@ function inGuild (emitter) {
 				current.push(gallery);
 		}
 		if (!att)
-			emitter.on('message', repost);
+			emitter.on('messageCreate', repost);
 		log.info('Setting up repost to channel', guild.channels.resolve(gallery).name, 'from', source.length, 'channels');
 		return `Repost to <#${gallery}> configured`;
 	}
@@ -141,7 +166,7 @@ function inGuild (emitter) {
 		}
 		if (res.length) {
 			if (ruleMap.size)
-				emitter.off('message', repost);
+				emitter.off('messageCreate', repost);
 			return `channels ${res.toString()} will no longer post to <#${gallery}>`;
 		} else {
 			return 'Nothing to delete';
@@ -256,6 +281,6 @@ function inGuild (emitter) {
 				break;
 			}
 		}
-		msg.channel.send(resMsg);
+		msg.channel.send({ content: resMsg });
 	};
 }

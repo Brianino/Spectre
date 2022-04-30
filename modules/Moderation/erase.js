@@ -13,6 +13,7 @@ addConfig('clear_old', Boolean, { default: true, description: 'allow the clearin
 
 function inGuild () {
 	const { DiscordAPIError, Collection } = discordjs,
+		{ sendMessage } = Utils,
 		config = this.config;
 
 	async function getMessages (channel, users, number) {
@@ -89,12 +90,13 @@ function inGuild () {
 	}
 
 	async function handleFailiures ({ failed, msg, number, channels, users }) {
+		const send = content => sendMessage(msg.channel, content, { cleanAfter: 10000 });
 		if (failed.length === 0) {
 			const names = channels.map(channel => channel.name);
 			log.info(`${msg.author.username} (${msg.author.id}) erased ${number} messages from ${names.toString()}`);
 			log.info('Channel erase targets:', names.toString());
 			log.warn('Users targeted by erase:', users.map(user => `${user.displayName()} (${user.id})`).toString());
-			return (await msg.channel.send(`Successfully deleted ${number} messages from: ${names.toString()}`)).delete({ timeout: 10000 });
+			return send(`Successfully deleted ${number} messages from: ${names.toString()}`);
 		} else if (failed.length > 1) {
 			let text = 'Failed to delete messages on some channels:';
 
@@ -105,11 +107,11 @@ function inGuild () {
 			const names = channels.map(channel => channel.name);
 			log.info(`${msg.author.username} (${msg.author.id}) erased ${number} messages from ${names.toString()}`);
 			log.warn(text);
-			return (await msg.channel.send(text)).delete({ timeout: 10000 });
+			return send(text);
 		} else {
 			const { channel, message } = failed.pop();
 			log.warn(`${msg.author.username} (${msg.author.id}) failed to erase: <#${channel.id}> ${message}`);
-			return (await msg.channel.send(`Failed to delete messages in <#${channel.id}>: ${message}`)).delete({ timeout: 10000 });
+			return send(`Failed to delete messages in <#${channel.id}>: ${message}`);
 		}
 	}
 

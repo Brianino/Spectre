@@ -7,10 +7,10 @@ function inAll () {
 	return async (msg, id) => {
 		try {
 			await getBot().guilds.resolve(id).leave();
-			return msg.channel.send('Left server');
+			return msg.channel.send({ content: 'Left server' });
 		} catch (e) {
 			log.error('unable to leave server:', e.toString());
-			return msg.channel.send('Unable to leave server, check logs');
+			return msg.channel.send({ content: 'Unable to leave server, check logs' });
 		}
 	};
 }

@@ -36,7 +36,7 @@ function inGuild () {
 				embed.fields.push(val);
 			}
 			log.debug('Posting settings info');
-			return msg.channel.send({ embed });
+			return msg.channel.send({ embeds: [embed] });
 		}
 
 		if (input.length > 0) {
@@ -44,7 +44,7 @@ function inGuild () {
 			if (input[0] === 'undefined') {
 				this.config[setting] = undefined;
 				log.info('Setting', setting, 'for guild', msg.guild.name, 'reverted to default');
-				return msg.channel.send('Setting reverted to default');
+				return msg.channel.send({ content: 'Setting reverted to default' });
 			}
 			log.debug('Inputs:', input.toString());
 			try {
@@ -56,19 +56,25 @@ function inGuild () {
 					case 'set': input = new Set(input);
 					case 'array': this.config[setting] = input; break;
 					case 'permissions': {
-						let temp = Number(input[0]);
-						if (isNaN(temp))
-							temp = input;
+						let temp = 0n;
+						for (const perm of input) {
+							try {
+								temp |= BigInt(perm);
+							} catch (ignore) {
+								if (Object.hasOwn(Permissions.FLAGS, perm))
+									temp |= Permissions.FLAGS[perm];
+							}
+						}
 						this.config[setting] = new Permissions(temp);
 						break;
 					}
 					default: this.config[setting] = input; break;
 				}
 				log.info('Updated', setting, 'setting to', this.config[setting], 'for guild', msg.guild.name);
-				return msg.channel.send(`Updated the setting ${setting}`);
+				return msg.channel.send({ content: `Updated the setting ${setting}` });
 			} catch (e) {
 				log.warn('Issue updating config variable:', e);
-				return msg.channel.send(`Unable to update setting: ${e.message}`);
+				return msg.channel.send({ content: `Unable to update setting: ${e.message}` });
 			}
 		} else {
 			// show setting info
@@ -84,7 +90,7 @@ function inGuild () {
 			embed.description += `Type: ${type}\n`;
 			embed.description += `Current: ${inspect(this.config[setting])}`;
 
-			return msg.channel.send({ embed });
+			return msg.channel.send({ embeds: [embed] });
 		}
 	};
 }

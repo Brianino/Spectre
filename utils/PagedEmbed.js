@@ -224,7 +224,10 @@ class PagedEmbed {
 	}
 
 	#setEmbedDefaults (embed) {
-		embed.setFooter(`${this.#pages.indexOf(embed) + 1}/${this.#pages.length}`, embed.footer?.iconURL || this.#icon);
+		embed.setFooter({
+			text: `${this.#pages.indexOf(embed) + 1}/${this.#pages.length}`,
+			iconURL: embed.footer?.iconURL || this.#icon
+		});
 		if (!embed.image && this.#image)
 			embed.setImage(this.#image);
 		if (!embed.thumbnail && this.#thumb)
@@ -237,7 +240,13 @@ class PagedEmbed {
 	}
 
 	#setupController () {
-		const manager = this.#manager;
+		const manager = this.#manager,
+			updateMsg = (msg, page) => {
+				const embed = this.#setEmbedDefaults(this.#pages[page]);
+				msg.edit({ embeds: [embed] }).catch(e => {
+					log.error('Unable to modify embed', e);
+				});
+			};
 		log.debug('Attaching events to controller for paged embed');
 		this.#controller.on('next', input => {
 			const group = manager.with(input);
@@ -247,11 +256,8 @@ class PagedEmbed {
 				group.page = this.#pages.length - 1;
 				this.#controller.pauseControls('next', 'last');
 			}
-			for (const msg of group.messages()) {
-				msg.edit({ embed: this.#setEmbedDefaults(this.#pages[group.page]) }).catch(e => {
-					log.error('Unable to modify embed', e);
-				});
-			}
+			for (const msg of group.messages())
+				updateMsg(msg, group.page);
 		});
 		this.#controller.on('prev', input => {
 			const group = manager.with(input);
@@ -261,33 +267,24 @@ class PagedEmbed {
 				group.page = 0;
 				this.#controller.pauseControls('prev', 'first');
 			}
-			for (const msg of group.messages()) {
-				msg.edit({ embed: this.#setEmbedDefaults(this.#pages[group.page]) }).catch(e => {
-					log.error('Unable to modify embed', e);
-				});
-			}
+			for (const msg of group.messages())
+				updateMsg(msg, group.page);
 		});
 		this.#controller.on('first', input => {
 			const group = manager.with(input);
 			group.page = 0;
 			this.#controller.resumeAllControlsExcluding('prev', 'first');
 			this.#controller.pauseControls('prev', 'first');
-			for (const msg of group.messages()) {
-				msg.edit({ embed: this.#setEmbedDefaults(this.#pages[0]) }).catch(e => {
-					log.error('Unable to modify embed', e);
-				});
-			}
+			for (const msg of group.messages())
+				updateMsg(msg, 0);
 		});
 		this.#controller.on('last', input => {
 			const group = manager.with(input);
 			group.page = this.#pages.length - 1;
 			this.#controller.resumeAllControlsExcluding('next', 'last');
 			this.#controller.pauseControls('next', 'last');
-			for (const msg of group.messages()) {
-				msg.edit({ embed: this.#setEmbedDefaults(this.#pages[group.page]) }).catch(e => {
-					log.error('Unable to modify embed', e);
-				});
-			}
+			for (const msg of group.messages())
+				updateMsg(msg, group.page);
 		});
 		this.#controller.on('end', msg => {
 			msg.delete().catch(e => {
@@ -314,7 +311,7 @@ class PagedEmbed {
 		}
 		if (!message) {
 			const embed = this.#setEmbedDefaults(this.#pages[0]);
-			message = await channel.send({ embed });
+			message = await channel.send({ embeds: [embed] });
 			log.debug('Associating message', message.id, 'with controller, and group', groupName);
 			group.addMsg(message);
 			// Only attach the contoller if there is more than one page, otherwise navigation is unnecessary

@@ -6,22 +6,21 @@ this.arguments = '';
 function inGuild () {
 	return msg => {
 		const server = msg.guild, channels = server.channels.cache, users = server.members.cache, roles = server.roles.cache,
-			text = channels.filter(tmp => tmp.type === 'text'),
-			voice = channels.filter(tmp => tmp.type === 'voice'),
-			category = channels.filter(tmp => tmp.type === 'category'),
-			other = channels.filter(tmp => ['text', 'voice', 'category'].indexOf(tmp.type) < -1),
+			text = channels.filter(tmp => tmp.type === 'GUILD_TEXT'),
+			voice = channels.filter(tmp => tmp.type === 'GUILD_VOICE'),
+			category = channels.filter(tmp => tmp.type === 'GUILD_CATEGORY'),
+			other = channels.filter(tmp => ['GUILD_TEXT', 'GUILD_VOICE', 'GUILD_CATEGORY'].indexOf(tmp.type) < -1),
 			online = users.filter(tmp => tmp.presence.status === 'online'),
 			idle = users.filter(tmp => ['idle', 'dnd'].indexOf(tmp.presence.status) >= 0),
 			ping = roles.filter(tmp => tmp.mentionable);
 
 		log.debug('Icon?', server.icon);
 		return msg.channel.send({
-			embed: {
+			embeds: [{
 				title: server.name,
 				description: [
 					server.description,
 					`ID: ${server.id}`,
-					// 'Shard: ' + server.shardID, //shard is currently not in use
 				].join('\n'),
 				color: 0xBB0000,
 				thumbnail: {
@@ -70,7 +69,7 @@ function inGuild () {
 						dynamic: true,
 					}),
 				},
-			},
+			}],
 		});
 	};
 }

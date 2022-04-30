@@ -32,7 +32,7 @@ this.addConfig('poll_reactions', Boolean, { default: true, description: 'use rea
 // this.addConfig('poll_active', Map, {default: new Map(), configurable: false});
 
 function inGuild () {
-	const { split } = Utils, hardlimit = timespan.parse('1 month'),
+	const { split, sendMessage } = Utils, hardlimit = timespan.parse('1 month'),
 	 active = new Map(), dynamicPolls = new Set(), activeWarn = new Set(),
 
 	 emoteDelete = '\uD83D\uDDD1\uFE0F';
@@ -86,7 +86,7 @@ function inGuild () {
 					list = list.filter(({ owner }) => owner.id === msg.author.id);
 
 				if (list.length === 0)
-					return (await msg.channel.send('You are unable to end any polls')).delete({ timeout: 10000 });
+					return sendMessage(msg.channel, 'You are unable to end any polls', { cleanAfter: 10000 });
 				else if (tmp.question === 'all' || list.length === 1)
 					choice = list;
 				else
@@ -102,7 +102,7 @@ function inGuild () {
 					list = list.filter(({ owner }) => owner.id === msg.author.id);
 
 				if (list.length === 0)
-					return (await msg.channel.send('There are no dynamic polls you can modify running right now')).delete({ timeout: 10000 });
+					return sendMessage(msg.channel, 'There are no dynamic polls you can modify running right now', { cleanAfter: 10000 });
 				if (list.length === 1)
 					choice = list[0];
 				else
@@ -113,11 +113,11 @@ function inGuild () {
 						const added = await choice.add(option);
 
 						if (!added)
-							return (await msg.channel.send('Cannot have more than 10 options')).delete({ timeout: 10000 });
+							return sendMessage(msg.channel, 'Cannot have more than 10 options', { cleanAfter: 10000 });
 					} catch (e) {
 						log.error('error modifying dynamic poll');
 						log.error(e);
-						return (await msg.channel.send('An error occured whilst modifying the poll')).delete({ timeout: 10000 });
+						return sendMessage(msg.channel, 'An error occured whilst modifying the poll', { cleanAfter: 10000 });
 					}
 				}
 				break;
@@ -129,7 +129,7 @@ function inGuild () {
 					list = list.filter(({ owner }) => owner.id === msg.author.id);
 
 				if (list.length === 0)
-					return (await msg.channel.send('There are no dynamic polls you can modify running right now')).delete({ timeout: 10000 });
+					return sendMessage(msg.channel, 'There are no dynamic polls you can modify running right now', { cleanAfter: 10000 });
 				if (list.length === 1)
 					choice = list[0];
 				else
@@ -140,13 +140,13 @@ function inGuild () {
 				} catch (e) {
 					log.error('error modifying dynamic poll');
 					log.error(e);
-					return (await msg.channel.send('An error occured whilst modifying the poll')).delete({ timeout: 10000 });
+					return sendMessage(msg.channel, 'An error occured whilst modifying the poll', { cleanAfter: 10000 });
 				}
 
 
 			case 5: // List Active polls
 				list = Array.from(active.values());
-				return (await pollList(list, msg.channel, msg.author)).delete({ timeout: 10000 });
+				return pollList(list, msg.channel, msg.author);
 
 
 			case 6: // Modify timeout on poll
@@ -154,10 +154,10 @@ function inGuild () {
 				if (!msg.member.permissions.has('MANAGE_MESSAGES'))
 					list = list.filter(({ owner }) => owner.id === msg.author.id);
 				if (!tmp.tvalid)
-					return (await msg.channel.send('Invalid time entered')).delete({ timeout: 10000 });
+					return sendMessage(msg.channel, 'Invalid time entered', { cleanAfter: 10000 });
 
 				if (list.length === 0)
-					return (await msg.channel.send('There are no dynamic polls you can modify running right now')).delete({ timeout: 10000 });
+					return sendMessage(msg.channel, 'There are no dynamic polls you can modify running right now', { cleanAfter: 10000 });
 				if (list.length === 1)
 					choice = list[0];
 				else
@@ -167,7 +167,7 @@ function inGuild () {
 
 
 			default: // Unknown input
-				return (await msg.channel.send('Missing parameters, refer to help')).delete({ timeout: 10000 });
+				return sendMessage(msg.channel, 'Missing parameters, refer to help', { cleanAfter: 10000 });
 		}
 	};
 
@@ -232,9 +232,9 @@ function inGuild () {
 
 			log.debug('Attaching attachment to poll message');
 			embed.image = { url: `attachment://${temp.name}` };
-			return msg.channel.send({ embed: embed, files: [{ attachment: temp.url, name: temp.name }]});
+			return msg.channel.send({ embeds: [embed], files: [{ attachment: temp.url, name: temp.name }]});
 		} else {
-			return msg.channel.send({ embed });
+			return msg.channel.send({ embeds: [embed] });
 		}
 	}
 
@@ -255,15 +255,15 @@ function inGuild () {
 		log.debug('Modifying poll', tmp.question, 'for user', owner.tag);
 		if (attachment) {
 			embed.image = { url: `attachment://${attachment.name}` };
-			return msg.edit({ embed: embed, files: [{ attachment: attachment.url, name: attachment.name }]});
+			return msg.edit({ embeds: [embed], files: [{ attachment: attachment.url, name: attachment.name }]});
 		} else if (msg.attachments.size) {
 			const temp = msg.attachments.first();
 
 			log.debug('Attaching attachment to modified poll');
 			embed.image = { url: `attachment://${temp.name}` };
-			return msg.edit({ embed: embed, files: [{ attachment: temp.url, name: temp.name }]});
+			return msg.edit({ embeds: [embed], files: [{ attachment: temp.url, name: temp.name }]});
 		} else {
-			return msg.edit({ embed });
+			return msg.edit({ embeds: [embed] });
 		}
 	}
 
@@ -289,9 +289,9 @@ function inGuild () {
 
 			log.debug('Attaching attachment to results');
 			embed.image = { url: `attachment://${temp.name}` };
-			return msg.channel.send({ embed: embed, files: [{ attachment: temp.url, name: temp.name }]});
+			return msg.channel.send({ embeds: [embed], files: [{ attachment: temp.url, name: temp.name }]});
 		} else {
-			return msg.channel.send({ embed });
+			return msg.channel.send({ embeds: [embed] });
 		}
 	}
 
@@ -317,22 +317,26 @@ function inGuild () {
 			});
 		});
 
-		return channel.send({ embed });
+		return channel.send({ embeds: [embed] });
 	}
 
 	async function menu (list, channel, author, allAllowed) {
 		let choice, menu = await pollList(list, channel, author, allAllowed ? 'Enter the index, \'all\', or \'cancel\'' : 'Enter the index or cancel');
 
-		choice = await channel.awaitMessages(msg => {
-			if (msg.author.id === author.id) {
-				const i = Number(msg.content);
-				if ((!isNaN(i) && i > 0 && i <= list.length) || msg.content === 'cancel' || (msg.content === 'all' && allAllowed)) {
-					msg.delete().catch(e => log.warn('Unable to delete poll choice message', e.toString()));
-					return true;
+		choice = await channel.awaitMessages({
+			filter: msg => {
+				if (msg.author.id === author.id) {
+					const i = Number(msg.content);
+					if ((!isNaN(i) && i > 0 && i <= list.length) || msg.content === 'cancel' || (msg.content === 'all' && allAllowed)) {
+						msg.delete().catch(e => log.warn('Unable to delete poll choice message', e.toString()));
+						return true;
+					}
 				}
-			}
-			return false;
-		}, { max: 1, time: 30000 });
+				return false;
+			},
+			max: 1,
+			time: 30000
+		});
 		await menu.delete().catch(e => log.warn('Unable to delete menu message', e.toString()));
 		if (choice.first()) {
 			const temp = choice.first().content, i = Number(temp);
@@ -352,7 +356,7 @@ function inGuild () {
 	async function sendWarning (channel) {
 		if (activeWarn.has(channel.id))
 			return;
-		(await channel.send('Poll is already active in this channel')).delete({ timeout: 10000 })
+		sendMessage(channel, 'Poll is already active in this channel', { cleanAfter: 10000 })
 			.then(() => activeWarn.delete(channel.id))
 			.catch(e => {
 				activeWarn.channel.delete(channel.id);
@@ -444,7 +448,7 @@ function inGuild () {
 			await pollMsg.react(emoteDelete);
 
 		log.debug('Poll incognito:', obj.incognito);
-		collector = pollMsg.createReactionCollector(reaction => options.has(reaction.emoji.name) || reaction.emoji.name === emoteDelete, { time: obj.time });
+		collector = pollMsg.createReactionCollector({ filter: reaction => options.has(reaction.emoji.name) || reaction.emoji.name === emoteDelete, time: obj.time });
 		collected = await handlePoll(collector, tmp, async (reaction, user) => {
 			const count = pollMsg.reactions.cache.filter(reaction => reaction.users.cache.has(user.id) && options.has(reaction.emoji.name)).size;
 
@@ -524,7 +528,7 @@ function inGuild () {
 			}, ...obj,
 		};
 
-		collector = pollMsg.channel.createMessageCollector(msg => msg.content.startsWith(`${config.prefix}vote`), { time: obj.time });
+		collector = pollMsg.channel.createMessageCollector({ filter: msg => msg.content.startsWith(`${config.prefix}vote`), time: obj.time });
 		collected = await handlePoll(collector, tmp, async msg => {
 			let parts = msg.content.split(' ').slice(1), input = parts[0], i = Number(input);
 
@@ -533,7 +537,7 @@ function inGuild () {
 				const existing = collector.collected.filter(tmsg => tmsg.author.id === msg.author.id), count = existing.size,
 					copies = existing.filter(tmsg => Number(tmsg.content.split(' ')[1]) === i).size;
 				if (count <= obj.limit && copies < 2) {
-					(await msg.reply('vote registered')).delete({ timeout: 5000 });
+					sendMessage(msg.channel, 'vote registered', { cleanAfter: 5000, reply: msg });
 				} else {
 					log.debug('Count of votes for user', msg.author.username, 'is', count, 'of', obj.limit);
 					log.debug('Existing:', copies);
@@ -547,17 +551,17 @@ function inGuild () {
 							const existing = collector.collected.find(tmsg => tmsg.author.id === msg.author.id && Number(tmsg.content.split(' ')[1]) === i);
 							if (existing) {
 								collector.collected.delete(existing.id);
-								(await msg.reply('removed specified vote')).delete({ timeout: 5000 });
+								sendMessage(msg.channel,'removed specified vote', { cleanAfter: 5000, reply: msg });
 							}
 						} else {
 							collector.collector.filter(tmsg => tmsg.author.id === msg.author.id).forEach(tmsg => collector.collected.delete(tmsg.id));
-							(await msg.reply('removed all votes')).delete({ timeout: 5000 });
+								sendMessage(msg.channel,'removed all votes', { cleanAfter: 5000, reply: msg });
 						}
 						break;
 
 					case 'list': {
 						const votes = collector.collected.filter(tmsg => tmsg.author.id === msg.author.id).map(tmsg => Number(tmsg.content.split(' ')[1]));
-						(await msg.reply(`you have voted for options: ${votes.join(' ')}`)).delete({ timeout: 5000 });
+						sendMessage(msg.channel,`you have voted for options: ${votes.join(' ')}`, { cleanAfter: 5000, reply: msg });
 					}
 				}
 			}

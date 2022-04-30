@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 import logger from './logger.js';
 import { inspect } from 'util';
 import Path from 'path';
+import _ from 'lodash';
 import vm from 'vm';
 
 const log = logger('Module-Loader'),
@@ -52,6 +53,9 @@ const log = logger('Module-Loader'),
 		Promise, Reflect, Proxy, Intl, WebAssembly, TextEncoder, TextDecoder,
 		setImmediate, setInterval, setTimeout, URL, URLSearchParams, inspect,
 		timespan: timespan('msec'), discordjs,
+
+		// Lodash
+		_,
 
 		// Utils
 		Utils,

@@ -18,68 +18,86 @@ addConfig('welcome_thumbnail', String, { description: 'The image link to use as 
 addConfig('welcome_image', String, { description: 'The image link to attach to an embeded welcome (image below the main text)', configurable: true });
 
 function inGuild (emitter) {
-	const { getChannelID, checkForUrl } = Utils;
+	const { getChannelID, checkForUrl } = Utils,
+		{ chunk, memoize } = _,
+		messageParts = memoize(getMessageParts),
+		config = this.config;
 
-	emitter.on('guildMemberAdd', async member => {
-		const guild = member.guild, replaceText = (input) => {
-			if (typeof input === 'string') {
-				return input.replace(/\{server\}/g, guild.name).replace(/\{user\}/g, `<@${member.id}>`)
-					.replace(/\{name\}/g, member.displayName);
-			} else { return undefined; }
-		};
+	function replaceText (member, input) {
+		input = _.toString(input);
+		return _(input)
+			.replace(/\{server\}/g, member.guild.name)
+			.replace(/\{user\}/g, `<@${member.id}>`)
+			.replace(/\{name\}/g, member.displayName)
+			.value();
+	}
 
-		log.info('member joined:', guild.name, member.user.username, ':: welcome channel set?', !!this.config.welcome_channel);
-		if (this.config.welcome_channel) {
-			let msg;
-			if (!member.user.bot)
-				msg = replaceText(this.config.welcome_message);
-			else
-				msg = replaceText(this.config.welcome_bot_message);
+	function getMessage (member) {
+		if (member.user.bot)
+			return replaceText(member, config.welcome_bot_message);
+		return replaceText(member, config.welcome_message);
+	}
 
-			if (msg) {
-				const channel = await getChannelID(this.config.welcome_channel, guild, { allowText: 'partial', resolve: true });
-				log.debug('Channel result:', channel, 'type?', channel.type);
-				if (channel && channel.type === 'text') {
-					if (this.config.welcome_embed) {
-						const title = replaceText(this.config.welcome_title),
-							footer = replaceText(this.config.welcome_footer), embed = { description: msg };
+	function getUrlFrom (prop) {
+		const res = checkForUrl(config[prop], true);
 
-						if (title)
-							embed.title = title;
-						if (footer)
-							embed.footer = { text: footer };
-						if (this.config.welcome_thumbnail) {
-							const url = checkForUrl(this.config.welcome_thumbnail, true);
+		if (res?.[0] !== config[prop])
+			config[prop] = res?.[0];
+		return res?.[0];
+	}
 
-							if (url && url[0] === this.config.welcome_thumbnail) {
-								if (url[0] !== this.config.welcome_thumbnail)
-									this.config.welcome_thumbnail = url[0];
-								embed.thumbnail = { url: url[0] };
-							} else {
-								this.config.welcome_thumbnail = undefined;
-							}
-						}
-						if (this.config.welcome_image) {
-							const url = checkForUrl(this.config.welcome_image, true);
-
-							if (url && url[0] === this.config.welcome_image) {
-								if (url[0] !== this.config.welcome_image)
-									this.config.welcome_image = url[0];
-								embed.image = { url: url[0] };
-							} else {
-								this.config.welcome_image = undefined;
-							}
-						}
-						return channel.send({ embed });
-					} else {
-						return channel.send(msg);
-					}
-				} else {
-					log.error('Unable to find welcome text channel for server', guild.name, '<->', guild.id);
-					this.config.welcome_channel = undefined;
-				}
-			}
+	async function getMessageParts (member) {
+		return {
+			guild: member.guild,
+			msg: getMessage(member),
+			channel: await getChannelID(config.welcome_channel, member.guild, { allowText: 'partial', resolve: true }),
+			// Embed details
+			title: config.welcome_embed ? replaceText(config.welcome_title) : null,
+			footer: config.welcome_embed ? replaceText(config.welcome_footer) : null,
+			thumbnail: config.welcome_embed ? getUrlFrom('welcome_thumbnail') : null,
+			image: config.welcome_embed ? getUrlFrom('welcome_image') : null,
 		}
+	}
+
+	async function sendMessage (member, obj) {
+		const { guild, channel, msg } = await messageParts(member);
+
+		if (!msg)
+			return;
+		if (!channel || channel.type !== 'GUILD_TEXT') {
+			log.error('Unable to find welcome text channel for server', guild.name, '<->', guild.id);
+			config.welcome_channel = undefined;
+			return;
+		}
+		if (!obj)
+			obj = { content: msg };
+		obj.allowedMentions = { parse: ['users'] };
+		messageParts.cache.clear();
+		return channel.send(obj);
+	}
+
+	async function sendEmbed (member) {
+		const { title, footer, thumbnail, image, msg } = await messageParts(member),
+			embed = {};
+
+		if (title)
+			embed.title = title;
+		if (footer)
+			embed.footer = { text: footer };
+		if (thumbnail)
+			embed.thumbnail = { url: thumbnail };
+		if (image)
+			embed.image = { url: image };
+		return sendMessage(member, { embeds: [embed] });
+	}
+
+	emitter.on('guildMemberAdd', member => {
+		if (!config.welcome_channel)
+			return;
+		log.info('Welcoming User', member.user.username, 'to', member.guild.name);
+		if (config.welcome_embed)
+			return sendEmbed(member);
+		return sendMessage(member);
 	});
 
 	return (msg, ...input) => {

@@ -14,9 +14,9 @@ function inGuild () {
 		}
 		if (res.length > 0) {
 			this.config.disabled = res;
-			return msg.channel.send(`Disabled commands: \`${res.join('` `')}\``);
+			return msg.channel.send({ content: `Disabled commands: \`${res.join('` `')}\`` });
 		} else {
-			return msg.channel.send('No new commmands to disable');
+			return msg.channel.send({ content: 'No new commmands to disable' });
 		}
 	};
 }

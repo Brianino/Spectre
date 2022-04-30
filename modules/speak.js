@@ -4,7 +4,7 @@ this.permissions = 'MANAGE_MESSAGES';
 this.arguments = '[message to repeat]';
 
 function inGuild (emitter) {
-	emitter.on('message', async msg => {
+	emitter.on('messageCreate', async msg => {
 		if (msg.mentions.users.has(getBot().user.id)) {
 			log.debug('Message:', msg.content);
 			await msg.reply(`to use my commands use the prefix \`${this.config.prefix}\``);
@@ -35,7 +35,7 @@ function inGuild (emitter) {
 				}),
 			});
 		} else {
-			return msg.channel.send(input.join(' '), { disableMentions: 'all' });
+			return msg.channel.send({ content: input.join(' '), allowedMentions: { parse: [] } });
 		}
 	};
 }

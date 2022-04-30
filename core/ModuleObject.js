@@ -22,7 +22,7 @@ class ModuleObject {
 	#objectGroup;
 	#description = [];
 	#arguments = [];
-	#permissions = new Permissions('VIEW_CHANNEL');
+	#permissions = new Permissions(Permissions.FLAGS.VIEW_CHANNEL);
 	#limitedTo = new Map([['users', new Set()], ['guilds', new Set()]]);
 	#events = new EventEmitter();
 	#consolidated = new Set();

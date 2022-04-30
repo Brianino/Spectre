@@ -79,6 +79,17 @@ class MappingUtilties {
 		};
 	}
 
+	static get bigint () {
+		return {
+			toJson (input) {
+				return input.toString();
+			},
+			from (input) {
+				return BigInt(input);
+			}
+		}
+	}
+
 	static get object () {
 		return {
 			toJson: (input) => {
@@ -127,8 +138,8 @@ class MappingUtilties {
 
 	static get permissions () {
 		return {
-			toJson: (input) => input.bitfield,
-			from: (input) => new Permissions(input),
+			toJson: (input) => this.bigint.toJson(input.bitfield),
+			from: (input) => new Permissions(this.bigint.from(input)),
 		};
 	}
 

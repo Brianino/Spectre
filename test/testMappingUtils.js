@@ -19,6 +19,7 @@ describe('Mapping Utils', function () {
 	// Primative test data (symbols and undefined primatives are not supported)
 	types.push({type: 'string', value: 'some test string', converted: 'some test string'});
 	types.push({type: 'number', value: 10, converted: 10});
+	types.push({type: 'bigint', value: 15n, converted: 15n});
 	types.push({type: 'boolean', value: true, converted: true, label: 'boolean true'});
 	types.push({type: 'boolean', value: false, converted: false, label: 'boolean false'});
 	//types.push({type: 'bigint', value: 9007199254740992n, converted: "9007199254740992"})
@@ -43,8 +44,8 @@ describe('Mapping Utils', function () {
 	types.push({type: 'set', value: new Set([{p1: 1, p2: 2}, {t1: 1, t2: 2}]), converted: [{p1: 1, p2: 2}, {t1: 1, t2: 2}].map(val => Mapper.auto.toJson(val)), label: 'set of objects'});
 
 	// Other objects test data
-	types.push({type: 'permissions', value: new Permissions(164002), converted: 164002, label: 'permissions with int input'});
-	types.push({type: 'permissions', value: new Permissions(['VIEW_AUDIT_LOG', 'MANAGE_GUILD', 'KICK_MEMBERS', 'ATTACH_FILES', 'MENTION_EVERYONE']), converted: 164002, label: 'permissions with flag input'});
+	types.push({type: 'permissions', value: new Permissions(164002n), converted: 164002n, label: 'permissions with int input'});
+	types.push({type: 'permissions', value: new Permissions(['VIEW_AUDIT_LOG', 'MANAGE_GUILD', 'KICK_MEMBERS', 'ATTACH_FILES', 'MENTION_EVERYONE']), converted: 164002n, label: 'permissions with flag input'});
 
 	for (let {type, value, converted, label} of types) {
 		describe('Mapping Type ' + (label || type), function () {

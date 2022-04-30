@@ -23,14 +23,14 @@ function inGuild () {
 			});
 			try {
 				this.config.permissions = [command, ...perms];
-				return msg.channel.send(`Permissions for \`${command}\` updated`);
+				return msg.channel.send({ content: `Permissions for \`${command}\` updated` });
 			} catch (e) {
 				log.error('Failed to set permissions:', e.toString());
 				log.debug(e.stack);
-				return msg.channel.send('There was an error updating permissions, check server logs for more info');
+				return msg.channel.send({ content: 'There was an error updating permissions, check server logs for more info' });
 			}
 		} else {
-			return msg.channel.send(`Could not find command \`${command}\``);
+			return msg.channel.send({ content: `Could not find command \`${command}\`` });
 		}
 	}
 
@@ -43,7 +43,7 @@ function inGuild () {
 		if (cmd && access.call(cmd, msg.author, msg.guild, this.config)) {
 			const perms = this.config.permissions(cmd) || cmd.permissions || new Permissions();
 			msg.channel.send({
-				embed: {
+				embeds: [{
 					title: 'Permissions',
 					fields: {
 						name: command,
@@ -51,10 +51,10 @@ function inGuild () {
 						inline: false,
 					},
 					color: 0xBB0000,
-				},
+				}],
 			});
 		} else {
-			return msg.channel.send(`Could not find command \`${command}\``);
+			return msg.channel.send({ content: `Could not find command \`${command}\`` });
 		}
 	}
 
@@ -74,7 +74,7 @@ function inGuild () {
 				});
 			}
 		}
-		return msg.channel.send({ embed });
+		return msg.channel.send({ embeds: [embed] });
 	}
 
 	return (msg, ...args) => {
@@ -89,10 +89,12 @@ function inGuild () {
 				return setPermission.call(this, msg, args.shift(), args);
 
 			default:
-				return msg.channel.send('Unknown option, use either:\n' +
-				'`list` (to list the permissions for all the commands)\n' +
-				'`show` (to show the permissions for a single command)\n' +
-				'`set` (to set the permissions for a command)');
+				return msg.channel.send({ content:
+					'Unknown option, use either:\n' +
+					'`list` (to list the permissions for all the commands)\n' +
+					'`show` (to show the permissions for a single command)\n' +
+					'`set` (to set the permissions for a command)'
+				});
 		}
 	};
 }

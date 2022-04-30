@@ -82,7 +82,7 @@ function inAll () {
 				arg = arg.replace(/`/g, '');
 				if (arg === '')
 					arg = ' ';
-				return msg.channel.send(`Could not find command \`${arg}\``);
+				return msg.channel.send({ content: `Could not find command \`${arg}\`` });
 			}
 		}
 	};

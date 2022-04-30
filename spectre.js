@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import Discord from 'discord.js';
+import { Client, Intents } from 'discord.js';
 import logger from './core/logger.js';
 import ModuleLoader from './core/ModuleLoader.js';
 import { readFile } from 'fs/promises';
 
 const log = logger('Main'),
-	bot = new Discord.Client(),
+	bot = new Client({ intents: getIntents() }),
 	modLoader = new ModuleLoader(),
 	data = await readFile(new URL('./config.json', import.meta.url)),
 	{ token, login_retries } = JSON.parse(data);
@@ -16,6 +16,19 @@ process.on('unhandledRejection', (e, origin) => {
 	log.error('At Promise:', origin);
 	log.debug(e.stack);
 });
+
+function getIntents () {
+	let res = 0;
+	res |= Intents.FLAGS.GUILDS;
+	res |= Intents.FLAGS.GUILD_MEMBERS;
+	res |= Intents.FLAGS.GUILD_BANS;
+	res |= Intents.FLAGS.GUILD_MESSAGES;
+	res |= Intents.FLAGS.GUILD_MESSAGE_REACTIONS;
+	res |= Intents.FLAGS.DIRECT_MESSAGES;
+	res |= Intents.FLAGS.DIRECT_MESSAGE_REACTIONS;
+	log.info(`Using intents: ${res}`)
+	return res;
+}
 
 // ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
 bot.on('ready', async () => {
@@ -31,7 +44,7 @@ bot.on('ready', async () => {
 	}
 });
 
-bot.on('message', async (msg) => {
+bot.on('messageCreate', async (msg) => {
 	try {
 		await modLoader.runCommand(msg);
 	} catch (e) {

@@ -172,7 +172,7 @@ class EmojiController extends AbstractController {
 
 	_getCollector ({ message, time, idle }) {
 		const filter = (_r, u) => (u.id !== u.client.user.id);
-		return message.createReactionCollector(filter, { time, idle });
+		return message.createReactionCollector({ filter, time, idle });
 	}
 
 	_fetchValue (reaction, _user) {

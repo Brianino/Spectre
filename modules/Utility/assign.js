@@ -5,7 +5,7 @@ this.arguments = '<role>';
 addConfig('assign_roles', Set, { default: new Set(), description: 'Self assignable roles', configurable: true });
 
 function inGuild () {
-	const { getRoleID } = Utils;
+	const { getRoleID, sendMessage } = Utils;
 
 	function idToMention (id) {
 		return `<@&${id}>`;
@@ -26,8 +26,7 @@ function inGuild () {
 					// assign role to user
 					return msg.member.roles.add(resolvedRole).catch(async e => {
 						log.error('Unable to assign role', e);
-						const reply = await msg.channel.send({ message: 'can\'t assign role' });
-						return reply.delete({ timeout: 10000 });
+						return sendMessage(msg.channel, 'can\'t assign role', { cleanAfter: 10000 })
 					});
 				}
 			})());
