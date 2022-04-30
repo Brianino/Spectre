@@ -9,24 +9,20 @@ const urlReg = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=+$,\w]+@)?[A-Za-z0-9.-]+|(?:
  * @return {(boolean|Array[])} returns either the list of matching regex results, or a boolean value
 */
 function checkForUrl (text, getMatches = false, flags = '') {
-	if (!getMatches) {
+	if (!getMatches)
 		return urlReg.test(text);
-	} else {
+
+	const treg = flags? new RegExp(urlReg, String(flags)) : urlReg;
+
+	if (treg.global || treg.sticky) {
 		const res = [];
-		let treg = urlReg;
-
-		if (flags)
-			treg = new RegExp(urlReg, String(flags));
-
-		if (treg.global || treg.sticky) {
-			let temp;
-			while ((temp = treg.exec(text)))
-				res.push(temp);
-			return res;
-		} else {
-			return treg.exec(text);
-		}
+		let temp;
+		while ((temp = treg.exec(text)))
+			res.push(temp);
+		return res;
 	}
+
+	return treg.exec(text);
 }
 
 export default checkForUrl;

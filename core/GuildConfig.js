@@ -52,7 +52,10 @@ function convert (id, obj, varStore) {
 				res.set(key, MappingUtils.asObject(type, obj[key]));
 			}
 		} catch (e) {
-			log.error('Unable to parse', key, 'for', obj.id, 'because', e);
+			if (!varStore.has(key))
+				log.warn('Missing definition for:', key, `(Guild: ${id})`);
+			else
+				log.error('Unable to parse', key, 'for', id, 'because', e);
 			log.debug('in store:', [...varStore.keys()].toString());
 		}
 	}
@@ -345,10 +348,21 @@ class ConfigManager {
 			set ([cmd, ...permissions]) {
 				if (typeof cmd === 'object')
 					cmd = cmd.command;
-				if (permissions.length)
-					this.set(cmd, new Permissions(permissions));
-				else
-					this.delete(cmd);
+				if (!cmd)
+					return;
+				if (!permissions.length)
+					return this.delete(cmd);
+
+				let res = 0n;
+				for (const perm of permissions) {
+					try {
+						res |= BigInt(perm);
+					} catch (ignore) {
+						if (Object.hasOwn(Permissions.FLAGS, perm))
+							res |= Permissions.FLAGS[perm];
+					}
+				}
+				this.set(cmd, new Permissions(res));
 			},
 		});
 		this.#confVars.set('disabled', {

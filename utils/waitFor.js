@@ -8,27 +8,30 @@
  * @return {Promise} a promise that resolves when the check function succeeds, otherwise it will reject
 */
 function waitFor (time = 1000, interval = 10, checkFunc) {
+	if (!checkFunc && interval instanceof Function)
+		checkFunc = interval;
 	interval =  Number(interval);
 	if (isNaN(interval) || interval === 0)
 		interval = 10;
 	return new Promise((resolve, reject) => {
-		const func = async (passed, tFunc) => {
-			const newTime = interval + passed - time;
+		const func = async (passed) => {
+			const timeRemaining = time - passed;
 			try {
-				if (await tFunc()) {
+				if (await checkFunc()) {
 					return resolve(true);
-				} else if (newTime > 0) {
-					interval -= newTime;
-					if (interval <= 0)
-						return resolve(false);
+				} else if (timeRemaining <= 0) {
+					return resolve(false);
+				} else if (timeRemaining < interval) {
+					interval = timeRemaining;
 				}
-				setTimeout(func, interval, passed + interval, tFunc);
+				setTimeout(func, interval, passed + interval);
 			} catch (e) {
 				return reject(e);
 			}
 		};
+
 		if (interval && typeof checkFunc === 'function')
-			setTimeout(func, interval, interval, checkFunc);
+			setImmediate(func, 0);
 		else
 			setTimeout(func, time, time, () => true);
 	});

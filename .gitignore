@@ -56,5 +56,7 @@ out
 data
 
 package-lock.json
+
+# Sublime Project Files
 *.sublime-project
 *.sublime-workspace
