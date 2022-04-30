@@ -118,7 +118,7 @@ describe('Guild Config', function () {
 		});
 
 		it('can set multiple permissions', function () {
-			let cmd1 = 'testCmd1', cmd2 = 'testCmd2', bit1 = 1, bit2 = 2;
+			let cmd1 = 'testCmd1', cmd2 = 'testCmd2', bit1 = 1n, bit2 = 2n;
 
 			testGuild.permissions = [cmd1, bit1];
 			testGuild.permissions = [cmd2, bit2];

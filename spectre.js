@@ -30,7 +30,6 @@ function getIntents () {
 	return res;
 }
 
-// ADD POST INSTALL SCRIPT TO GENERATE CONFIG FILES
 bot.on('ready', async () => {
 	log.info('Connected to discord');
 	try {
