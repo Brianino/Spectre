@@ -6,8 +6,9 @@ this.arguments = '[message to repeat]';
 function inGuild (emitter) {
 	emitter.on('messageCreate', async msg => {
 		if (msg.mentions.users.has(getBot().user.id)) {
-			log.debug('Message:', msg.content);
-			await msg.reply(`to use my commands use the prefix \`${this.config.prefix}\``);
+			log.debug('Message:', msg.content, 'Is command?', msg.content.startsWith(this.config.prefix));
+			if (!msg.content.startsWith(this.config.prefix))
+				await msg.reply(`to use my commands use the prefix \`${this.config.prefix}\``);
 		}
 	});
 

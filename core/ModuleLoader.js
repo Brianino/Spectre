@@ -114,9 +114,11 @@ class ModuleLoader {
 	}
 
 	reload (mod) {
+		log.debug('Attempting to reload: ', mod);
 		if (typeof mod === 'string')
 			mod = this.modules.get(mod);
-		else if (mod instanceof ModuleObject === false)
+		log.debug('Found module?', mod, 'Modules', this.modules);
+		if (mod instanceof ModuleObject === false)
 			throw new Error('Need either a module object, or a module name');
 		this.#context.cleanup(mod);
 		this.modules.delete(mod.command);

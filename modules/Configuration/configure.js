@@ -8,7 +8,8 @@ this.arguments = '';
 this.permissions = 'MANAGE_GUILD';
 
 function inGuild () {
-	const { Permissions } = discordjs;
+	const { Permissions } = discordjs,
+		{ parseBool } = Utils;
 
 	return (msg, setting, ...input) => {
 		const options = getConfigurable();

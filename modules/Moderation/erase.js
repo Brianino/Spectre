@@ -60,17 +60,20 @@ function inGuild () {
 		try {
 			let count = 0;
 			while (messages.size > 0) {
-				const chunk = messages.first(100), temp = chunk.filter(msg => Date.now() - msg.createdAt.getTime() > 1209600000);
+				const chunk = messages.first(100),
+					oldMessages = chunk.filter(msg => (Date.now() - msg.createdAt.getTime()) > 1209600000)
+					recentMessages = chunk.filter(msg => (Date.now() - msg.createdAt.getTime()) <= 1209600000);
 
-				await channel.bulkDelete(chunk, true);
-				log.debug('Chunk of', chunk.length - temp.length, 'messages deleted');
-				count += chunk.length - temp.length;
-				if (temp.length > 0  && config.clear_old) {
-					for (const msg of temp) {
+				log.debug('Chunk to bulk delete is:', recentMessages);
+				await channel.bulkDelete(recentMessages, true);
+				log.debug('Chunk of', recentMessages, 'messages deleted');
+				count += recentMessages.length;
+				if (oldMessages.length > 0  && config.clear_old) {
+					for (const msg of oldMessages) {
 						await msg.delete();
 						count += 1;
 					}
-					log.debug('Deleted remaining', temp.length, 'messages');
+					log.debug('Deleted remaining', oldMessages.length, 'messages');
 				}
 				chunk.forEach(({ id }) => messages.delete(id));
 				log.debug('Remaining messages to delete', messages.size);
@@ -78,7 +81,7 @@ function inGuild () {
 			if (count !== number)
 				throw new LessThan(`Bulk deleted ${count}/${number} messages, remaining messages are older than 2 weeks`);
 		} catch (e) {
-			log.error('Unable to delete messages from channel', channel.name, ':', e.message);
+			log.error('Unable to delete messages from channel', channel.name, ':', e);
 			if (e instanceof DiscordAPIError || e instanceof LessThan) {
 				failed.push({ channel, message: e.message });
 			} else {
@@ -95,7 +98,7 @@ function inGuild () {
 			const names = channels.map(channel => channel.name);
 			log.info(`${msg.author.username} (${msg.author.id}) erased ${number} messages from ${names.toString()}`);
 			log.info('Channel erase targets:', names.toString());
-			log.warn('Users targeted by erase:', users.map(user => `${user.displayName()} (${user.id})`).toString());
+			log.warn('Users targeted by erase:', users.map(user => `${user.nickname || user.username} (${user.id})`).toString());
 			return send(`Successfully deleted ${number} messages from: ${names.toString()}`);
 		} else if (failed.length > 1) {
 			let text = 'Failed to delete messages on some channels:';
@@ -110,7 +113,7 @@ function inGuild () {
 			return send(text);
 		} else {
 			const { channel, message } = failed.pop();
-			log.warn(`${msg.author.username} (${msg.author.id}) failed to erase: <#${channel.id}> ${message}`);
+			log.warn(`${msg.author.username} (${msg.author?.id}) failed to erase: <#${channel?.id}> ${message}`);
 			return send(`Failed to delete messages in <#${channel.id}>: ${message}`);
 		}
 	}
@@ -120,7 +123,7 @@ function inGuild () {
 			users = msg.mentions.members, promises = [];
 		let failed = [];
 
-		msg.delete();
+		await msg.channel.messages.delete(msg);
 		// Setup variables with default values;
 		number = Number(number);
 		if (isNaN(number))
@@ -130,10 +133,10 @@ function inGuild () {
 
 		// Loop through channels and handle message collection/deletion
 		for (const channel of channels.values()) {
-			promises.push(async () => {
+			promises.push((async () => {
 				const messages = await getMessages(channel, users, number);
 				return deleteMessages(channel, messages, number);
-			});
+			})());
 		}
 		// Process results
 		for (const { status, value, reason } of await Promise.allSettled(promises)) {

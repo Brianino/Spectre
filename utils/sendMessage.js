@@ -1,4 +1,9 @@
+import logger from '../core/logger.js';
 import waitFor from './waitFor.js';
+import _ from 'lodash';
+
+const log = logger('Utilities'),
+	{ isString, isArray } = _;
 
 /**
  * Send a message to the specified channel
@@ -13,9 +18,9 @@ import waitFor from './waitFor.js';
 */
 async function sendMessage (channel, content, { wait, cleanAfter, reply } = {}) {
 	const tmpObj = {};
-	if (content instanceof String)
+	if (isString(content))
 		tmpObj.content = content;
-	else if (content instanceof Array)
+	else if (isArray(content))
 		tmpObj.embeds = content;
 	else
 		tmpObj.embeds = [content];
@@ -26,7 +31,8 @@ async function sendMessage (channel, content, { wait, cleanAfter, reply } = {}) 
 
 	if (wait)
 		await waitFor(wait);
-	const msg = channel.send(tmpObj);
+	log.debug('Will send', tmpObj, `to channel: ${channel}, content is:`, content);
+	const msg = await channel.send(tmpObj);
 
 	if (cleanAfter) {
 		await waitFor(cleanAfter);

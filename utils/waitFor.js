@@ -1,3 +1,9 @@
+import logger from '../core/logger.js';
+import _ from 'lodash';
+
+const log = logger('Utilities'),
+	{ isFunction } = _;
+
 /**
  * A timeout function to wait for a certain condition
  * @memberof utils
@@ -8,11 +14,15 @@
  * @return {Promise} a promise that resolves when the check function succeeds, otherwise it will reject
 */
 function waitFor (time = 1000, interval = 10, checkFunc) {
-	if (!checkFunc && interval instanceof Function)
+	if (!checkFunc && isFunction(interval)) {
 		checkFunc = interval;
-	interval =  Number(interval);
-	if (isNaN(interval) || interval === 0)
 		interval = 10;
+	} else {
+		interval = Number(interval);
+		if (isNaN(interval) || interval === 0)
+			interval = 10;
+	}
+	log.debug('Will wait', time, 'with interval', interval, `(Has check? ${!!checkFunc} ${typeof checkFunc})`);
 	return new Promise((resolve, reject) => {
 		const func = async (passed) => {
 			const timeRemaining = time - passed;
@@ -30,10 +40,12 @@ function waitFor (time = 1000, interval = 10, checkFunc) {
 			}
 		};
 
-		if (interval && typeof checkFunc === 'function')
+		if (isFunction(checkFunc)) {
 			setImmediate(func, 0);
-		else
-			setTimeout(func, time, time, () => true);
+		} else {
+			checkFunc = () => true;
+			setTimeout(func, time, time);
+		}
 	});
 }
 
