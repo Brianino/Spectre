@@ -28,8 +28,7 @@ function inGuild (emitter) {
 		return _(input)
 			.replace(/\{server\}/g, member.guild.name)
 			.replace(/\{user\}/g, `<@${member.id}>`)
-			.replace(/\{name\}/g, member.displayName)
-			.value();
+			.replace(/\{name\}/g, member.displayName);
 	}
 
 	function getMessage (member) {

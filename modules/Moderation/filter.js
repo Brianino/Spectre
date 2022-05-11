@@ -23,7 +23,9 @@ const common = {
 
 function inGuild (emitter, groupObj) {
 	const { getRoleID, PagedEmbed, sendMessage } = Utils,
-		{ Permissions } = discordjs;
+		{ Permissions } = discordjs,
+		{ escapeRegExp } = _,
+		guild = this.guild;
 
 	UpdateCommonReg: {
 		let updated = false;
@@ -38,11 +40,11 @@ function inGuild (emitter, groupObj) {
 	}
 
 	async function checkExempt (member, exemptRole) {
-		if (member.permissions.has(Permissions.FLAGS.ADMINISTRATOR))
+		if (member?.permissions.has(Permissions.FLAGS.ADMINISTRATOR))
 			return true;
 		else if (!exemptRole)
 			return false;
-		else if (member.roles.highest.comparePositionTo(await getRoleID(exemptRole, this.guild, { resolve: true })) >= 0)
+		else if (member?.roles.highest.comparePositionTo(await getRoleID(exemptRole, guild, { resolve: true })) >= 0)
 			return true;
 		else
 			return false;
@@ -54,7 +56,7 @@ function inGuild (emitter, groupObj) {
 			if (msg.content.match(reg)) {
 				log.debug('Message has a match');
 				// check user has exempt role
-				if (await checkExempt.call(this, msg.member, this.config.filter_exempt.get(name)))
+				if (await checkExempt(msg.member, this.config.filter_exempt.get(name)))
 					return log.debug('User is exempt from filter due to higher role');
 				log.info('Deleting filtered message', msg.content, 'from user', msg.author.username);
 				msg.delete().catch(ignore => {
@@ -74,6 +76,8 @@ function inGuild (emitter, groupObj) {
 			exempt = undefined;
 		} else if (!regex) {
 			throw new SyntaxError('Missing regex');
+		} else {
+			regex = escapeRegExp(regex);
 		}
 		if (exempt)
 			this.config.filter_exempt.set(filterName, await getRoleID(exempt, this.guild));
