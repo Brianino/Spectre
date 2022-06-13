@@ -1,11 +1,12 @@
 import ContextHandler from './ContextHandler.js';
 import ModuleObject, { access } from './ModuleObject.js';
-import { promises as fs, readFileSync } from 'fs';
 import ConfigManager from './GuildConfig.js';
 import * as Utils from '../utils/utils.js';
+import getConfig from './configUtils.js';
 import wrapObject from './wrapObject.js';
 import * as discordjs from 'discord.js';
 import timespan from 'timespan-parser';
+import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
 import logger from './logger.js';
 import { inspect } from 'util';
@@ -18,7 +19,6 @@ const log = logger('Module-Loader'),
 	// move iniTimeout to config, maybe add an option for timeout running a command?
 	moduleFolder = '../modules', iniTimeout = 1000,
 	__dirname = Path.dirname(fileURLToPath(import.meta.url)),
-	config = JSON.parse(readFileSync('./config.json')),
 
 	globals = { // TODO: Lock off objects so that they can't be modified from within the module
 	// Value Globals
@@ -60,8 +60,8 @@ const log = logger('Module-Loader'),
 		// Utils
 		Utils,
 
-		// Bot config
-		OwnerID: config.owner,
+		// OwnerId
+		OwnerID: getConfig().owner,
 	};
 
 class ModuleLoader {

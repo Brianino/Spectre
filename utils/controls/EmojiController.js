@@ -80,7 +80,7 @@ class EmojiController extends AbstractController {
 		for (const msg of msgs) {
 			promises.push((async () => {
 				const reaction = EmojiController.#getReaction(msg, emote);
-				if (reaction) {
+				if (reaction && reaction.users.cache.size) {
 					try {
 						await reaction.remove();
 					} catch (e) {

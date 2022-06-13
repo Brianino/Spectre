@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 
+import ModuleLoader from './core/ModuleLoader.js';
+import getConfig from './core/configUtils.js';
 import { Client, Intents } from 'discord.js';
 import logger from './core/logger.js';
-import ModuleLoader from './core/ModuleLoader.js';
-import { readFile } from 'fs/promises';
 
 const log = logger('Main'),
 	bot = new Client({ intents: getIntents() }),
 	modLoader = new ModuleLoader(),
-	data = await readFile(new URL('./config.json', import.meta.url)),
-	{ token, login_retries } = JSON.parse(data);
+	{ token, login_retries } = getConfig();
 
 process.on('unhandledRejection', (e, origin) => {
 	log.error('Promise Error:', e.toString());
@@ -62,6 +61,11 @@ bot.on('warn', info => {
 bot.on('debug', info => {
 	log.debug('Client debug', info);
 });
+
+if (!token) {
+	log.error('No token provided, please updated config.json');
+	process.exit(2);
+}
 
 for (let count = 0; count < login_retries; count++) {
 	try {

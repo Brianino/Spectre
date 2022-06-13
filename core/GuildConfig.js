@@ -1,14 +1,15 @@
-import logger from './logger.js';
-import { Permissions } from 'discord.js';
+import { promises as fs, constants } from 'fs';
 import MappingUtils from './MappingUtils.js';
-import { promises as fs, constants, readFileSync } from 'fs';
+import getConfig from './configUtils.js';
+import { Permissions } from 'discord.js';
 import { fileURLToPath } from 'url';
 import lock from './namedLock.js';
+import logger from './logger.js';
 import Path from 'path';
 
 const log = logger('Guild-Config'),
-	{ prefix } = JSON.parse(readFileSync('./config.json')),
-	confDir = Path.resolve(fileURLToPath(import.meta.url), '../../data/');
+	confDir = Path.resolve(fileURLToPath(import.meta.url), '../../data/'),
+	{ prefix } = getConfig();
 let configDirExists = false;
 
 /** The config object to interact with the configured guild properties
