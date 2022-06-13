@@ -1,8 +1,35 @@
-import { GuildChannel, GuildMember, Role } from 'discord.js';
 import logger from '../core/logger.js';
 import split from './split.js';
+import {
+	GuildChannel,
+	GuildMember,
+	Role,
+	ChannelManager,
+	GuildChannelManager,
+	GuildMemberManager,
+	RoleManager,
+} from 'discord.js';
 
 const log = logger('Utilities');
+
+function getFetchMethod (manager, maxCount) {
+	let argsMapper = toFetch => [toFetch];
+	switch (manager.constructor) {
+		case ChannelManager:
+			argsMapper = toFetch => [toFetch];
+			break;
+		case GuildChannelManager:
+			argsMapper = toFetch => [toFetch];
+			break;
+		case GuildMemberManager:
+			argsMapper = toFetch => [{ user: toFetch, limit: maxCount }];
+			break;
+		case RoleManager:
+			argsMapper = toFetch => [toFetch];
+			break;
+	}
+	return input => Promise.allSettled(input.map(val => manager.fetch(argsMapper(val))));
+}
 
 /**
  * Perform a string matching algorithm on the objects of the source collection
@@ -72,8 +99,10 @@ async function getIDs ({ input, manager, prop, reg, maxCount, resolve, Type, all
 			else
 				toFetch.push(val);
 		});
-		if (fetch && Object.hasOwn(manager, 'fetch') && toFetch.length) {
+		log.debug('manager has fetch?', manager.fetch instanceof Function, manager.fetch, 'on', manager.constructor);
+		if (fetch && manager.fetch instanceof Function && toFetch.length) {
 			// Currently only the guild user manager has a fetch method
+			log.debug('Will attempt to fetch', toFetch);
 			try {
 				const tmp = await fetchMethod(toFetch);
 				inCache.push(...tmp.values());
@@ -102,12 +131,10 @@ async function getIDs ({ input, manager, prop, reg, maxCount, resolve, Type, all
 		let temp;
 
 		while ((temp = inputReg.exec(input)) && res.length < maxCount) {
-			res.push(temp[0]);
+			res.push(temp.length > 1 ? temp[1] : temp[0]);
 			removeResult(temp[0], temp.index);
 		}
-		return handleResult(res, (toFetch) => {
-			return manager.fetch({ user: toFetch, limit: maxCount });
-		});
+		return handleResult(res, getFetchMethod(manager, maxCount));
 	}
 
 	// Setup defaults
