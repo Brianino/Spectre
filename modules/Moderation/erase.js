@@ -1,5 +1,5 @@
 /* eslint no-undef: "warn" */
-/* global addConfig, log, discordjs, Utils */
+/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
 
 class LessThan extends Error {}
 
@@ -61,7 +61,7 @@ function inGuild () {
 			let count = 0;
 			while (messages.size > 0) {
 				const chunk = messages.first(100),
-					oldMessages = chunk.filter(msg => (Date.now() - msg.createdAt.getTime()) > 1209600000)
+					oldMessages = chunk.filter(msg => (Date.now() - msg.createdAt.getTime()) > 1209600000),
 					recentMessages = chunk.filter(msg => (Date.now() - msg.createdAt.getTime()) <= 1209600000);
 
 				log.debug('Chunk to bulk delete is:', recentMessages);

@@ -1,3 +1,6 @@
+/* eslint no-undef: "warn" */
+/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
+
 this.description = 'disables a command on a server (meaning no one can use it)';
 this.arguments = '[...command]';
 this.permissions = ['MANAGE_GUILD', 'MANAGE_CHANNELS'];

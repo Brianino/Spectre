@@ -1,3 +1,6 @@
+/* eslint no-undef: "warn" */
+/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
+
 this.description = 'ban a user';
 this.arguments = '<@user> [reason]';
 this.arguments = '<user id> [reason]';

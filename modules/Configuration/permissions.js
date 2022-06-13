@@ -1,3 +1,6 @@
+/* eslint no-undef: "warn" */
+/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
+
 this.description = 'Modifying required permissions for commands';
 this.arguments = 'set <command> [...permission]';
 this.arguments = 'show <command>';

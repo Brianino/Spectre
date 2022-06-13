@@ -1,3 +1,6 @@
+/* eslint no-undef: "warn" */
+/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
+
 this.description = 'use a regex filter to remove messages and auto ban abusers';
 this.description = 'Filter names must be unique, some names are reserved for common filters (list with common option)';
 this.description = 'The exmept_role is used to define the lowest required role to be exempt from the filter';
@@ -72,7 +75,7 @@ function inGuild (emitter, groupObj) {
 		if (filterName in common) {
 			regex = common[filterName];
 		} else if (!regex && exempt) {
-			regex = exempt;
+			regex = escapeRegExp(exempt);
 			exempt = undefined;
 		} else if (!regex) {
 			throw new SyntaxError('Missing regex');

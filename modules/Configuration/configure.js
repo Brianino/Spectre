@@ -1,3 +1,6 @@
+/* eslint no-undef: "warn" */
+/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
+
 this.description = 'Use to set command config options';
 this.description = 'Adding no arguments will display the available settings to configure';
 this.description = 'using the setting with no value will display more info on the setting.';

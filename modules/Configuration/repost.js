@@ -1,3 +1,6 @@
+/* eslint no-undef: "warn" */
+/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
+
 this.description = 'Repost images into an image gallery channel';
 this.description = 'At least one source channel needs to be provided, and a gallery channel';
 this.arguments = '<...source> to <gallery>';
@@ -137,7 +140,7 @@ function inGuild (emitter) {
 	}
 
 	function listRules (ruleMap) {
-		resMsg = 'Repost rules (channel => Image Channels):\n';
+		let resMsg = 'Repost rules (channel => Image Channels):\n';
 		for (const [source, galls] of ruleMap) {
 			resMsg += `<#${source}> => `;
 			resMsg += galls.map(val => `<#${val}>`).join(', ');
@@ -185,7 +188,7 @@ function inGuild (emitter) {
 		const promises = [],
 			processed = new WeakMap(),
 			processChannel = async (channel) => {
-				const ch = await getChannelID(channel, msg.guild);
+				const ch = await getChannelID(channel, guild);
 				if (ch)
 					return { status: 1, value: ch };
 				else

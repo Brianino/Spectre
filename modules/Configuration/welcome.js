@@ -1,3 +1,6 @@
+/* eslint no-undef: "warn" */
+/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
+
 this.description = 'set the server welcome message';
 this.description = 'user mention: {user}';
 this.description = 'server name: {server}';
@@ -51,8 +54,8 @@ function inGuild (emitter) {
 			msg: getMessage(member),
 			channel: await getChannelID(config.welcome_channel, member.guild, { allowText: 'partial', resolve: true }),
 			// Embed details
-			title: config.welcome_embed ? replaceText(config.welcome_title) : null,
-			footer: config.welcome_embed ? replaceText(config.welcome_footer) : null,
+			title: config.welcome_embed ? replaceText(member, config.welcome_title) : null,
+			footer: config.welcome_embed ? replaceText(member, config.welcome_footer) : null,
 			thumbnail: config.welcome_embed ? getUrlFrom('welcome_thumbnail') : null,
 			image: config.welcome_embed ? getUrlFrom('welcome_image') : null,
 		};

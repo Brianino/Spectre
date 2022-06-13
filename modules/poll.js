@@ -1,3 +1,7 @@
+/* eslint no-undef: "warn", complexity: "off", require-atomic-updates: "off" */
+/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
+
+// TODO: fix complexity/atomic updates (currently disabled because no one uses this module)
 this.description = 'create a poll in the channel';
 this.description = 'single - a poll where you can only vote for one option';
 this.description = 'multi - a poll where you can specify the max number of votes';
@@ -33,9 +37,8 @@ this.addConfig('poll_reactions', Boolean, { default: true, description: 'use rea
 
 function inGuild () {
 	const { split, sendMessage } = Utils, hardlimit = timespan.parse('1 month'),
-	 active = new Map(), dynamicPolls = new Set(), activeWarn = new Set(),
-
-	 emoteDelete = '\uD83D\uDDD1\uFE0F';
+		active = new Map(), dynamicPolls = new Set(), activeWarn = new Set(),
+		emoteDelete = '\uD83D\uDDD1\uFE0F';
 	/* Custom emote set, not used for now
 	emoteSet = [
 		'\u26AA', //WHITE CIRCLE
@@ -57,7 +60,8 @@ function inGuild () {
 	];*/
 
 	return async (msg, ...input) => {
-		let tmp = parseInput(input.join(' '), this.config), votes, emMsg, tmpType, list, choice;
+		const tmp = parseInput(input.join(' '), this.config);
+		let votes, emMsg, tmpType, list, choice;
 
 
 		switch (tmp.type) {
@@ -172,7 +176,7 @@ function inGuild () {
 	};
 
 	function parseInput (input, config) {
-		let [type, question, ...options] = split(input), res = { type: 1, tvalid: false, incognito: false, question, options };
+		const [type, question, ...options] = split(input), res = { type: 1, tvalid: false, incognito: false, question, options };
 
 		switch (type) {
 			default: res.question = type; if (question)
@@ -321,22 +325,22 @@ function inGuild () {
 	}
 
 	async function menu (list, channel, author, allAllowed) {
-		let choice, menu = await pollList(list, channel, author, allAllowed ? 'Enter the index, \'all\', or \'cancel\'' : 'Enter the index or cancel');
-
-		choice = await channel.awaitMessages({
-			filter: msg => {
-				if (msg.author.id === author.id) {
-					const i = Number(msg.content);
-					if ((!isNaN(i) && i > 0 && i <= list.length) || msg.content === 'cancel' || (msg.content === 'all' && allAllowed)) {
-						msg.delete().catch(e => log.warn('Unable to delete poll choice message', e.toString()));
-						return true;
+		const menu = await pollList(list, channel, author, allAllowed ? 'Enter the index, \'all\', or \'cancel\'' : 'Enter the index or cancel'),
+			choice = await channel.awaitMessages({
+				filter: msg => {
+					if (msg.author.id === author.id) {
+						const i = Number(msg.content);
+						if ((!isNaN(i) && i > 0 && i <= list.length) || msg.content === 'cancel' || (msg.content === 'all' && allAllowed)) {
+							msg.delete().catch(e => log.warn('Unable to delete poll choice message', e.toString()));
+							return true;
+						}
 					}
-				}
-				return false;
-			},
-			max: 1,
-			time: 30000,
-		});
+					return false;
+				},
+				max: 1,
+				time: 30000,
+			});
+
 		await menu.delete().catch(e => log.warn('Unable to delete menu message', e.toString()));
 		if (choice.first()) {
 			const temp = choice.first().content, i = Number(temp);
@@ -353,7 +357,7 @@ function inGuild () {
 		return allAllowed ? [] : undefined;
 	}
 
-	async function sendWarning (channel) {
+	function sendWarning (channel) {
 		if (activeWarn.has(channel.id))
 			return;
 		sendMessage(channel, 'Poll is already active in this channel', { cleanAfter: 10000 })
@@ -369,7 +373,8 @@ function inGuild () {
 
 	function handlePoll (collector, { dynamic, question, time, owner, channel, ...func }, filter) {
 		return new Promise(resolve => {
-			let ind = Symbol('identifier'), start = Date.now();
+			const ind = Symbol('identifier');
+			let start = Date.now();
 
 			active.set(ind, Object.defineProperties({}, {
 				time: {
@@ -404,7 +409,7 @@ function inGuild () {
 	}
 
 	async function reactionPoll (pollMsg, obj, owner) {
-		let options = new Map(), uList = new Map(), collector, collected, tmp = {
+		const options = new Map(), uList = new Map(), tmp = {
 			owner: owner,
 			channel: pollMsg.channel,
 			add: async (option, attachment) => {
@@ -448,33 +453,33 @@ function inGuild () {
 			await pollMsg.react(emoteDelete);
 
 		log.debug('Poll incognito:', obj.incognito);
-		collector = pollMsg.createReactionCollector({ filter: reaction => options.has(reaction.emoji.name) || reaction.emoji.name === emoteDelete, time: obj.time });
-		collected = await handlePoll(collector, tmp, async (reaction, user) => {
-			const count = pollMsg.reactions.cache.filter(reaction => reaction.users.cache.has(user.id) && options.has(reaction.emoji.name)).size;
+		const collector = pollMsg.createReactionCollector({ filter: reaction => options.has(reaction.emoji.name) || reaction.emoji.name === emoteDelete, time: obj.time }),
+			collected = await handlePoll(collector, tmp, async (reaction, user) => {
+				const count = pollMsg.reactions.cache.filter(reaction => reaction.users.cache.has(user.id) && options.has(reaction.emoji.name)).size;
 
-			if (user.id === user.client.user.id)
-				return;
-			if (obj.incognito) {
-				const arr = options.get(reaction.emoji.name), count = uList.get(user.id) || 0;
+				if (user.id === user.client.user.id)
+					return;
+				if (obj.incognito) {
+					const arr = options.get(reaction.emoji.name), count = uList.get(user.id) || 0;
 
-				if (reaction.emoji.name === emoteDelete) {
-					if (count)
-						log.debug('Removing votes for', user.username);
-					uList.set(user.id, 0);
-					options.forEach((val, key) => {
-						options.set(key, val.filter(tmp => tmp !== user.id));
-					});
-				} else if (count < obj.limit) {
-					arr.push(user.id);
-					uList.set(user.id, count + 1);
+					if (reaction.emoji.name === emoteDelete) {
+						if (count)
+							log.debug('Removing votes for', user.username);
+						uList.set(user.id, 0);
+						options.forEach((val, key) => {
+							options.set(key, val.filter(tmp => tmp !== user.id));
+						});
+					} else if (count < obj.limit) {
+						arr.push(user.id);
+						uList.set(user.id, count + 1);
+					}
+					await reaction.users.remove(user);
+				} else if (count > obj.limit) {
+					log.debug('Count of reactions for user', user.username, 'is', count, 'of', obj.limit);
+					log.debug('Reactions:', ...pollMsg.reactions.cache.map((reaction, key) => `${key}-${reaction.count}`));
+					await reaction.users.remove(user);
 				}
-				await reaction.users.remove(user);
-			} else if (count > obj.limit) {
-				log.debug('Count of reactions for user', user.username, 'is', count, 'of', obj.limit);
-				log.debug('Reactions:', ...pollMsg.reactions.cache.map((reaction, key) => `${key}-${reaction.count}`));
-				await reaction.users.remove(user);
-			}
-		});
+			});
 		try {
 			await pollMsg.fetch();
 			for (const reaction of pollMsg.reactions.cache.values()) {
@@ -512,60 +517,60 @@ function inGuild () {
 
 
 	async function cmdPoll (pollMsg, obj, owner, config) {
-		let collector, collected, tmp = {
-			owner: owner,
-			channel: pollMsg.channel,
-			add: async (option, attachment) => {
-				pollMsg = await editPoll(pollMsg, { question: obj.question, options: [...obj.options, option]}, owner, attachment);
-				obj.options.push(option);
-				return true;
+		const tmp = {
+				owner: owner,
+				channel: pollMsg.channel,
+				add: async (option, attachment) => {
+					pollMsg = await editPoll(pollMsg, { question: obj.question, options: [...obj.options, option]}, owner, attachment);
+					obj.options.push(option);
+					return true;
+				},
+				delete: async () => {
+					const newopt = obj.options.slice(0, -1);
+					pollMsg = await editPoll(pollMsg, { question: obj.question, options: newopt }, owner);
+					obj.options = newopt;
+					return true;
+				}, ...obj,
 			},
-			delete: async () => {
-				const newopt = obj.options.slice(0, -1);
-				pollMsg = await editPoll(pollMsg, { question: obj.question, options: newopt }, owner);
-				obj.options = newopt;
-				return true;
-			}, ...obj,
-		};
+			collector = pollMsg.channel.createMessageCollector({ filter: msg => msg.content.startsWith(`${config.prefix}vote`), time: obj.time }),
+			collected = await handlePoll(collector, tmp, msg => {
+				const parts = msg.content.split(' ').slice(1), input = parts[0];
+				let i = Number(input);
 
-		collector = pollMsg.channel.createMessageCollector({ filter: msg => msg.content.startsWith(`${config.prefix}vote`), time: obj.time });
-		collected = await handlePoll(collector, tmp, async msg => {
-			let parts = msg.content.split(' ').slice(1), input = parts[0], i = Number(input);
-
-			msg.delete().catch(e => log.debug('unable to delete vote removal message'));
-			if (!isNaN(i) && i <= obj.options.length && i > 0) {
-				const existing = collector.collected.filter(tmsg => tmsg.author.id === msg.author.id), count = existing.size,
-					copies = existing.filter(tmsg => Number(tmsg.content.split(' ')[1]) === i).size;
-				if (count <= obj.limit && copies < 2) {
-					sendMessage(msg.channel, 'vote registered', { cleanAfter: 5000, reply: msg });
+				msg.delete().catch(e => log.debug('unable to delete vote removal message'));
+				if (!isNaN(i) && i <= obj.options.length && i > 0) {
+					const existing = collector.collected.filter(tmsg => tmsg.author.id === msg.author.id), count = existing.size,
+						copies = existing.filter(tmsg => Number(tmsg.content.split(' ')[1]) === i).size;
+					if (count <= obj.limit && copies < 2) {
+						sendMessage(msg.channel, 'vote registered', { cleanAfter: 5000, reply: msg });
+					} else {
+						log.debug('Count of votes for user', msg.author.username, 'is', count, 'of', obj.limit);
+						log.debug('Existing:', copies);
+						collector.collected.delete(msg.id);
+					}
 				} else {
-					log.debug('Count of votes for user', msg.author.username, 'is', count, 'of', obj.limit);
-					log.debug('Existing:', copies);
 					collector.collected.delete(msg.id);
-				}
-			} else {
-				collector.collected.delete(msg.id);
-				switch (input) {
-					case 'remove': i = Number(parts[1]);
-						if (parts[1] && !isNaN(i)) {
-							const existing = collector.collected.find(tmsg => tmsg.author.id === msg.author.id && Number(tmsg.content.split(' ')[1]) === i);
-							if (existing) {
-								collector.collected.delete(existing.id);
-								sendMessage(msg.channel, 'removed specified vote', { cleanAfter: 5000, reply: msg });
+					switch (input) {
+						case 'remove': i = Number(parts[1]);
+							if (parts[1] && !isNaN(i)) {
+								const existing = collector.collected.find(tmsg => tmsg.author.id === msg.author.id && Number(tmsg.content.split(' ')[1]) === i);
+								if (existing) {
+									collector.collected.delete(existing.id);
+									sendMessage(msg.channel, 'removed specified vote', { cleanAfter: 5000, reply: msg });
+								}
+							} else {
+								collector.collector.filter(tmsg => tmsg.author.id === msg.author.id).forEach(tmsg => collector.collected.delete(tmsg.id));
+								sendMessage(msg.channel, 'removed all votes', { cleanAfter: 5000, reply: msg });
 							}
-						} else {
-							collector.collector.filter(tmsg => tmsg.author.id === msg.author.id).forEach(tmsg => collector.collected.delete(tmsg.id));
-							sendMessage(msg.channel, 'removed all votes', { cleanAfter: 5000, reply: msg });
-						}
-						break;
+							break;
 
-					case 'list': {
-						const votes = collector.collected.filter(tmsg => tmsg.author.id === msg.author.id).map(tmsg => Number(tmsg.content.split(' ')[1]));
-						sendMessage(msg.channel, `you have voted for options: ${votes.join(' ')}`, { cleanAfter: 5000, reply: msg });
+						case 'list': {
+							const votes = collector.collected.filter(tmsg => tmsg.author.id === msg.author.id).map(tmsg => Number(tmsg.content.split(' ')[1]));
+							sendMessage(msg.channel, `you have voted for options: ${votes.join(' ')}`, { cleanAfter: 5000, reply: msg });
+						}
 					}
 				}
-			}
-		});
+			});
 
 		return collected.reduce((acc, msg) => {
 			try {
