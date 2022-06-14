@@ -141,7 +141,7 @@ async function getIDs ({ input, manager, prop, reg, maxCount, resolve, Type, all
 	const res = [];
 	if (!input)
 		return [];
-	else if (typeof input[Symbol.iterator] === 'function')
+	else if (Array.isArray(input))
 		input = [...input].join(' ');
 	else
 		input = String(input);
