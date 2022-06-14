@@ -63,7 +63,6 @@ function inGuild (emitter) {
 		if (!channel || channel.type !== 'GUILD_TEXT') {
 			log.error('Unable to find welcome text channel for server', guild.name, '<->', guild.id);
 			log.debug('Channel info', channel);
-			config.welcome_channel = undefined;
 			return;
 		}
 		arg.allowedMentions = { parse: ['users']};
