@@ -22,8 +22,6 @@ addConfig('welcome_image', String, { description: 'The image link to attach to a
 
 function inGuild (emitter) {
 	const { getChannelID, checkForUrl } = Utils,
-		{ memoize } = _,
-		messageParts = memoize(getMessageParts),
 		config = this.config;
 
 	function replaceText (member, input) {
@@ -61,25 +59,25 @@ function inGuild (emitter) {
 		};
 	}
 
-	async function sendMessage (member, obj) {
-		const { guild, channel, msg } = await messageParts(member);
-
-		if (!msg)
-			return;
+	function handleMessage (channel, guild, arg) {
 		if (!channel || channel.type !== 'GUILD_TEXT') {
 			log.error('Unable to find welcome text channel for server', guild.name, '<->', guild.id);
+			log.debug('Channel info', channel);
 			config.welcome_channel = undefined;
 			return;
 		}
-		if (!obj)
-			obj = { content: msg };
-		obj.allowedMentions = { parse: ['users']};
-		messageParts.cache.clear();
-		return channel.send(obj);
+		arg.allowedMentions = { parse: ['users']};
+		log.debug('Sending welcome message to', channel?.name, 'args', arg);
+		return channel.send(arg);
+	}
+
+	async function sendMessage (member) {
+		const { channel, guild, msg } = await getMessageParts(member);
+		return handleMessage(channel, guild, { content: msg });
 	}
 
 	async function sendEmbed (member) {
-		const { title, footer, thumbnail, image, msg } = await messageParts(member),
+		const { title, footer, thumbnail, image, msg, channel, guild } = await getMessageParts(member),
 			embed = { description: msg };
 
 		if (title)
@@ -90,7 +88,7 @@ function inGuild (emitter) {
 			embed.thumbnail = { url: thumbnail };
 		if (image)
 			embed.image = { url: image };
-		return sendMessage(member, { embeds: [embed]});
+		return handleMessage(channel, guild, { embeds: [embed]});
 	}
 
 	emitter.on('guildMemberAdd', member => {
