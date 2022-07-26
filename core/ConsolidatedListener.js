@@ -228,11 +228,11 @@ class ConsolidatedListener {
 	listenerCount (eventName) {
 		if (eventName) {
 			eventName = (typeof eventName === 'symbol') ? eventName : String(eventName);
-			return (this.#eventsToListeners.get(eventName) || []).size;
+			return (this.#eventsToListeners.get(eventName) || []).length;
 		} else {
 			let count = 0;
 			for (const list of this.#eventsToListeners.values())
-				count += list.size;
+				count += list.length;
 			return count;
 		}
 	}

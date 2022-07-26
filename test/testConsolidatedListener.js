@@ -1,4 +1,5 @@
 import ConsolidatedListener from '../core/ConsolidatedListener.js';
+import { logAppender } from '../core/logger.js';
 import assert from 'assert/strict';
 import EventEmitter from 'events';
 
@@ -133,12 +134,39 @@ function Tests () {
 				listener.addSource(event);
 		});
 
-		it('Can iterate through attached events');
+		it('Can iterate through the names of attached events', function () {
+			const evNames = new Set(["Test1", "Test2", "Test3"]);
+			for (const evName of evNames) {
+				listener.on(evName, () => {});
+			}
+			
+			let itt = evNames.values();
+			for (const evName of listener.eventNames()) {
+				assert.equal(evName, itt.next().value);
+			}
+		});
 
-		it('Can get the listener count');
+		it('Can get the listener count', function () {
+			const evNames = new Map([["Test1", 3], ["Test2", 2], ["Test3", 1]]);
+			let totalCount = 0;
+
+			for (const [evName, count] of evNames) {
+				for (let i = 0; i < count; i++) {
+					listener.on(evName, () => {});
+				}
+				totalCount += count;
+			}
+
+			for (const [evName, count] of evNames) {
+				assert.equal(listener.listenerCount(evName), count);
+			}
+			assert.equal(listener.listenerCount(), totalCount);
+		});
 
 		it('Can forward uncaught errors to the error event', function () {
-			let event = Symbol('Test error event'), promises = [], count = 0;
+			const event = Symbol('Test error event');
+			let count = 0;
+
 			return new Promise((resolve, reject) => {
 				listener.on(event, () => {throw new TestError()});
 				listener.on('error', (e) => {
@@ -150,13 +178,34 @@ function Tests () {
 					emitter.emit(event);
 				setTimeout(() => {
 					if (count === events.size)
-						resolve();
+						return resolve();
 					reject();
 				}, 10);
 			});
 		});
 
-		it('Can log uncaught errors if there is no attached error listener');
+		it('Can log uncaught errors if there is no attached error listener', function () {
+			const logs = logAppender.listen('Consolidated-Listener', true),
+				event = Symbol('Test error event');
+			
+			listener.on(event, () => {throw new TestError()});
+			return new Promise((resolve, reject) => {
+				
+				for (let emitter of events)
+					emitter.emit(event);
+				setTimeout(() => {
+					resolve();
+				}, 10);
+			}).then(() => {
+				const errors = logs.filter(lEvent => lEvent.level.levelStr == 'ERROR');
+
+				assert.equal(errors.length, events.size);
+				for (const lEvent of errors) {
+					assert.equal(lEvent.data[0], 'Uncaught error:');
+					assert.ok(lEvent.data[1] instanceof TestError);
+				}
+			});
+		});
 	});
 }
 

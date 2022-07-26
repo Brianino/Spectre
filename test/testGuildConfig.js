@@ -60,6 +60,8 @@ describe('Guild Config', function () {
 			await waitFor(undefined, undefined, async () => {
 				try {
 					file = await fs.readFile(Path.resolve(__dirname, '../data/savetest.json'), 'utf8');
+					if (file.length == 0)
+						throw new Error('File empty');
 					return true;
 				} catch (e) {
 					return false;
