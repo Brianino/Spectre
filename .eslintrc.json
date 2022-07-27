@@ -112,12 +112,43 @@
         "lines-between-class-members": ["error", "always", {"exceptAfterSingleLine": true}],
         "object-curly-spacing": ["error", "always", {"objectsInObjects": false, "arraysInObjects": false }]
     },
+    "ignorePatterns": ["*.log"],
     "overrides": [{
         "files": ["**/modules/**/*.js"],
+        "globals": {
+            "access": "readonly",
+            "addConfig": "readonly",
+            "discordjs": "readonly",
+            "getBot": "readonly",
+            "getConfigurable": "readonly",
+            "inspect": "readonly",
+            "loadNew": "readonly",
+            "log": "readonly",
+            "modules": "readonly",
+            "OwnerID": "readonly",
+            "timespan": "readonly",
+            "reload": "readonly",
+            "Utils": "readonly",
+            "_": "readonly"
+        },
         "rules": {
-            "no-undef": "off",
+            "no-undef": "warn",
             "no-unused-vars": ["warn", {"args": "none","vars": "local", "varsIgnorePattern": "in(Guild|AllGuilds|AllDM|All)|[iI]gnore"}],
             "no-self-assign": "off"
+        }
+    }, {
+        "files": ["**/test/**/*.js"],
+        "globals": {
+            "describe": "readonly",
+            "it": "readonly",
+            "before": "readonly",
+            "beforeEach": "readonly",
+            "after": "readonly",
+            "afterEach": "readonly"
+        },
+        "rules": {
+            "prefer-arrow-callback": "off",
+            "func-names": ["off"]
         }
     }]
 }

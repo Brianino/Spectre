@@ -1,6 +1,3 @@
-/* eslint no-undef: "warn" */
-/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
-
 this.description = 'set the server welcome message';
 this.description = 'user mention: {user}';
 this.description = 'server name: {server}';

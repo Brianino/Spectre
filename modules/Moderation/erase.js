@@ -1,6 +1,3 @@
-/* eslint no-undef: "warn" */
-/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
-
 class LessThan extends Error {}
 
 this.description = 'erase a number of messages from a user or from all users';

@@ -1,6 +1,3 @@
-/* eslint no-undef: "warn" */
-/* global access, addConfig, discordjs, getBot, getConfigurable, inspect, log, modules, OwnerID, timespan, Utils, _ */
-
 this.description = 'Repost images into an image gallery channel';
 this.description = 'At least one source channel needs to be provided, and a gallery channel';
 this.arguments = '<...source> to <gallery>';

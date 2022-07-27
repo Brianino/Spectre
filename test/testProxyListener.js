@@ -1,10 +1,10 @@
 import ProxyListener from '../core/ProxyListener.js';
 import assert from 'assert/strict';
-import events from 'events';
+import Events from 'events';
 
 describe('Proxy Listener', function () {
 	describe('Initialised with source event emitter', function () {
-		let source = new events(), plistener = new ProxyListener(source);
+		const source = new Events(), plistener = new ProxyListener(source);
 
 		it('can create the proxy listener', function () {
 			assert.ok(plistener.isAttached);
@@ -15,9 +15,9 @@ describe('Proxy Listener', function () {
 	});
 
 	describe('Source event emitter added later', function () {
-		let source = new events(), plistener = new ProxyListener(), list = [],
-		evQue = Object.getOwnPropertySymbols(plistener).find(sym => sym.toString() === 'Symbol(queue)'),
-		evSym = Object.getOwnPropertySymbols(plistener).find(sym => sym.toString() === 'Symbol(events to listeners)');
+		const source = new Events(), plistener = new ProxyListener(), list = [],
+			evQue = Object.getOwnPropertySymbols(plistener).find(sym => sym.toString() === 'Symbol(queue)'),
+			evSym = Object.getOwnPropertySymbols(plistener).find(sym => sym.toString() === 'Symbol(events to listeners)');
 
 		it('can create the proxy listener', function () {
 			assert.ok(!plistener.isAttached);
@@ -25,39 +25,39 @@ describe('Proxy Listener', function () {
 		});
 
 		it('can queue up listener addition', function () {
-			let listener = () => {}, event = Symbol('Queue listener'), size = plistener[evQue].length;
+			const listener = () => {}, event = Symbol('Queue listener'), size = plistener[evQue].length;
 
 			plistener.on(event, listener);
-			list.push({event, listener});
+			list.push({ event, listener });
 
 			assert.ok((size + 1) === plistener[evQue].length);
 		});
 
 		it('can queue up once listener addition', function () {
-			let listener = () => {}, event = Symbol('Queue once listener'), size = plistener[evQue].length;
+			const listener = () => {}, event = Symbol('Queue once listener'), size = plistener[evQue].length;
 
 			plistener.once(event, listener);
-			list.push({event, listener, once: true});
+			list.push({ event, listener, once: true });
 
 			assert.ok((size + 1) === plistener[evQue].length);
 		});
 
 		it('can queue up listener prepend', function () {
-			let listener = () => {}, event = Symbol('Queue prepend'), size = plistener[evQue].length,
-			listener2 = () => {};
+			const listener = () => {}, event = Symbol('Queue prepend'), size = plistener[evQue].length,
+				listener2 = () => {};
 
 			plistener.on(event, listener2);
 			plistener.prependListener(event, listener);
-			list.unshift({event, listener, check: (input) => input[0] === listener && input[1] === listener2});
+			list.unshift({ event, listener, check: (input) => input[0] === listener && input[1] === listener2 });
 
 			assert.ok((size + 2) === plistener[evQue].length);
 		});
 
 		it('can queue up listener removal', function () {
-			let listener = () => {}, event = Symbol('Queue delete'), size = plistener[evQue].length;
+			const listener = () => {}, event = Symbol('Queue delete'), size = plistener[evQue].length;
 
 			plistener.on(event, listener);
-			list.push({event, listener, deleted: true});
+			list.push({ event, listener, deleted: true });
 			plistener.off(event, listener);
 
 			assert.ok((size + 2) === plistener[evQue].length);
@@ -69,20 +69,20 @@ describe('Proxy Listener', function () {
 		});
 
 		it('should have dealt with the queued up actions', function () {
-			for (let {event, listener, once, deleted, check} of list) {
-				let [tmp] = plistener[evSym].get(event) || [new Set()];
+			for (const { event, listener, once, deleted, check } of list) {
+				const [tmp] = plistener[evSym].get(event) || [new Set()];
 
 				if (!deleted && once)
-					assert.ok([...tmp].find(val => val.listener === listener), event.toString() + ' wasn\'t added');
+					assert.ok([...tmp].find(val => val.listener === listener), `${event.toString()} wasn't added`);
 				else if (!deleted)
-					assert.ok(tmp.has(listener), event.toString() + ' wasn\'t added');
+					assert.ok(tmp.has(listener), `${event.toString()} wasn't added`);
 				else if (once)
-					assert.ok(![...tmp].find(val => val.listener === listener), event.toString() + ' wasn\'t removed');
+					assert.ok(![...tmp].find(val => val.listener === listener), `${event.toString()} wasn't removed`);
 				else
-					assert.ok(!tmp.has(listener), event.toString() + ' wasn\'t removed');
+					assert.ok(!tmp.has(listener), `${event.toString()} wasn't removed`);
 
 				if (check)
-					assert.ok(check([...tmp]), event.toString() + ' failed the check');
+					assert.ok(check([...tmp]), `${event.toString()} failed the check`);
 			}
 		});
 
@@ -90,19 +90,19 @@ describe('Proxy Listener', function () {
 	});
 
 	describe('Uncaught listener error forwarding', function () {
-		let source = new events();
+		const source = new Events();
 		it('should forward uncaught errors to the error event', function () {
-			let plistener = new ProxyListener(source, true), event = Symbol();
+			const plistener = new ProxyListener(source, true), event = Symbol();
 
 			return new Promise((resolve, reject) => {
-				let e = new Error('uncaught error');
+				const e = new Error('uncaught error');
 				plistener.on('error', (err) => {
 					if (err === e)
 						return resolve();
 					else
-						return reject();
+						return reject(err);
 				});
-				plistener.on(event, () => {throw e});
+				plistener.on(event, () => { throw e; });
 				source.emit(event);
 			});
 		});
@@ -112,13 +112,14 @@ describe('Proxy Listener', function () {
 });
 
 function standardTests (plistener, source) {
-	let testFuncs = [], evSym = Object.getOwnPropertySymbols(plistener).find(sym => sym.toString() === 'Symbol(events to listeners)');
+	const evSym = Object.getOwnPropertySymbols(plistener).find(sym => sym.toString() === 'Symbol(events to listeners)');
+	let testFuncs = [];
 
 	describe('General', function () {
 		it('should only attach a single listener to the source emitter for each event', function () {
-			let listener = () => {}, event = 'test';
+			const listener = () => {}, event = 'test';
 			plistener.on(event, listener);
-			testFuncs.push({event, listener});
+			testFuncs.push({ event, listener });
 			assert.ok(source.listenerCount(event));
 		});
 
@@ -127,87 +128,89 @@ function standardTests (plistener, source) {
 		});
 
 		it('Should forward an event successfully to the proxy listener', function () {
-			return new Promise ((resolve) => {
-				let listener = resolve, event = Symbol('forward event');
+			return new Promise((resolve) => {
+				const listener = resolve, event = Symbol('forward event');
 				plistener.on(event, listener);
-				testFuncs.push({event, listener});
+				testFuncs.push({ event, listener });
 				source.emit(event);
 			});
 		});
 	});
 
-	let count = 0, eventNameGenerator = [() => 'test' + count++, () => Symbol()];
-	let methodSets = {
-		on: ['on', 'addListener'],
-		once:['once'],
-		prepend: ['prependListener'],
-		prependOnce: ['prependOnceListener'],
-		off: ['off', 'removeListener'],
-	}
+	// eslint-disable-next-line one-var
+	let count = 0;
+	const eventNameGenerator = [() => `test${count++}`, () => Symbol()],
+		methodSets = {
+			on: ['on', 'addListener'],
+			once: ['once'],
+			prepend: ['prependListener'],
+			prependOnce: ['prependOnceListener'],
+			off: ['off', 'removeListener'],
+		};
 
-	for (let func of eventNameGenerator) {
-		let checkparams = (prop, once) => {
-			it('should pass through arguments using ' + prop + ' (promise)', function () {
-				let testValue = 'passed value';
+	for (const func of eventNameGenerator) {
+		const checkparams = (prop, once) => {
+			it(`should pass through arguments using ${prop} (promise)`, function () {
+				const testValue = 'passed value';
 
-				return new Promise ((resolve) => {
-					let listener = resolve, event = func();
+				return new Promise((resolve) => {
+					const listener = resolve, event = func();
 					plistener[prop](event, listener);
 					if (!once)
-						testFuncs.push({event, listener, once});
+						testFuncs.push({ event, listener, once });
 					source.emit(event, testValue);
 				}).then(retValue => {
 					assert.equal(retValue, testValue);
 				});
 			});
 
-			it('should pass through mulitple arguments using ' + prop + ' (arrow)', function () {
-				let testValue = ['some test value', 'second test'], event = func();
+			it(`should pass through mulitple arguments using ${prop} (arrow)`, function () {
+				const testValue = ['some test value', 'second test'], event = func();
 
 				return new Promise(resolve => {
-					let listener = (...input) => resolve(input);
+					const listener = (...input) => resolve(input);
 
 					plistener[prop](event, listener);
 					if (!once)
-						testFuncs.push({event, listener, once});
+						testFuncs.push({ event, listener, once });
 					source.emit(event, ...testValue);
 				}).then(retValue => {
 					assert.deepEqual(retValue, testValue);
 				});
 			});
-		}
+		};
 
-		describe('Using ' + typeof func() + ' for event names', function () {
+		describe(`Using ${typeof func()} for event names`, function () {
 			describe('Adding Listeners', function () {
-				for (let prop of methodSets.on) {
-					let once = false;
-					it('can add a listener using ' + prop + ' with name as ' + typeof func(), function () {
-						let listener = () => {}, event = func(), tmp;
+				for (const prop of methodSets.on) {
+					const once = false;
+					it(`can add a listener using ${prop} with name as ${typeof func()}`, function () {
+						const listener = () => {}, event = func();
 
 						plistener[prop](event, listener);
-						testFuncs.push({event, listener, once});
-						[tmp] = plistener[evSym].get(event);
+						testFuncs.push({ event, listener, once });
+						const [tmp] = plistener[evSym].get(event);
 
 						assert.ok(tmp);
 						assert.ok(tmp.has(listener));
 					});
 
 					it('should run if the check function returns true', function () {
-						return new Promise ((resolve) => {
-							let listener = resolve, event = func();
+						return new Promise((resolve) => {
+							const listener = resolve, event = func();
 							plistener[prop](event, listener, () => true);
-							testFuncs.push({event, listener, once});
+							testFuncs.push({ event, listener, once });
 							source.emit(event);
 						});
 					});
 
 					it('should not run if the check function returns false', function () {
-						return new Promise ((resolve, reject) => {
-							let event = func();
+						return new Promise((resolve, reject) => {
+							const event = func();
 							plistener[prop](event, reject, () => false);
-							plistener[prop](event, resolve)
-							testFuncs.push({event, listener: resolve, once});
-							testFuncs.push({event, listener: reject, once});
+							plistener[prop](event, resolve);
+							testFuncs.push({ event, listener: resolve, once });
+							testFuncs.push({ event, listener: reject, once });
 							source.emit(event);
 						});
 					});
@@ -217,27 +220,28 @@ function standardTests (plistener, source) {
 			});
 
 			describe('Adding one time listeners', function () {
-				for (let prop of methodSets.once) {
-					let once = true;
-					it('can add a one time listener using ' + prop, function () {
-						let listener = () => {}, event = func(), tmp;
+				for (const prop of methodSets.once) {
+					const once = true;
+					it(`can add a one time listener using ${prop}`, function () {
+						const listener = () => {}, event = func();
 
 						plistener[prop](event, listener);
-						testFuncs.push({event, listener, once});
-						[tmp] = plistener[evSym].get(event);
+						testFuncs.push({ event, listener, once });
+						const [tmp] = plistener[evSym].get(event);
 
 						assert.ok(tmp);
 						assert.ok([...tmp].find(val => val.listener === listener));
 					});
 
 					it('should remove the once listener after running once', function () {
-						let event = func(), listener;
+						const event = func();
+						let listener;
 
 						return new Promise(resolve => {
 							plistener[prop](event, listener = resolve);
 							source.emit(event);
 						}).then(() => {
-							let [tmp] = plistener[evSym].get(event) || [new Set()];
+							const [tmp] = plistener[evSym].get(event) || [new Set()];
 
 							assert.ok(![...tmp].find(val => val.listener === listener));
 						});
@@ -248,17 +252,17 @@ function standardTests (plistener, source) {
 			});
 
 			describe('Prepending listeners', function () {
-				for (let prop of methodSets.prepend) {
-					let once = false;
-					it('can prepend a listener using ' + prop, function () {
-						let listener = () => {}, listener2 = () => {}, event = func(), tmp;
+				for (const prop of methodSets.prepend) {
+					const once = false;
+					it(`can prepend a listener using ${prop}`, function () {
+						const listener = () => {}, listener2 = () => {}, event = func();
 
 						plistener[prop](event, listener2);
-						testFuncs.push({event, listener: listener2, once});
+						testFuncs.push({ event, listener: listener2, once });
 
 						plistener[prop](event, listener);
-						testFuncs.push({event, listener, once});
-						[tmp] = plistener[evSym].get(event);
+						testFuncs.push({ event, listener, once });
+						const [tmp] = plistener[evSym].get(event);
 
 						assert.ok(tmp);
 						assert.ok(tmp.has(listener));
@@ -269,17 +273,17 @@ function standardTests (plistener, source) {
 			});
 
 			describe('Prepending one time listeners', function () {
-				for (let prop of methodSets.prependOnce) {
-					let once = true;
-					it('can prepend a one time listener using ' + prop, function () {
-						let listener = () => {}, listener2 = () => {}, event = func(), tmp;
+				for (const prop of methodSets.prependOnce) {
+					const once = true;
+					it(`can prepend a one time listener using ${prop}`, function () {
+						const listener = () => {}, listener2 = () => {}, event = func();
 
 						plistener[prop](event, listener2);
-						testFuncs.push({event, listener: listener2, once});
+						testFuncs.push({ event, listener: listener2, once });
 
 						plistener[prop](event, listener);
-						testFuncs.push({event, listener, once});
-						[tmp] = plistener[evSym].get(event);
+						testFuncs.push({ event, listener, once });
+						const [tmp] = plistener[evSym].get(event);
 
 						assert.ok(tmp);
 						assert.ok([...tmp].find(val => val.listener === listener));
@@ -288,13 +292,14 @@ function standardTests (plistener, source) {
 					});
 
 					it('should remove the prepended once listener after running once', function () {
-						let event = func(), listener;
+						const event = func();
+						let listener;
 
 						return new Promise(resolve => {
 							plistener[prop](event, listener = resolve);
 							source.emit(event);
 						}).then(() => {
-							let [tmp] = plistener[evSym].get(event) || [new Set()];
+							const [tmp] = plistener[evSym].get(event) || [new Set()];
 
 							assert.ok(![...tmp].find(val => val.listener === listener));
 						});
@@ -306,20 +311,20 @@ function standardTests (plistener, source) {
 
 	describe('General', function () {
 		it('can list off event names with attached listeners', function () {
-			let events = new Set(plistener.eventNames());
+			const events = new Set(plistener.eventNames());
 
-			for (let {event} of testFuncs) {
+			for (const { event } of testFuncs)
 				assert.ok(events.has(event));
-			}
+
 		});
-	})
+	});
 
 	describe('Removing listeners', function () {
-		for (let prop of methodSets.off) {
-			it('can remove a listener using ' + prop, function () {
-				let list = testFuncs.filter(({once}) => !once), {event, listener} = list[Symbol.iterator]().next().value, tmp;
+		for (const prop of methodSets.off) {
+			it(`can remove a listener using ${prop}`, function () {
+				const list = testFuncs.filter(({ once }) => !once), { event, listener } = list[Symbol.iterator]().next().value,
+					[tmp] = plistener[evSym].get(event);
 
-				[tmp] = plistener[evSym].get(event);
 				plistener[prop](event, listener);
 
 				assert.ok(tmp);
@@ -327,10 +332,10 @@ function standardTests (plistener, source) {
 				testFuncs = testFuncs.filter(val => val.listener !== listener);
 			});
 
-			it('can remove a once listener using ' + prop, function () {
-				let list = testFuncs.filter(({once}) => once), {event, listener} = list[Symbol.iterator]().next().value, tmp;
+			it(`can remove a once listener using ${prop}`, function () {
+				const list = testFuncs.filter(({ once }) => once), { event, listener } = list[Symbol.iterator]().next().value,
+					[tmp] = plistener[evSym].get(event);
 
-				[tmp] = plistener[evSym].get(event);
 				plistener[prop](event, listener);
 
 				assert.ok(![...tmp].find(val => val.listener === listener));
@@ -339,10 +344,10 @@ function standardTests (plistener, source) {
 		}
 
 		it('can remove all the listeners', function () {
-			for (let {event, listener, once} of testFuncs) {
-				let [tmp, slistener] = plistener[evSym].get(event) || [];
+			for (const { event, listener, once } of testFuncs) {
+				const [tmp, slistener] = plistener[evSym].get(event) || [];
 
-				assert.ok(tmp, 'missing listeners for ' + event.toString());
+				assert.ok(tmp, `missing listeners for ${event.toString()}`);
 				plistener.off(event, listener);
 
 				if (!once)

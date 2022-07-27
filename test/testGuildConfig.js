@@ -6,23 +6,23 @@ import { fileURLToPath } from 'url';
 import assert from 'assert/strict';
 import Path from 'path';
 
-const config = JSON.parse(readFileSync('./config.json'));
-const __dirname = Path.resolve(fileURLToPath(import.meta.url), '../');
+const config = JSON.parse(readFileSync('./config.json')),
+	__dirname = Path.resolve(fileURLToPath(import.meta.url), '../');
 
 describe('Guild Config', function () {
 	let guildConfig, testGuild;
 
-	beforeEach (function () {
+	beforeEach(function () {
 		guildConfig = new GuildConfig();
 		testGuild = guildConfig.getGuildConfig('test');
 	});
 
-	after (function () {
+	after(function () {
 		guildConfig.deleteGuildConfig('test');
 	});
 
 	describe('Generic', function () {
-		let savedValue = 'new';
+		const savedValue = 'new';
 
 		it('should create a new guild config manager object', function () {
 			guildConfig = new GuildConfig();
@@ -35,32 +35,33 @@ describe('Guild Config', function () {
 		});
 
 		it('can iterate through the properties', function () {
-			for (let [prop, val] of testGuild) {
+			for (const [prop, val] of testGuild) {
 				assert.ok(prop, 'undefined property name was returned');
-				assert.ok(val, 'undefined value for ' + prop + ' was returned');
+				assert.ok(val, `undefined value for ${prop} was returned`);
 			}
 			return true;
 		});
 
 		it('can get a list of configurable properties', function () {
-			let configurable = guildConfig.getConfigurable();
+			const configurable = guildConfig.getConfigurable();
 
 			assert.ok(configurable, 'nothing returned when requesting configurable options');
 			assert.ok(configurable instanceof Map, 'returned value is not a map');
-			for (let [prop, [type, desc]] of configurable) {
+			for (const [prop, [type]] of configurable) {
 				assert.ok(prop, 'property name missing');
 				assert.ok(type, 'property type missing');
 			}
 		});
 
 		it('can save properties', async function () {
-			let guild = guildConfig.getGuildConfig('savetest'), file;
+			const guild = guildConfig.getGuildConfig('savetest');
+			let file;
 
 			guild.prefix = savedValue;
 			await waitFor(undefined, undefined, async () => {
 				try {
 					file = await fs.readFile(Path.resolve(__dirname, '../data/savetest.json'), 'utf8');
-					if (file.length == 0)
+					if (file.length === 0)
 						throw new Error('File empty');
 					return true;
 				} catch (e) {
@@ -71,10 +72,10 @@ describe('Guild Config', function () {
 		});
 
 		it('can load properties', async function () {
-			let tempConfig = new GuildConfig(), guild;
+			const tempConfig = new GuildConfig();
 
 			await tempConfig.loadConfig();
-			guild = tempConfig.getGuildConfig('savetest');
+			const guild = tempConfig.getGuildConfig('savetest');
 
 			assert.equal(guild.prefix, savedValue);
 		});
@@ -99,7 +100,7 @@ describe('Guild Config', function () {
 		});
 
 		it('can modify the property', function () {
-			let newPrefix = 'prefix';
+			const newPrefix = 'prefix';
 
 			testGuild.prefix = newPrefix;
 
@@ -113,14 +114,14 @@ describe('Guild Config', function () {
 		});
 
 		it('can set a new permission', function () {
-			let cmd = 'testcmd';
+			const cmd = 'testcmd';
 
 			testGuild.permissions = [cmd, 1];
 			return testGuild.permissions(cmd) instanceof Permissions;
 		});
 
 		it('can set multiple permissions', function () {
-			let cmd1 = 'testCmd1', cmd2 = 'testCmd2', bit1 = 1n, bit2 = 2n;
+			const cmd1 = 'testCmd1', cmd2 = 'testCmd2', bit1 = 1n, bit2 = 2n;
 
 			testGuild.permissions = [cmd1, bit1];
 			testGuild.permissions = [cmd2, bit2];
@@ -138,29 +139,31 @@ describe('Guild Config', function () {
 		});
 
 		it('can assign a set to the property', function () {
-			let dis = new Set(['one', 'two', 'three']);
+			const dis = new Set(['one', 'two', 'three']);
 
 			testGuild.disabled = dis;
 
-			for (let temp of dis) {
-				assert.ok(testGuild.disabled.has(temp), 'missing ' + temp + ' from the disabled set');
-			}
+			for (const temp of dis)
+				assert.ok(testGuild.disabled.has(temp), `missing ${temp} from the disabled set`);
+
 			return true;
 		});
 
 		it('can assign an array to the property', function () {
-			let dis = ['one', 'two', 'three'];
+			const dis = ['one', 'two', 'three'];
 
 			testGuild.disabled = dis;
 
-			for (let temp of dis) {
-				assert.ok(testGuild.disabled.has(temp), 'missing ' + temp + ' from the disabled set');
-			}
+			for (const temp of dis)
+				assert.ok(testGuild.disabled.has(temp), `missing ${temp} from the disabled set`);
+
 			return true;
 		});
 	});
 
-	let baseTypes = [], count = 0;
+	const baseTypes = [];
+	// eslint-disable-next-line one-var
+	let count = 0;
 
 	baseTypes.push([String, 'some default', 'test val', 'updated val']);
 	baseTypes.push([Number, 100, 20, 30]);
@@ -169,29 +172,29 @@ describe('Guild Config', function () {
 	baseTypes.push([Map, new Map([['default', 'test']]), new Map([['test', 'new']]), new Map([['updated', 'test']])]);
 	baseTypes.push([Set, new Set(['default', 'test']), new Set(['test', 'new']), new Set(['updated', 'test'])]);
 	baseTypes.push([Array, ['default', 'test'], ['test', 'new'], ['updated', 'test']]);
-	baseTypes.push([Object, {default: 'test'}, {test: 'new'}, {updated: 'test'}]);
+	baseTypes.push([Object, { default: 'test' }, { test: 'new' }, { updated: 'test' }]);
 
-	for (let [type, defVal, newVal, otherVal] of baseTypes) {
-		let typeName = type.name, prop = count++ + 'test' + typeName, prop2 = prop + '2';
+	for (const [type, defVal, newVal, otherVal] of baseTypes) {
+		const typeName = type.name, prop = `${count++}test${typeName}`, prop2 = `${prop}2`;
 
-		describe('Custom ' + typeName + ' Property', function () {
+		describe(`Custom ${typeName} Property`, function () {
 			beforeEach(function () {
 				guildConfig.register(prop, type, {
 					default: defVal,
 					userEditable: false,
-					description: 'A test variable of type ' + typeName,
+					description: `A test variable of type ${typeName}`,
 				});
 				guildConfig.register(prop2, type, {
 					userEditable: false,
-					description: 'A test variable of type ' + typeName,
+					description: `A test variable of type ${typeName}`,
 				});
 			});
 
-			it('can register a new property of type ' + typeName, function () {
+			it(`can register a new property of type ${typeName}`, function () {
 				return assert.ok(prop in testGuild, 'missing new property in config object');
 			});
 
-			it('can register a new property of type ' + typeName + ' without a default', function () {
+			it(`can register a new property of type ${typeName} without a default`, function () {
 				return assert.ok(prop2 in testGuild, 'missing new property in config object');
 			});
 
@@ -245,20 +248,16 @@ describe('Guild Config', function () {
 
 		it('can set the type as configurable', function () {
 			const prop = 'test_configurable';
-			guildConfig.register(prop, String, {
-				configurable: true,
-			});
+			guildConfig.register(prop, String, { configurable: true });
 
-			return assert.ok(guildConfig.getConfigurable().get(prop), 'property ' + prop + ' is not showing up in configurable options');
+			return assert.ok(guildConfig.getConfigurable().get(prop), `property ${prop} is not showing up in configurable options`);
 		});
 
 		it('can set the type as non configurable', function () {
 			const prop = 'test_non_configurable';
-			guildConfig.register(prop, String, {
-				configurable: false,
-			});
+			guildConfig.register(prop, String, { configurable: false });
 
-			return assert.ok(!guildConfig.getConfigurable().has(prop), 'property ' + prop + ' is showing up in configurable options when it shouldn\'t');
+			return assert.ok(!guildConfig.getConfigurable().has(prop), `property ${prop} is showing up in configurable options when it shouldn't`);
 		});
 
 		it('can set the type description', function () {
@@ -269,7 +268,7 @@ describe('Guild Config', function () {
 				configurable: true,
 			});
 
-			return assert.equal(guildConfig.getConfigurable().get(prop)[1], desc, 'property ' + prop + ' description does not match');
+			return assert.equal(guildConfig.getConfigurable().get(prop)[1], desc, `property ${prop} description does not match`);
 		});
 
 		it('can set a custom setter (object)', function () {
@@ -279,41 +278,41 @@ describe('Guild Config', function () {
 				default: testObj,
 				set (value) {
 					this.normal = value;
-				}
+				},
 			});
-			guildConfig.register('arrow' + prop, Object, {
+			guildConfig.register(`arrow${prop}`, Object, {
 				default: testObj,
 				set: (value) => {
 					testObj.arrow = value;
-				}
+				},
 			});
 
 			testGuild[prop] = testVal;
-			testGuild['arrow' + prop] = testVal;
+			testGuild[`arrow${prop}`] = testVal;
 
-			assert.equal(testObj.arrow, testVal, testVal + ' was not assigned to the object (arrow setter)');
-			assert.notEqual(testObj.normal, testVal, testVal + ' should not assigned to the object but was (normal setter)');
-			assert.notEqual(testGuild['arrow' + prop].arrow, testVal, testVal + ' should not assigned to the object but was (arrow setter)');
-			assert.equal(testGuild[prop].normal, testVal, testVal + ' was not assigned to the object (normal setter)');
+			assert.equal(testObj.arrow, testVal, `${testVal} was not assigned to the object (arrow setter)`);
+			assert.notEqual(testObj.normal, testVal, `${testVal} should not assigned to the object but was (normal setter)`);
+			assert.notEqual(testGuild[`arrow${prop}`].arrow, testVal, `${testVal} should not assigned to the object but was (arrow setter)`);
+			assert.equal(testGuild[prop].normal, testVal, `${testVal} was not assigned to the object (normal setter)`);
 		});
 
 		it('can set a custom getter (object)', function () {
-			const prop = 'test_getter', testObj = {test: 'First:'}, append = 'Second';
+			const prop = 'test_getter', testObj = { test: 'First:' }, append = 'Second';
 
 			guildConfig.register(prop, Object, {
 				default: testObj,
 				get () {
 					return this.test + append;
-				}
+				},
 			});
 
-			for (let [key, val] of testGuild) {
+			for (const [key, val] of testGuild) {
 				if (key === prop) {
-					assert.equal(val, testObj, val + ' is stored instead of ' + testObj);
+					assert.equal(val, testObj, `${val} is stored instead of ${testObj}`);
 					break;
 				}
 			}
-			assert.equal(testGuild[prop], testObj.test + append, 'got ' + testGuild[prop] + ' instead of ' + testObj.test + append);
+			assert.equal(testGuild[prop], testObj.test + append, `got ${testGuild[prop]} instead of ${testObj.test}${append}`);
 		});
 
 		it('can save properties');

@@ -3,32 +3,37 @@ import { logAppender } from '../core/logger.js';
 import assert from 'assert/strict';
 import EventEmitter from 'events';
 
-let listener, events = new Set();
+const events = new Set();
+let listener;
 
-class TestError extends Error {};
+class TestError extends Error {}
 
-function Tests () {
+function tests () {
 	describe('Manage Sources', function () {
 		it('Can add a source', function () {
-			let source = new EventEmitter(), found = false;
+			const source = new EventEmitter();
+			let found = false;
+
 			listener.addSource(source);
-			for (let src of listener.sources())
+			for (const src of listener.sources())
 				found ||= (src === source);
 			assert.ok([...listener.sources()].length);
 			assert.ok(found, 'Source not found when iterating through sources');
 		});
 
 		it('Can remove a source', function () {
-			let source = new EventEmitter(), found = false;
+			const source = new EventEmitter();
+			let found = false;
+
 			listener.addSource(source);
 			listener.removeSource(source);
-			for (let src of listener.sources())
+			for (const src of listener.sources())
 				found ||= (src === source);
 			assert.ok(!found, 'Source found when iterating through sources when it shouldn\'t be');
 		});
 
 		it('Can check for source presence', function () {
-			let source = new EventEmitter();
+			const source = new EventEmitter();
 			listener.addSource(source);
 			assert.ok(listener.hasSource(source), 'Returned false when checking for source presence');
 			listener.removeSource(source);
@@ -36,29 +41,30 @@ function Tests () {
 		});
 
 		it('Can iterate through sources', function () {
-			let sources = new Set(), itt;
+			const sources = new Set();
+
 			sources.add(new EventEmitter());
 			sources.add(new EventEmitter());
-			for (let source of sources)
+			for (const source of sources)
 				listener.addSource(source);
-			itt = sources.values();
-			for (let source of listener.sources())
+			const itt = sources.values();
+			for (const source of listener.sources())
 				assert.equal(source, itt.next().value);
 		});
 	});
 
-	describe('Manage Listeners', function() {
+	describe('Manage Listeners', function () {
 		beforeEach(function () {
-			for (let event of events)
+			for (const event of events)
 				listener.addSource(event);
 		});
 
-		for (let prop of ['on', 'addListener']) {
+		for (const prop of ['on', 'addListener']) {
 			it(`Can add a listener using ${prop}`, function () {
-				let event = Symbol('Test Add'), promises = [];
+				const event = Symbol('Test Add'), promises = [];
 
 				listener[prop](event, (resolve) => resolve());
-				for (let emitter of events) {
+				for (const emitter of events) {
 					promises.push(new Promise((resolve) => {
 						emitter.emit(event, resolve);
 					}));
@@ -67,12 +73,12 @@ function Tests () {
 			});
 		}
 
-		for (let prop of ['off', 'removeListener']) {
+		for (const prop of ['off', 'removeListener']) {
 			it(`Can remove a listener using ${prop}`, function () {
-				let event = Symbol('Test Remove'), promises = [];
+				const event = Symbol('Test Remove'), promises = [];
 				listener.on('end', (resolve) => resolve());
 				listener[prop](event, (reject) => reject());
-				for (let emitter of events) {
+				for (const emitter of events) {
 					promises.push(new Promise((resolve, reject) => {
 						emitter.emit(event, reject);
 						setImmediate(() => emitter.emit('end', resolve));
@@ -83,26 +89,27 @@ function Tests () {
 		}
 
 		it('Can add a one use listener', function () {
-			let event = Symbol('Test Once'), promises = [], count = 0;
+			const event = Symbol('Test Once');
+			let count = 0;
 
 			listener.once(event, () => count++);
-			for (let emitter of events)
+			for (const emitter of events)
 				emitter.emit(event);
 			return new Promise((resolve, reject) => {
 				setTimeout(() => {
 					if (count === 1)
 						return resolve();
 					else
-						return reject();
+						return reject(new Error('Count is not 1'));
 				}, 10);
 			});
 		});
 
 		it('Can prepend a listener', function () {
-			let event = Symbol('Test Prepend'), promises = [];
+			const event = Symbol('Test Prepend'), promises = [];
 			listener.on(event, (resolve, reject) => reject());
-			listener.prependListener(event, (resolve, reject) => resolve());
-			for (let emitter of events) {
+			listener.prependListener(event, (resolve) => resolve());
+			for (const emitter of events) {
 				promises.push(new Promise((resolve, reject) => {
 					emitter.emit(event, resolve, reject);
 				}));
@@ -111,18 +118,19 @@ function Tests () {
 		});
 
 		it('Can prepend a once listener', function () {
-			let event = Symbol('Test Prepend Once'), promises = [], count = 0;
+			const event = Symbol('Test Prepend Once');
+			let count = 0;
 
 			return new Promise((resolve, reject) => {
-				listener.on(event, () => (count === 0) && reject());
+				listener.on(event, () => (count === 0) && reject(new Error('Count is 0')));
 				listener.prependOnceListener(event, () => count++);
-				for (let emitter of events)
+				for (const emitter of events)
 					emitter.emit(event);
 				setTimeout(() => {
 					if (count === 1)
 						return resolve();
 					else
-						return reject();
+						return reject(new Error('Count is not 1'));
 				}, 10);
 			});
 		});
@@ -130,36 +138,36 @@ function Tests () {
 
 	describe('Other', function () {
 		beforeEach(function () {
-			for (let event of events)
+			for (const event of events)
 				listener.addSource(event);
 		});
 
 		it('Can iterate through the names of attached events', function () {
-			const evNames = new Set(["Test1", "Test2", "Test3"]);
-			for (const evName of evNames) {
+			const evNames = new Set(['Test1', 'Test2', 'Test3']);
+			for (const evName of evNames)
 				listener.on(evName, () => {});
-			}
-			
-			let itt = evNames.values();
-			for (const evName of listener.eventNames()) {
+
+
+			const itt = evNames.values();
+			for (const evName of listener.eventNames())
 				assert.equal(evName, itt.next().value);
-			}
+
 		});
 
 		it('Can get the listener count', function () {
-			const evNames = new Map([["Test1", 3], ["Test2", 2], ["Test3", 1]]);
+			const evNames = new Map([['Test1', 3], ['Test2', 2], ['Test3', 1]]);
 			let totalCount = 0;
 
 			for (const [evName, count] of evNames) {
-				for (let i = 0; i < count; i++) {
+				for (let i = 0; i < count; i++)
 					listener.on(evName, () => {});
-				}
+
 				totalCount += count;
 			}
 
-			for (const [evName, count] of evNames) {
+			for (const [evName, count] of evNames)
 				assert.equal(listener.listenerCount(evName), count);
-			}
+
 			assert.equal(listener.listenerCount(), totalCount);
 		});
 
@@ -168,18 +176,18 @@ function Tests () {
 			let count = 0;
 
 			return new Promise((resolve, reject) => {
-				listener.on(event, () => {throw new TestError()});
+				listener.on(event, () => { throw new TestError(); });
 				listener.on('error', (e) => {
 					if (e instanceof TestError)
 						return ++count;
-					reject();
+					reject(e);
 				});
-				for (let emitter of events)
+				for (const emitter of events)
 					emitter.emit(event);
 				setTimeout(() => {
 					if (count === events.size)
 						return resolve();
-					reject();
+					reject(new Error('count doesn\'t match the number of events'));
 				}, 10);
 			});
 		});
@@ -187,17 +195,17 @@ function Tests () {
 		it('Can log uncaught errors if there is no attached error listener', function () {
 			const logs = logAppender.listen('Consolidated-Listener', true),
 				event = Symbol('Test error event');
-			
-			listener.on(event, () => {throw new TestError()});
-			return new Promise((resolve, reject) => {
-				
-				for (let emitter of events)
+
+			listener.on(event, () => { throw new TestError(); });
+			return new Promise((resolve) => {
+
+				for (const emitter of events)
 					emitter.emit(event);
 				setTimeout(() => {
 					resolve();
 				}, 10);
 			}).then(() => {
-				const errors = logs.filter(lEvent => lEvent.level.levelStr == 'ERROR');
+				const errors = logs.filter(lEvent => lEvent.level.levelStr === 'ERROR');
 
 				assert.equal(errors.length, events.size);
 				for (const lEvent of errors) {
@@ -221,7 +229,7 @@ describe('Consolidated Listener', function () {
 			events.clear();
 		});
 
-		Tests();
+		tests();
 	});
 
 	describe('Multi Source', function () {
@@ -237,6 +245,6 @@ describe('Consolidated Listener', function () {
 			events.clear();
 		});
 
-		Tests();
+		tests();
 	});
 });

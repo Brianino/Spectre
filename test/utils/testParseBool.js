@@ -14,5 +14,5 @@ describe('Parse Bool', function () {
 			assert.equal(parseBool('f'), false);
 			assert.equal(parseBool(''), false);
 		});
-	})
+	});
 });

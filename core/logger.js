@@ -1,11 +1,9 @@
 import log4js from 'log4js';
-import {configure as multiFileAppender } from 'log4js/lib/appenders/multiFile.js'
+import { configure as multiFileAppender } from 'log4js/lib/appenders/multiFile.js';
 import fs from 'fs/promises';
 
 class LogAppender {
 	#categories = new Map();
-
-	constructor () {}
 
 	listen (categoryName, wipe = false) {
 		let weakRef = this.#categories.get(categoryName),
@@ -16,7 +14,7 @@ class LogAppender {
 				val.splice(0, val.length);
 			return val;
 		}
-		
+
 		val = [];
 		weakRef = new WeakRef(val);
 		this.#categories.set(categoryName, weakRef);
@@ -77,9 +75,9 @@ switch (process.env.TEST) {
 				return (loggingEvent) => {
 					logAppender.handleLogEvent(loggingEvent);
 					return fileAppender(loggingEvent);
-				}
-			}
-		}
+				};
+			},
+		};
 
 		log4js.configure({
 			appenders: {
@@ -108,11 +106,11 @@ switch (process.env.TEST) {
 		break;
 	}
 
-	default: 
-	console.log('Somthing went horribly wrong setting up the logger');
-	process.exit(1);
+	default:
+		console.log('Somthing went horribly wrong setting up the logger');
+		process.exit(1);
 }
 
 export default (namespace) => log4js.getLogger(namespace);
 
-export { logAppender }
+export { logAppender };
