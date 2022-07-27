@@ -46,7 +46,7 @@ class ProxyListener {
 					else
 						log.debug('Skipping listener due to failed check');
 				} catch (e) {
-					if (this[sym.errors])
+					if (this[sym.errors] && this[sym.source].listenerCount('error'))
 						this[sym.source].emit('error', e);
 					else
 						log.error('Uncaught error in', event, 'listener:', e);

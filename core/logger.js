@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 class LogAppender {
 	#categories = new Map();
 
-	listen (categoryName, wipe = false) {
+	listen (categoryName, wipe = true) {
 		let weakRef = this.#categories.get(categoryName),
 			val = weakRef?.deref();
 

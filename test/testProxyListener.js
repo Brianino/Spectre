@@ -1,4 +1,5 @@
 import ProxyListener from '../core/ProxyListener.js';
+import { logAppender } from '../core/logger.js';
 import assert from 'assert/strict';
 import Events from 'events';
 
@@ -91,6 +92,12 @@ describe('Proxy Listener', function () {
 
 	describe('Uncaught listener error forwarding', function () {
 		const source = new Events();
+
+		afterEach(function () {
+			for (const ev of source.eventNames())
+				source.removeAllListeners(ev);
+		});
+
 		it('should forward uncaught errors to the error event', function () {
 			const plistener = new ProxyListener(source, true), event = Symbol();
 
@@ -107,7 +114,41 @@ describe('Proxy Listener', function () {
 			});
 		});
 
-		it('should catch and log uncaught errors');
+		it('should log forwarded errors to the error event (when there is no error listener attached)', function () {
+			const plistener = new ProxyListener(source, true),
+				event = Symbol(),
+				logs = logAppender.listen('Proxy-Listener', true),
+				e = new Error('uncaught error');
+
+			return new Promise((resolve) => {
+				plistener.on(event, () => { throw e; });
+				source.emit(event);
+				resolve();
+			}).then(() => {
+				const errors = logs.filter(lEvent => lEvent.level.levelStr === 'ERROR');
+
+				assert.equal(errors.length, 1);
+				assert.deepEqual(errors[0].data, ['Uncaught error in', event, 'listener:', e]);
+			});
+		});
+
+		it('should catch and log uncaught errors', function () {
+			const plistener = new ProxyListener(source, false),
+				event = Symbol('Test error event'),
+				logs = logAppender.listen('Proxy-Listener', true),
+				e = new Error('uncaught error');
+
+			return new Promise((resolve) => {
+				plistener.on(event, () => { throw e; });
+				source.emit(event);
+				resolve();
+			}).then(() => {
+				const errors = logs.filter(lEvent => lEvent.level.levelStr === 'ERROR');
+
+				assert.equal(errors.length, 1);
+				assert.deepEqual(errors[0].data, ['Uncaught error in', event, 'listener:', e]);
+			});
+		});
 	});
 });
 

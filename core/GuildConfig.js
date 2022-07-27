@@ -436,7 +436,7 @@ class ConfigManager {
 	 * @param {extraProperties} param - extra modifiable properties
 	}
 	*/
-	register (name, type, { default: defaultVal, configurable, description, get, set, toJson, from }) {
+	register (name, type, { default: defaultVal, configurable, description, get, set }) {
 		let temp;
 
 		name = String(name);
@@ -456,10 +456,6 @@ class ConfigManager {
 			log.debug('Setting getters/setters for', name);
 			temp.get = get;
 			temp.set = set;
-		}
-		if (toJson && from) {
-			Object.defineProperty(MappingUtils, type, { value: { toJson, from }});
-			log.info('Set up json conversion functions for property', name);
 		}
 		log.info('Finished registering config property', name);
 		// iterate through store and convert any non converted objects

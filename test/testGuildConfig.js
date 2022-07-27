@@ -237,9 +237,39 @@ describe('Guild Config', function () {
 			});
 
 			if (typeof defVal !== 'object') {
-				it('can use a custom setter (primitive)');
+				it('can\'t use a custom setter (primitive)', function () {
+					const testProp = `${prop}(setter)`;
+					let isSet = false;
 
-				it('can use a custom getter (primitive)');
+					guildConfig.register(testProp, type, {
+						set (val) {
+							isSet = true;
+							return val;
+						},
+						userEditable: false,
+						description: `A test variable of type ${typeName} (setter)`,
+					});
+
+					testGuild[testProp] = newVal;
+
+					assert.equal(testGuild[testProp], newVal);
+					assert.ok(!isSet);
+				});
+
+				it('can\'t use a custom getter (primitive)', function () {
+					const testProp = `${prop}(getter)`, badVal = new Error('bad value');
+
+					guildConfig.register(testProp, type, {
+						default: defVal,
+						get () {
+							return badVal;
+						},
+						userEditable: false,
+						description: `A test variable of type ${typeName} (setter)`,
+					});
+
+					assert.equal(testGuild[testProp], defVal);
+				});
 			}
 		});
 	}
@@ -314,16 +344,6 @@ describe('Guild Config', function () {
 			}
 			assert.equal(testGuild[prop], testObj.test + append, `got ${testGuild[prop]} instead of ${testObj.test}${append}`);
 		});
-
-		it('can save properties');
-
-		it('can load properties');
-
-		it('can set custom json converters');
-
-		it('can save properties with custom converters');
-
-		it('can load properties with custom converters');
 	});
 
 	after(async function () {
