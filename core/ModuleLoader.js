@@ -21,7 +21,7 @@ const log = logger('Module-Loader'),
 	__dirname = Path.dirname(fileURLToPath(import.meta.url)),
 
 	globals = { // TODO: Lock off objects so that they can't be modified from within the module
-	// Value Globals
+		// Value Globals
 		Infinity, NaN, undefined,
 
 		// Function Globals
