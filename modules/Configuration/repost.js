@@ -231,7 +231,7 @@ function inGuild (emitter) {
 					}
 				}));
 		}
-		for (const { reason } of Promise.allSettled(promises)) {
+		for (const { reason } of await Promise.allSettled(promises)) {
 			if (reason) {
 				log.error('Issue processing one of the rules', reason);
 				failed++;

@@ -99,6 +99,7 @@ class PagedEmbed {
 	#icon;
 	#timestamp;
 	#active = false;
+	#selfCleanup = false;
 	#manager = new GroupManager();
 
 	static MAX_ROWS = 25;
@@ -202,6 +203,10 @@ class PagedEmbed {
 		return this.#pages[index];
 	}
 
+	setSelfCleanup (input) {
+		this.#selfCleanup = Boolean(input);
+	}
+
 	async sendTo (channel, group = Symbol()) {
 		if (!channel || channel instanceof Channel === false)
 			throw new Error('Channel required');
@@ -287,9 +292,11 @@ class PagedEmbed {
 				updateMsg(msg, group.page);
 		});
 		this.#controller.on('end', msg => {
-			msg.delete().catch(e => {
-				log.error('Unable to delete embed', e);
-			});
+			if (this.#selfCleanup) {
+				msg.delete().catch(e => {
+					log.error('Unable to delete embed', e);
+				});
+			}
 		});
 	}
 

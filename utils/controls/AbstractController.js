@@ -351,7 +351,7 @@ class AbstractController extends events {
 	*/
 	emit (event, ...args) {
 		event = AbstractController.#convertEventName(event);
-		if ((this.#controlMap.has(event) && !this.#paused.has(event) && this.#controlsOn) || event === 'end')
+		if ((this.#controlMap.has(event) && !this.#paused.has(event) && this.#controlsOn) || event === AbstractController.END_EVENT)
 			super.emit(event, ...args);
 	}
 
