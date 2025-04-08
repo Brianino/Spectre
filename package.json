@@ -1,6 +1,6 @@
 {
   "name": "Spectre",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A shitty general purpose bot",
   "type": "module",
   "engines": {
