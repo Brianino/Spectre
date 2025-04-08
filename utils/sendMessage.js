@@ -25,7 +25,6 @@ async function sendMessage (channel, content, { wait, cleanAfter, reply } = {}) 
 	else
 		tmpObj.embeds = [content];
 
-
 	if (reply)
 		tmpObj.reply = { messageReference: reply };
 

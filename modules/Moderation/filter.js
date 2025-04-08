@@ -58,7 +58,7 @@ function inGuild (emitter, groupObj) {
 				// check user has exempt role
 				if (await checkExempt(msg.member, this.config.filter_exempt.get(name)))
 					return log.debug('User is exempt from filter due to higher role');
-				log.info('Deleting filtered message', msg.content, 'from user', msg.author.username);
+				log.info('Deleting filtered message', msg.content, 'from user', msg.author.username, `(${msg.author.id}-${msg.guild.name})`);
 				msg.delete().catch(ignore => {
 					log.error('Unable to delete filtered message', msg.content, 'from user', msg.author.username, `(${msg.author.id})`);
 				});
